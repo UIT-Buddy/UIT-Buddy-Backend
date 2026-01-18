@@ -68,7 +68,7 @@ local:
 	podman compose up -d
 	@Write-Host "Waiting for database to be ready..." -ForegroundColor Yellow
 	@Start-Sleep -Seconds 10
-	.\mvnw.cmd spring-boot:run "-Dspring-boot.run.profiles=dev"
+	Get-Content .env | ForEach-Object { if ($$_ -match '^([^#][^=]*)=(.*)$$') { [System.Environment]::SetEnvironmentVariable($$matches[1], $$matches[2]) } }; .\mvnw.cmd spring-boot:run "-Dspring-boot.run.profiles=dev"
 
 # Hiển thị hướng dẫn
 help:
