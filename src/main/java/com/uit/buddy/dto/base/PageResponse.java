@@ -1,5 +1,6 @@
 package com.uit.buddy.dto.base;
 
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -13,6 +14,7 @@ import java.util.List;
 @SuperBuilder
 @NoArgsConstructor
 @AllArgsConstructor
+@JsonPropertyOrder({ "statusCode", "message", "data", "paging" })
 public class PageResponse<T> extends AbstractBaseResponse {
     private List<T> data;
     private PagingResponse paging;

@@ -1,31 +1,17 @@
 # Build stage
-FROM eclipse-temurin:25-jdk-alpine AS build
+FROM maven:3.9-eclipse-temurin-25 AS build
 
-WORKDIR /app
+COPY src /home/app/src
+COPY pom.xml /home/app
 
-# Copy Maven wrapper and pom.xml
-COPY .mvn/ .mvn
-COPY mvnw pom.xml ./
+# Build and list the target directory to verify JAR creation
+RUN mvn -f /home/app/pom.xml clean package -DskipTests=true && ls -la /home/app/target/
 
-# Download dependencies
-RUN ./mvnw dependency:go-offline -B
+# Package stage
+FROM eclipse-temurin:25-jre
 
-# Copy source code
-COPY src ./src
+COPY --from=build /home/app/target/buddy-0.0.1-SNAPSHOT.jar /usr/local/lib/app.jar
 
-# Build application
-RUN ./mvnw clean package -DskipTests
-
-# Run stage
-FROM eclipse-temurin:25-jre-alpine
-
-WORKDIR /app
-
-# Copy jar from build stage
-COPY --from=build /app/target/*.jar app.jar
-
-# Expose port
 EXPOSE 8080
 
-# Run application
-ENTRYPOINT ["java", "-jar", "app.jar"]
+ENTRYPOINT ["java", "-jar", "/usr/local/lib/app.jar"]

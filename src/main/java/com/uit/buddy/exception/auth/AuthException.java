@@ -4,18 +4,28 @@ import lombok.Getter;
 
 @Getter
 public class AuthException extends RuntimeException {
-    private final String errorCode;
-    private final int httpStatus;
+    private final AuthErrorCode errorCode;
 
-    public AuthException(String errorCode, String message, int httpStatus) {
-        super(message);
+    public AuthException(AuthErrorCode errorCode) {
+        super(errorCode.getMessage());
         this.errorCode = errorCode;
-        this.httpStatus = httpStatus;
     }
 
-    public AuthException(String errorCode, String message, int httpStatus, Throwable cause) {
-        super(message, cause);
+    public AuthException(AuthErrorCode errorCode, String customMessage) {
+        super(customMessage);
         this.errorCode = errorCode;
-        this.httpStatus = httpStatus;
+    }
+
+    public AuthException(AuthErrorCode errorCode, Throwable cause) {
+        super(errorCode.getMessage(), cause);
+        this.errorCode = errorCode;
+    }
+
+    public String getCode() {
+        return errorCode.getCode();
+    }
+
+    public int getHttpStatus() {
+        return errorCode.getHttpStatus();
     }
 }
