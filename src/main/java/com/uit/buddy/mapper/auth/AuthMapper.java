@@ -15,7 +15,5 @@ public interface AuthMapper {
 
     @Named("toUserInfo")
     @Mapping(target = "id", expression = "java(user.getId().toString())")
-    @Mapping(target = "role", expression = "java(user.getRole().name())")
-    @Mapping(target = "status", expression = "java(user.getStatus().name())")
     AuthResponse.UserInfo toUserInfo(User user);
 }

@@ -15,11 +15,9 @@ import com.uit.buddy.dto.response.auth.TempTokenResponse;
 import com.uit.buddy.service.auth.AuthService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -31,41 +29,10 @@ public class AuthController extends AbstractBaseController {
 
     private final AuthService authService;
 
-    @Value("${jwt.refresh-expiration}")
-    private long refreshExpiration;
-
-    private static final String REFRESH_TOKEN_COOKIE_NAME = "refreshToken";
-
-    private void setRefreshTokenCookie(HttpServletResponse response, String refreshToken) {
-        Cookie cookie = new Cookie(REFRESH_TOKEN_COOKIE_NAME, refreshToken);
-        cookie.setHttpOnly(true);
-        cookie.setSecure(true);
-        cookie.setPath("/api/auth");
-        cookie.setMaxAge((int) (refreshExpiration / 1000));
-        cookie.setAttribute("SameSite", "Strict");
-        response.addCookie(cookie);
-    }
-
-    private void clearRefreshTokenCookie(HttpServletResponse response) {
-        Cookie cookie = new Cookie(REFRESH_TOKEN_COOKIE_NAME, null);
-        cookie.setHttpOnly(true);
-        cookie.setSecure(true);
-        cookie.setPath("/api/auth");
-        cookie.setMaxAge(0);
-        response.addCookie(cookie);
-    }
-
     @PostMapping("/signup/initiate")
     public ResponseEntity<SuccessResponse> signUp(@Valid @RequestBody SignUpRequest request) {
         authService.initiateSignUp(request);
         return success("OTP has been sent to your student email. Please check your inbox!");
-    }
-
-    @PostMapping("/signup/resend-otp")
-    @Operation(description = "Can be requested once every 2 minutes")
-    public ResponseEntity<SuccessResponse> resendSignupOtp(@Valid @RequestBody SignUpRequest request) {
-        authService.initiateSignUp(request);
-        return success("A new OTP has been sent to your email.");
     }
 
     @PostMapping("/signup/verify-otp")
@@ -80,7 +47,7 @@ public class AuthController extends AbstractBaseController {
             @Valid @RequestBody PasswordSettingRequest request,
             HttpServletResponse httpResponse) {
         AuthResponse response = authService.completeSignUp(request);
-        setRefreshTokenCookie(httpResponse, response.getRefreshToken());
+        httpResponse.setHeader("X-Refresh-Token", response.getRefreshToken());
         return successSingle(response, "Registration completed successfully!");
     }
 
@@ -89,23 +56,29 @@ public class AuthController extends AbstractBaseController {
             @Valid @RequestBody SignInRequest request,
             HttpServletResponse httpResponse) {
         AuthResponse response = authService.signIn(request);
-        setRefreshTokenCookie(httpResponse, response.getRefreshToken());
+        httpResponse.setHeader("X-Refresh-Token", response.getRefreshToken());
         return successSingle(response, "Sign-in successful!");
     }
 
-    @PostMapping("/refresh")
+    @PostMapping("/signup/resend-otp")
+    @Operation(description = "Can be requested once every 2 minutes")
+    public ResponseEntity<SuccessResponse> resendSignupOtp(@Valid @RequestBody SignUpRequest request) {
+        authService.initiateSignUp(request);
+        return success("A new OTP has been sent to your email.");
+    }
+
+    @PostMapping("/refresh-token")
     public ResponseEntity<SingleResponse<AuthResponse>> refreshToken(
-            @CookieValue(name = REFRESH_TOKEN_COOKIE_NAME) String refreshToken,
+            @RequestHeader("X-Refresh-Token") String refreshToken,
             HttpServletResponse httpResponse) {
         AuthResponse response = authService.refreshToken(refreshToken);
-        setRefreshTokenCookie(httpResponse, response.getRefreshToken());
+        httpResponse.setHeader("X-Refresh-Token", response.getRefreshToken());
         return successSingle(response, "Token refreshed successfully!");
     }
 
     @PostMapping("/signout")
     public ResponseEntity<SuccessResponse> signOut(HttpServletResponse httpResponse) {
         authService.signOut();
-        clearRefreshTokenCookie(httpResponse);
         return success("Sign-out successful!");
     }
 

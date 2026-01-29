@@ -2,6 +2,8 @@ package com.uit.buddy.security;
 
 import com.uit.buddy.entity.auth.User;
 import com.uit.buddy.repository.auth.UserRepository;
+import com.uit.buddy.security.impl.JwtUtilsImpl;
+
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -19,7 +21,7 @@ import java.io.IOException;
 @RequiredArgsConstructor
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
-    private final JwtUtils jwtUtils;
+    private final JwtUtilsImpl jwtUtils;
     private final UserRepository userRepository;
 
     @Override
@@ -38,7 +40,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         try {
             final String jwt = authHeader.substring(7);
-            final String userEmail = jwtUtils.extractUsername(jwt);
+            final String userEmail = jwtUtils.extractMssv(jwt);
 
             if (userEmail != null && SecurityContextHolder.getContext().getAuthentication() == null) {
                 User user = userRepository.findByEmail(userEmail).orElse(null);
@@ -46,7 +48,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 if (user != null) {
                     JwtUserDetails userDetails = new JwtUserDetails(user);
 
-                    if (jwtUtils.isTokenValid(jwt, userDetails)) {
+                    if (jwtUtils.validateAccessToken(jwt, userDetails)) {
                         UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
                                 userDetails,
                                 null,

@@ -37,17 +37,23 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .authorizeHttpRequests(auth -> auth
-                        // Public endpoints
                         .requestMatchers(
-                                "/api/auth/**",
+                                "/api/auth/signup/**",
+                                "/api/auth/signin",
+                                "/api/auth/forgot-password",
+                                "/api/auth/reset-password",
                                 "/api/public/**",
                                 "/swagger-ui/**",
                                 "/v3/api-docs/**",
                                 "/swagger-ui.html",
                                 "/actuator/health")
                         .permitAll()
-                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
-                        .requestMatchers("/api/student/**").hasAnyRole("STUDENT", "ADMIN")
+                        .requestMatchers(
+                                "/api/auth/me",
+                                "/api/auth/signout",
+                                "/api/auth/change-password",
+                                "/api/auth/refresh-token")
+                        .authenticated()
                         .anyRequest().authenticated())
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
@@ -65,6 +71,7 @@ public class SecurityConfig {
         configuration.setAllowedOriginPatterns(List.of("*"));
         configuration.setAllowedMethods(List.of("*"));
         configuration.setAllowedHeaders(List.of("*"));
+        configuration.setExposedHeaders(List.of("X-Refresh-Token"));
         configuration.setAllowCredentials(true);
         configuration.setMaxAge(3600L);
 

@@ -1,6 +1,5 @@
 package com.uit.buddy.dto.request.auth;
 
-import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
@@ -14,7 +13,6 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@JsonPropertyOrder({ "tempToken", "password", "confirmPassword" })
 public class PasswordSettingRequest {
 
     @Schema(description = "Temporary token from OTP verification", example = "abc123...", requiredMode = Schema.RequiredMode.REQUIRED)

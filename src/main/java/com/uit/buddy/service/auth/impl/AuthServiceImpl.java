@@ -10,8 +10,6 @@ import com.uit.buddy.dto.request.auth.SignUpRequest;
 import com.uit.buddy.dto.response.auth.AuthResponse;
 import com.uit.buddy.dto.response.auth.TempTokenResponse;
 import com.uit.buddy.entity.auth.User;
-import com.uit.buddy.enums.auth.UserRole;
-import com.uit.buddy.enums.auth.UserStatus;
 import com.uit.buddy.exception.auth.AuthErrorCode;
 import com.uit.buddy.exception.auth.AuthException;
 import com.uit.buddy.mapper.auth.AuthMapper;
@@ -20,14 +18,14 @@ import com.uit.buddy.security.JwtUserDetails;
 import com.uit.buddy.security.JwtUtils;
 import com.uit.buddy.service.auth.AuthService;
 import com.uit.buddy.service.auth.OtpService;
-import com.uit.buddy.service.redis.RedisService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -37,15 +35,8 @@ public class AuthServiceImpl implements AuthService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtils jwtUtils;
-    private final RedisService redisService;
     private final OtpService otpService;
     private final AuthMapper authMapper;
-
-    @Value("${jwt.refresh-expiration}")
-    private long refreshExpiration;
-
-    private static final int MAX_LOGIN_ATTEMPTS = 5;
-    private static final int LOCK_DURATION_MINUTES = 10;
 
     @Transactional
     public void initiateSignUp(SignUpRequest request) {
@@ -55,11 +46,11 @@ public class AuthServiceImpl implements AuthService {
         log.info("Initiating signup for mssv: {}", mssv);
 
         if (!mssv.matches("^[0-9]{8,10}$")) {
-            throw new AuthException(AuthErrorCode.INVALID_mssv_FORMAT);
+            throw new AuthException(AuthErrorCode.INVALID_MSSV_FORMAT);
         }
 
         if (userRepository.existsByMssv(mssv)) {
-            throw new AuthException(AuthErrorCode.mssv_ALREADY_EXISTS);
+            throw new AuthException(AuthErrorCode.MSSV_ALREADY_EXISTS);
         }
         otpService.sendSignupOtp(mssv);
         log.info("OTP sent to: {}", email);
@@ -73,7 +64,7 @@ public class AuthServiceImpl implements AuthService {
         log.info("Verifying signup OTP for mssv: {}", mssv);
 
         if (!mssv.matches("^[0-9]{8,10}$")) {
-            throw new AuthException(AuthErrorCode.INVALID_mssv_FORMAT);
+            throw new AuthException(AuthErrorCode.INVALID_MSSV_FORMAT);
         }
 
         String tempToken = otpService.verifySignupOtp(mssv, otp);
@@ -104,7 +95,7 @@ public class AuthServiceImpl implements AuthService {
 
         if (userRepository.existsByMssv(mssv)) {
             otpService.consumeTempToken(request.getTempToken());
-            throw new AuthException(AuthErrorCode.mssv_ALREADY_EXISTS);
+            throw new AuthException(AuthErrorCode.MSSV_ALREADY_EXISTS);
         }
 
         User user = User.builder()
@@ -112,11 +103,7 @@ public class AuthServiceImpl implements AuthService {
                 .mssv(mssv)
                 .password(passwordEncoder.encode(request.getPassword()))
                 .fullName(null)
-                .role(UserRole.STUDENT)
-                .status(UserStatus.ACTIVE)
-                .isActivated(true)
-                .isLocked(false)
-                .failedLoginAttempts(0)
+                .isVerified(true)
                 .build();
 
         user = userRepository.save(user);
@@ -126,12 +113,9 @@ public class AuthServiceImpl implements AuthService {
 
         JwtUserDetails userDetails = new JwtUserDetails(user);
         String accessToken = jwtUtils.generateToken(userDetails);
-        String refreshToken = jwtUtils.generateRefreshToken(userDetails);
+        Map<String, String> refreshTokenData = jwtUtils.generateRefreshTokenByJwtUserDetails(userDetails, null, false);
 
-        // Save refresh token to Redis
-        redisService.saveRefreshToken(user.getId().toString(), refreshToken, refreshExpiration);
-
-        return authMapper.toAuthResponse(user, accessToken, refreshToken);
+        return authMapper.toAuthResponse(user, accessToken, refreshTokenData.get("refresh_token"));
     }
 
     @Transactional
@@ -142,20 +126,14 @@ public class AuthServiceImpl implements AuthService {
                 .or(() -> userRepository.findByMssv(request.getMssv()))
                 .orElseThrow(() -> new AuthException(AuthErrorCode.USER_NOT_FOUND));
 
-        if (user.isAccountLocked()) {
-            throw new AuthException(AuthErrorCode.ACCOUNT_LOCKED);
-        }
-
-        if (!user.getIsActivated()) {
+        if (!user.getIsVerified()) {
             throw new AuthException(AuthErrorCode.ACCOUNT_NOT_ACTIVATED);
         }
 
         if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
-            handleFailedLogin(user);
             throw new AuthException(AuthErrorCode.INVALID_CREDENTIALS);
         }
 
-        user.resetFailedLoginAttempts();
         user.updateLastLogin();
         userRepository.save(user);
 
@@ -163,50 +141,36 @@ public class AuthServiceImpl implements AuthService {
 
         JwtUserDetails userDetails = new JwtUserDetails(user);
         String accessToken = jwtUtils.generateToken(userDetails);
-        String refreshToken = jwtUtils.generateRefreshToken(userDetails);
+        Map<String, String> refreshTokenData = jwtUtils.generateRefreshTokenByJwtUserDetails(userDetails, null, false);
 
-        // Save refresh token to Redis
-        redisService.saveRefreshToken(user.getId().toString(), refreshToken, refreshExpiration);
-
-        return authMapper.toAuthResponse(user, accessToken, refreshToken);
+        return authMapper.toAuthResponse(user, accessToken, refreshTokenData.get("refresh_token"));
     }
 
     @Transactional
     public AuthResponse refreshToken(String refreshToken) {
-        String username = jwtUtils.extractUsername(refreshToken);
-        User user = userRepository.findByEmail(username)
+        String mssv = jwtUtils.extractMssv(refreshToken);
+        User user = userRepository.findByMssv(mssv)
                 .orElseThrow(() -> new AuthException(AuthErrorCode.USER_NOT_FOUND));
 
-        // Verify refresh token from Redis
-        String storedToken = redisService.getRefreshToken(user.getId().toString());
-        if (storedToken == null || !storedToken.equals(refreshToken)) {
-            throw new AuthException(AuthErrorCode.REFRESH_TOKEN_INVALID);
-        }
+        String newAccessToken = jwtUtils.generateAccessTokenByRefreshToken(refreshToken);
 
         JwtUserDetails userDetails = new JwtUserDetails(user);
 
-        if (!jwtUtils.isTokenValid(refreshToken, userDetails)) {
-            throw new AuthException(AuthErrorCode.REFRESH_TOKEN_INVALID);
-        }
+        String familyToken = jwtUtils.extractClaim(refreshToken, claims -> claims.get("family_token", String.class));
 
-        String newAccessToken = jwtUtils.generateToken(userDetails);
-        String newRefreshToken = jwtUtils.generateRefreshToken(userDetails);
+        Map<String, String> refreshTokenData = jwtUtils.generateRefreshTokenByJwtUserDetails(userDetails, familyToken,
+                false);
 
-        // Update refresh token in Redis
-        redisService.saveRefreshToken(user.getId().toString(), newRefreshToken, refreshExpiration);
-
-        return authMapper.toAuthResponse(user, newAccessToken, newRefreshToken);
+        return authMapper.toAuthResponse(user, newAccessToken, refreshTokenData.get("refresh_token"));
     }
 
     public void initiatePasswordReset(ForgotPasswordRequest request) {
-        String emailOrmssv = request.getMssv();
-        log.info("Initiating password reset for: {}", emailOrmssv);
+        String mssv = request.getMssv();
+        log.info("Initiating password reset for: {}", mssv);
 
-        User user = userRepository.findByEmail(emailOrmssv)
-                .or(() -> userRepository.findByMssv(emailOrmssv))
+        User user = userRepository.findByMssv(mssv)
                 .orElseThrow(() -> new AuthException(AuthErrorCode.USER_NOT_FOUND));
 
-        // Send OTP
         otpService.sendForgetPasswordOtp(user.getEmail());
         log.info("Password reset OTP sent to: {}", user.getEmail());
     }
@@ -229,27 +193,9 @@ public class AuthServiceImpl implements AuthService {
 
         otpService.verifyOtp(user.getEmail(), request.getOtp());
 
-        // Update password
         user.setPassword(passwordEncoder.encode(request.getNewPassword()));
-        user.resetFailedLoginAttempts();
         userRepository.save(user);
         log.info("Password reset successfully for: {}", user.getEmail());
-    }
-
-    @Transactional
-    private void handleFailedLogin(User user) {
-        user.incrementFailedLoginAttempts();
-
-        if (user.getFailedLoginAttempts() >= MAX_LOGIN_ATTEMPTS) {
-            user.lockAccount(LOCK_DURATION_MINUTES);
-            log.warn("Account locked due to too many failed attempts: {}", user.getEmail());
-        }
-
-        userRepository.save(user);
-
-        if (user.getFailedLoginAttempts() >= MAX_LOGIN_ATTEMPTS) {
-            throw new AuthException(AuthErrorCode.TOO_MANY_LOGIN_ATTEMPTS);
-        }
     }
 
     private boolean isPasswordStrong(String password) {
@@ -276,7 +222,8 @@ public class AuthServiceImpl implements AuthService {
         User user = userRepository.findByEmail(username)
                 .orElseThrow(() -> new AuthException(AuthErrorCode.USER_NOT_FOUND));
 
-        redisService.deleteRefreshToken(user.getId().toString());
+        jwtUtils.revokeAllRefreshTokensByMssv(user.getMssv());
+
         log.info("User signed out: {}", user.getEmail());
     }
 
