@@ -50,7 +50,8 @@ help: ## Show this help message
 	@Write-Host ""
 	@Write-Host "[LOCAL DEVELOPMENT]" -ForegroundColor Green
 	@Write-Host "  make local              - Start infra + run backend locally"
-	@Write-Host "  make dev                - Run backend locally with dev profile"
+	@Write-Host "  make dev                - Start only DB containers (for DevTools)"
+	@Write-Host "  make run-local          - Run backend locally with dev profile"
 	@Write-Host "  make debug              - Run backend with debug port 5005"
 	@Write-Host ""
 	@Write-Host "[BUILD & TEST]" -ForegroundColor Green
@@ -184,9 +185,24 @@ _run-local:
 	@Write-Host ""
 	@powershell -ExecutionPolicy Bypass -File .\scripts\run-local.ps1 -Profile dev
 
-dev: ## Run backend locally with dev profile (requires infra running)
+dev: infra-up ## Start only DB containers (for Spring DevTools development)
+	@Write-Host ""
+	@Write-Host "============================================================" -ForegroundColor Green
+	@Write-Host "Development environment ready!" -ForegroundColor Green
+	@Write-Host "============================================================" -ForegroundColor Green
+	@Write-Host ""
+	@Write-Host "PostgreSQL: localhost:5433" -ForegroundColor Cyan
+	@Write-Host "Redis:      localhost:6379" -ForegroundColor Cyan
+	@Write-Host ""
+	@Write-Host "Now run your Spring Boot app from IDE or:" -ForegroundColor Yellow
+	@Write-Host "  make run-local" -ForegroundColor Yellow
+	@Write-Host ""
+	@Write-Host "Spring DevTools will auto-reload on code changes!" -ForegroundColor Green
+	@Write-Host ""
+
+run-local: ## Run backend locally with dev profile (requires infra running)
 	@Write-Host "Running backend with dev profile..." -ForegroundColor Cyan
-	@powershell -ExecutionPolicy Bypass -File .\scripts\run-local.ps1 -Profile dev
+	.\mvnw.cmd spring-boot:run "-Dspring-boot.run.profiles=dev"
 
 debug: ## Run backend with debug port 5005
 	@Write-Host "Running backend in debug mode (port 5005)..." -ForegroundColor Cyan
@@ -242,7 +258,7 @@ shell-redis: ## Open Redis CLI
 	up down restart logs status clean clean-all rebuild \
 	backend-logs backend-restart postgres-logs redis-logs \
 	infra-up infra-down \
-	dev debug \
+	dev run-local debug \
 	build build-skip-test test compile clean-maven deps \
 	shell-postgres shell-redis \
 	_wait-db _run-local

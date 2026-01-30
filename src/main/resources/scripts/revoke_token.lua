@@ -20,5 +20,5 @@ if is_revoked == revoke_value then
 end
 
 -- Revoke token atomically
-redis.call("HSET", token_key, field_name, 1)
+redis.call("HSET", token_key, field_name, revoke_value)
 return 1  

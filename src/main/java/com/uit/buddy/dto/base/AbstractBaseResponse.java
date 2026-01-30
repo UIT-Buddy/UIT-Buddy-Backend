@@ -14,6 +14,6 @@ import lombok.experimental.SuperBuilder;
 @NoArgsConstructor
 @AllArgsConstructor
 public abstract class AbstractBaseResponse {
-    protected int statusCode;
+    protected Integer statusCode;
     protected String message;
 }

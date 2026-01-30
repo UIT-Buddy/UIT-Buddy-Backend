@@ -22,7 +22,7 @@ public class User extends AbstractBaseEntity {
     @Column(name = "mssv", nullable = false, unique = true, length = 10)
     private String mssv;
 
-    @Column(name = "password", nullable = false, length = 50)
+    @Column(name = "password", nullable = false, length = 255)
     private String password;
 
     @Column(name = "full_name", length = 50)

@@ -39,10 +39,10 @@ public class JwtUtilsImpl implements JwtUtils {
     private final RedisTemplate<String, Object> redisTemplate;
     private final RedisScript<Long> revokeTokenScript;
 
-    @Value("${jwt.secret}")
+    @Value("${app.jwt.secret}")
     private String secretKey;
 
-    @Value("${jwt.expiration}")
+    @Value("${app.jwt.token.expires-in}")
     private long jwtExpiration;
 
     @Value("${app.jwt.refresh-token.expires-in}")

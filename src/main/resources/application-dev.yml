@@ -59,7 +59,12 @@ app:
       expires-in: ${JWT_REFRESH_EXPIRES_IN}
       expires-in-with-rememberme: ${JWT_REFRESH_EXPIRES_IN_WITH_REMEMBERME}
   otp:
-    expiration-minutes: ${OTP_EXPIRATION_MINUTES:5}
+    length: ${OTP_LENGTH:6}
+    expiration-seconds: ${OTP_EXPIRATION_SECONDS:300}
+    max-attempts: ${OTP_MAX_ATTEMPTS:5}
+    resend-cooldown-seconds: ${OTP_RESEND_COOLDOWN_SECONDS:120}
+  temp-token:
+    expiration-seconds: ${TEMP_TOKEN_EXPIRATION_SECONDS:600}
 
 scalar:
   path: ${SCALAR_PATH:/docs}

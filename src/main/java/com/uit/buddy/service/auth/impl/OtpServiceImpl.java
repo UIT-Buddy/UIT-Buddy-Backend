@@ -12,10 +12,13 @@ import com.uit.buddy.service.auth.OtpService;
 import com.uit.buddy.service.email.EmailService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.script.RedisScript;
 import org.springframework.stereotype.Service;
 
 import java.security.SecureRandom;
+import java.util.Collections;
 import java.util.concurrent.TimeUnit;
 
 @Service
@@ -28,12 +31,24 @@ public class OtpServiceImpl implements OtpService {
     private final TempTokenRepository tempTokenRepository;
     private final RedisTemplate<String, Object> redisTemplate;
     private final EmailService emailService;
+    private final RedisScript<Long> verifyOtpScript;
+    private final RedisScript<String> validateTempTokenScript;
 
-    private static final int OTP_LENGTH = 6;
-    private static final long OTP_EXPIRATION_SECONDS = 300; // 5 minutes
-    private static final int MAX_OTP_ATTEMPTS = 5;
-    private static final long RESEND_COOLDOWN_SECONDS = 120; // 2 minutes
-    private static final long TEMP_TOKEN_EXPIRATION_SECONDS = 600; // 10 minutes
+    @Value("${app.otp.length}")
+    private int otpLength;
+
+    @Value("${app.otp.expiration-seconds}")
+    private long otpExpirationSeconds;
+
+    @Value("${app.otp.max-attempts}")
+    private int maxOtpAttempts;
+
+    @Value("${app.otp.resend-cooldown-seconds}")
+    private long resendCooldownSeconds;
+
+    @Value("${app.temp-token.expiration-seconds}")
+    private long tempTokenExpirationSeconds;
+
     private static final String OTP_RESEND_PREFIX = "otp_resend:";
 
     @Override
@@ -50,7 +65,7 @@ public class OtpServiceImpl implements OtpService {
                 .mssv(mssv)
                 .attempts(0)
                 .isRevoked(false)
-                .ttl(OTP_EXPIRATION_SECONDS)
+                .ttl(otpExpirationSeconds)
                 .build();
 
         passwordResetTokenRepository.save(token);
@@ -65,21 +80,25 @@ public class OtpServiceImpl implements OtpService {
     public void verifyOtp(String email, String otp) {
         String mssv = email.replace("@gm.uit.edu.vn", "");
 
-        PasswordResetToken token = passwordResetTokenRepository.findByMssvAndIsRevoked(mssv, false)
-                .orElseThrow(() -> new AuthException(AuthErrorCode.OTP_NOT_FOUND));
+        Long result = redisTemplate.execute(
+                verifyOtpScript,
+                Collections.singletonList("password_reset_otp:*"),
+                mssv,
+                otp,
+                String.valueOf(maxOtpAttempts));
 
-        if (token.getAttempts() >= MAX_OTP_ATTEMPTS) {
-            passwordResetTokenRepository.delete(token);
+        if (result == null || result == -1) {
+            throw new AuthException(AuthErrorCode.OTP_NOT_FOUND);
+        }
+
+        if (result == -2) {
             throw new AuthException(AuthErrorCode.OTP_MAX_ATTEMPTS);
         }
 
-        if (!token.getOtp().equals(otp)) {
-            token.setAttempts(token.getAttempts() + 1);
-            passwordResetTokenRepository.save(token);
+        if (result == 0) {
             throw new AuthException(AuthErrorCode.OTP_INVALID);
         }
 
-        passwordResetTokenRepository.delete(token);
         log.info("Password reset OTP verified successfully for: {}", email);
     }
 
@@ -105,7 +124,7 @@ public class OtpServiceImpl implements OtpService {
                 .mssv(mssv)
                 .attempts(0)
                 .isRevoked(false)
-                .ttl(OTP_EXPIRATION_SECONDS)
+                .ttl(otpExpirationSeconds)
                 .build();
 
         signUpTokenRepository.save(token);
@@ -117,21 +136,24 @@ public class OtpServiceImpl implements OtpService {
 
     @Override
     public String verifySignupOtp(String mssv, String otp) {
-        SignUpToken token = signUpTokenRepository.findByMssvAndIsRevoked(mssv, false)
-                .orElseThrow(() -> new AuthException(AuthErrorCode.OTP_NOT_FOUND));
+        Long result = redisTemplate.execute(
+                verifyOtpScript,
+                Collections.singletonList("signup_otp:*"),
+                mssv,
+                otp,
+                String.valueOf(maxOtpAttempts));
 
-        if (token.getAttempts() >= MAX_OTP_ATTEMPTS) {
-            signUpTokenRepository.delete(token);
+        if (result == null || result == -1) {
+            throw new AuthException(AuthErrorCode.OTP_NOT_FOUND);
+        }
+
+        if (result == -2) {
             throw new AuthException(AuthErrorCode.OTP_MAX_ATTEMPTS);
         }
 
-        if (!token.getOtp().equals(otp)) {
-            token.setAttempts(token.getAttempts() + 1);
-            signUpTokenRepository.save(token);
+        if (result == 0) {
             throw new AuthException(AuthErrorCode.OTP_INVALID);
         }
-
-        signUpTokenRepository.delete(token);
 
         // Generate temp token
         String tempTokenValue = generateTempToken();
@@ -139,7 +161,7 @@ public class OtpServiceImpl implements OtpService {
                 .token(tempTokenValue)
                 .mssv(mssv)
                 .isRevoked(false)
-                .ttl(TEMP_TOKEN_EXPIRATION_SECONDS)
+                .ttl(tempTokenExpirationSeconds)
                 .build();
 
         tempTokenRepository.save(tempToken);
@@ -150,14 +172,17 @@ public class OtpServiceImpl implements OtpService {
 
     @Override
     public String validateTempToken(String token) {
-        TempToken tempToken = tempTokenRepository.findById(token)
-                .orElseThrow(() -> new AuthException(AuthErrorCode.TEMP_TOKEN_INVALID));
+        String redisKey = "temp_token:" + token;
 
-        if (tempToken.isRevoked()) {
+        String mssv = redisTemplate.execute(
+                validateTempTokenScript,
+                Collections.singletonList(redisKey));
+
+        if (mssv == null) {
             throw new AuthException(AuthErrorCode.TEMP_TOKEN_INVALID);
         }
 
-        return tempToken.getMssv();
+        return mssv;
     }
 
     @Override
@@ -174,7 +199,7 @@ public class OtpServiceImpl implements OtpService {
 
     private void setResendCooldown(String email) {
         String key = OTP_RESEND_PREFIX + email;
-        redisTemplate.opsForValue().set(key, "1", RESEND_COOLDOWN_SECONDS, TimeUnit.SECONDS);
+        redisTemplate.opsForValue().set(key, "1", resendCooldownSeconds, TimeUnit.SECONDS);
     }
 
     private String generateTempToken() {
@@ -192,7 +217,7 @@ public class OtpServiceImpl implements OtpService {
         SecureRandom random = new SecureRandom();
         StringBuilder otp = new StringBuilder();
 
-        for (int i = 0; i < OTP_LENGTH; i++) {
+        for (int i = 0; i < otpLength; i++) {
             otp.append(random.nextInt(10));
         }
 

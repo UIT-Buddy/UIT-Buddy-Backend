@@ -1,8 +1,8 @@
 package com.uit.buddy.security;
 
 import com.uit.buddy.entity.auth.User;
+import com.uit.buddy.exception.auth.AuthErrorCode;
 import com.uit.buddy.repository.auth.UserRepository;
-import com.uit.buddy.security.impl.JwtUtilsImpl;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -21,7 +21,7 @@ import java.io.IOException;
 @RequiredArgsConstructor
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
-    private final JwtUtilsImpl jwtUtils;
+    private final JwtUtils jwtUtils;
     private final UserRepository userRepository;
 
     @Override
@@ -55,12 +55,32 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                                 userDetails.getAuthorities());
                         authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                         SecurityContextHolder.getContext().setAuthentication(authToken);
+                    } else {
+                        // Token invalid
+                        request.setAttribute("errorCode", AuthErrorCode.TOKEN_INVALID.getCode());
+                        request.setAttribute("errorMessage", AuthErrorCode.TOKEN_INVALID.getMessage());
                     }
+                } else {
+                    // User not found
+                    request.setAttribute("errorCode", AuthErrorCode.TOKEN_INVALID.getCode());
+                    request.setAttribute("errorMessage", AuthErrorCode.TOKEN_INVALID.getMessage());
                 }
             }
+        } catch (io.jsonwebtoken.ExpiredJwtException e) {
+            // Token expired
+            request.setAttribute("errorCode", AuthErrorCode.TOKEN_EXPIRED.getCode());
+            request.setAttribute("errorMessage", AuthErrorCode.TOKEN_EXPIRED.getMessage());
+            logger.error("JWT token expired: " + e.getMessage());
+        } catch (io.jsonwebtoken.MalformedJwtException e) {
+            // Malformed token
+            request.setAttribute("errorCode", AuthErrorCode.TOKEN_INVALID.getCode());
+            request.setAttribute("errorMessage", AuthErrorCode.TOKEN_INVALID.getMessage());
+            logger.error("Invalid JWT token: " + e.getMessage());
         } catch (Exception e) {
-            // Log error but don't block the filter chain
-            logger.error("Cannot set user authentication: {}", e);
+            // Other errors
+            request.setAttribute("errorCode", AuthErrorCode.TOKEN_INVALID.getCode());
+            request.setAttribute("errorMessage", AuthErrorCode.TOKEN_INVALID.getMessage());
+            logger.error("Cannot set user authentication: " + e.getMessage());
         }
 
         filterChain.doFilter(request, response);

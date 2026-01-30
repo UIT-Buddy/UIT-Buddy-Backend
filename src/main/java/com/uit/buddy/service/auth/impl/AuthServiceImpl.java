@@ -122,8 +122,7 @@ public class AuthServiceImpl implements AuthService {
     public AuthResponse signIn(SignInRequest request) {
         log.info("Sign in attempt for mssv: {}", request.getMssv());
 
-        User user = userRepository.findByEmail(request.getMssv())
-                .or(() -> userRepository.findByMssv(request.getMssv()))
+        User user = userRepository.findByMssv(request.getMssv())
                 .orElseThrow(() -> new AuthException(AuthErrorCode.USER_NOT_FOUND));
 
         if (!user.getIsVerified()) {
@@ -187,8 +186,7 @@ public class AuthServiceImpl implements AuthService {
             throw new AuthException(AuthErrorCode.WEAK_PASSWORD);
         }
 
-        User user = userRepository.findByEmail(request.getMssv())
-                .or(() -> userRepository.findByMssv(request.getMssv()))
+        User user = userRepository.findByMssv(request.getMssv())
                 .orElseThrow(() -> new AuthException(AuthErrorCode.USER_NOT_FOUND));
 
         otpService.verifyOtp(user.getEmail(), request.getOtp());

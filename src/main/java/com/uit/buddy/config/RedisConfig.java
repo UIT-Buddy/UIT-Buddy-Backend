@@ -29,4 +29,14 @@ public class RedisConfig {
     public RedisScript<Long> revokeTokenScript() {
         return RedisScript.of(new ClassPathResource("scripts/revoke_token.lua"), Long.class);
     }
+
+    @Bean
+    public RedisScript<Long> verifyOtpScript() {
+        return RedisScript.of(new ClassPathResource("scripts/verify_otp.lua"), Long.class);
+    }
+
+    @Bean
+    public RedisScript<String> validateTempTokenScript() {
+        return RedisScript.of(new ClassPathResource("scripts/validate_temp_token.lua"), String.class);
+    }
 }
