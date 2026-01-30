@@ -40,22 +40,12 @@ public class SecurityConfig {
                                                 .requestMatchers(
                                                                 "/api/auth/signup/**",
                                                                 "/api/auth/signin",
+                                                                "/api/auth/refresh-token",
                                                                 "/api/auth/forgot-password",
                                                                 "/api/auth/reset-password",
-                                                                "/api/public/**",
-                                                                "/swagger-ui/**",
-                                                                "/swagger-ui.html",
                                                                 "/scalar/**",
-                                                                "/scalar.html",
-                                                                "/v3/api-docs/**",
-                                                                "/actuator/health")
+                                                                "/scalar.html")
                                                 .permitAll()
-                                                .requestMatchers(
-                                                                "/api/auth/me",
-                                                                "/api/auth/signout",
-                                                                "/api/auth/change-password",
-                                                                "/api/auth/refresh-token")
-                                                .authenticated()
                                                 .anyRequest().authenticated())
                                 .sessionManagement(session -> session
                                                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS))

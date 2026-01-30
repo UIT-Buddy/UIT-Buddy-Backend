@@ -18,7 +18,6 @@ public class JwtUserDetails implements UserDetails {
     private final String password;
     private final String fullName;
     private final Collection<? extends GrantedAuthority> authorities;
-    private final boolean enabled;
 
     public JwtUserDetails(User user) {
         this.id = user.getId();
@@ -27,7 +26,6 @@ public class JwtUserDetails implements UserDetails {
         this.password = user.getPassword();
         this.fullName = user.getFullName();
         this.authorities = List.of();
-        this.enabled = user.getIsVerified();
     }
 
     @Override
@@ -58,10 +56,5 @@ public class JwtUserDetails implements UserDetails {
     @Override
     public boolean isCredentialsNonExpired() {
         return true;
-    }
-
-    @Override
-    public boolean isEnabled() {
-        return enabled;
     }
 }

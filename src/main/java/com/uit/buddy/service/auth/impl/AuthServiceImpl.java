@@ -10,16 +10,20 @@ import com.uit.buddy.dto.request.auth.SignUpRequest;
 import com.uit.buddy.dto.response.auth.AuthResponse;
 import com.uit.buddy.dto.response.auth.TempTokenResponse;
 import com.uit.buddy.entity.auth.User;
+import com.uit.buddy.entity.redis.PendingAccount;
 import com.uit.buddy.exception.auth.AuthErrorCode;
 import com.uit.buddy.exception.auth.AuthException;
 import com.uit.buddy.mapper.auth.AuthMapper;
 import com.uit.buddy.repository.auth.UserRepository;
+import com.uit.buddy.repository.redis.PendingAccountRepository;
 import com.uit.buddy.security.JwtUserDetails;
 import com.uit.buddy.security.JwtUtils;
 import com.uit.buddy.service.auth.AuthService;
 import com.uit.buddy.service.auth.OtpService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -33,12 +37,16 @@ import java.util.Map;
 public class AuthServiceImpl implements AuthService {
 
     private final UserRepository userRepository;
+    private final PendingAccountRepository pendingAccountRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtils jwtUtils;
     private final OtpService otpService;
     private final AuthMapper authMapper;
 
-    @Transactional
+    @Value("${app.temp-token.expiration-seconds}")
+    private long tempTokenExpirationSeconds;
+
+    @Override
     public void initiateSignUp(SignUpRequest request) {
         String mssv = request.getMssv();
         String email = mssv + "@gm.uit.edu.vn";
@@ -56,6 +64,7 @@ public class AuthServiceImpl implements AuthService {
         log.info("OTP sent to: {}", email);
     }
 
+    @Override
     public TempTokenResponse verifySignupOtp(VerifyOtpRequest request) {
 
         String mssv = request.getMssv();
@@ -74,16 +83,24 @@ public class AuthServiceImpl implements AuthService {
                 .tempToken(tempToken)
                 .mssv(mssv)
                 .email(email)
-                .expiresIn(600) // 10 minutes in seconds
+                .expiresIn(tempTokenExpirationSeconds)
                 .build();
     }
 
+    @Override
     @Transactional
     public AuthResponse completeSignUp(PasswordSettingRequest request) {
         log.info("Completing signup with temp token");
 
         String mssv = otpService.validateTempToken(request.getTempToken());
         String email = mssv + "@gm.uit.edu.vn";
+
+        PendingAccount pendingAccount = pendingAccountRepository.findByMssv(mssv)
+                .orElseThrow(() -> new AuthException(AuthErrorCode.PENDING_ACCOUNT_NOT_FOUND));
+
+        if (pendingAccount.isRevoked()) {
+            throw new AuthException(AuthErrorCode.PENDING_ACCOUNT_EXPIRED);
+        }
 
         if (!request.getPassword().equals(request.getConfirmPassword())) {
             throw new AuthException(AuthErrorCode.PASSWORD_MISMATCH);
@@ -95,6 +112,7 @@ public class AuthServiceImpl implements AuthService {
 
         if (userRepository.existsByMssv(mssv)) {
             otpService.consumeTempToken(request.getTempToken());
+            pendingAccountRepository.deleteById(mssv);
             throw new AuthException(AuthErrorCode.MSSV_ALREADY_EXISTS);
         }
 
@@ -103,13 +121,14 @@ public class AuthServiceImpl implements AuthService {
                 .mssv(mssv)
                 .password(passwordEncoder.encode(request.getPassword()))
                 .fullName(null)
-                .isVerified(true)
                 .build();
 
         user = userRepository.save(user);
         log.info("User created successfully: {}", email);
 
         otpService.consumeTempToken(request.getTempToken());
+        pendingAccountRepository.deleteById(mssv);
+        log.info("Pending account deleted for mssv: {}", mssv);
 
         JwtUserDetails userDetails = new JwtUserDetails(user);
         String accessToken = jwtUtils.generateToken(userDetails);
@@ -118,16 +137,13 @@ public class AuthServiceImpl implements AuthService {
         return authMapper.toAuthResponse(user, accessToken, refreshTokenData.get("refresh_token"));
     }
 
+    @Override
     @Transactional
     public AuthResponse signIn(SignInRequest request) {
         log.info("Sign in attempt for mssv: {}", request.getMssv());
 
         User user = userRepository.findByMssv(request.getMssv())
                 .orElseThrow(() -> new AuthException(AuthErrorCode.USER_NOT_FOUND));
-
-        if (!user.getIsVerified()) {
-            throw new AuthException(AuthErrorCode.ACCOUNT_NOT_ACTIVATED);
-        }
 
         if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
             throw new AuthException(AuthErrorCode.INVALID_CREDENTIALS);
@@ -145,7 +161,7 @@ public class AuthServiceImpl implements AuthService {
         return authMapper.toAuthResponse(user, accessToken, refreshTokenData.get("refresh_token"));
     }
 
-    @Transactional
+    @Override
     public AuthResponse refreshToken(String refreshToken) {
         String mssv = jwtUtils.extractMssv(refreshToken);
         User user = userRepository.findByMssv(mssv)
@@ -163,6 +179,7 @@ public class AuthServiceImpl implements AuthService {
         return authMapper.toAuthResponse(user, newAccessToken, refreshTokenData.get("refresh_token"));
     }
 
+    @Override
     public void initiatePasswordReset(ForgotPasswordRequest request) {
         String mssv = request.getMssv();
         log.info("Initiating password reset for: {}", mssv);
@@ -174,6 +191,7 @@ public class AuthServiceImpl implements AuthService {
         log.info("Password reset OTP sent to: {}", user.getEmail());
     }
 
+    @Override
     @Transactional
     public void resetPassword(ResetPasswordRequest request) {
         log.info("Resetting password for: {}", request.getMssv());
@@ -206,15 +224,15 @@ public class AuthServiceImpl implements AuthService {
                 password.matches(".*[@$!%*?&].*");
     }
 
+    @Override
     public AuthResponse.UserInfo getUserInfo() {
-        String username = SecurityContextHolder.getContext().getAuthentication().getName();
-        User user = userRepository.findByEmail(username)
+        String mssv = SecurityContextHolder.getContext().getAuthentication().getName();
+        User user = userRepository.findByMssv(mssv)
                 .orElseThrow(() -> new AuthException(AuthErrorCode.USER_NOT_FOUND));
-
         return authMapper.toUserInfo(user);
     }
 
-    @Transactional
+    @Override
     public void signOut() {
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
         User user = userRepository.findByEmail(username)
@@ -225,6 +243,7 @@ public class AuthServiceImpl implements AuthService {
         log.info("User signed out: {}", user.getEmail());
     }
 
+    @Override
     @Transactional
     public void changePassword(ChangePasswordRequest request) {
         String username = SecurityContextHolder.getContext().getAuthentication().getName();

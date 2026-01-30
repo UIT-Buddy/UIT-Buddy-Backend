@@ -27,6 +27,5 @@ public class AuthResponse {
         private String email;
         private String mssv;
         private String fullName;
-        private Boolean isVerified;
     }
 }

@@ -4,8 +4,8 @@
 # Unified management for development and production
 #
 # Quick Start:
-#   make run    - Start all services in Docker (production-like)
-#   make local  - Start DB in Docker + Backend locally (development)
+#   make run    - Start all services in Podman (production-like)
+#   make local  - Start DB in Podman + Backend locally (development)
 #   make help   - Show all available commands
 # ===========================================
 
@@ -25,8 +25,8 @@ help: ## Show this help message
 	@Write-Host "============================================================" -ForegroundColor Cyan
 	@Write-Host ""
 	@Write-Host "[QUICK START]" -ForegroundColor Green
-	@Write-Host "  make run                - Start ALL services in Docker (production-like)"
-	@Write-Host "  make local              - Start DB in Docker + Backend locally (development)"
+	@Write-Host "  make run                - Start ALL services in Podman (production-like)"
+	@Write-Host "  make local              - Start DB in Podman + Backend locally (development)"
 	@Write-Host "  make stop               - Stop all services"
 	@Write-Host ""
 	@Write-Host "[DOCKER - ALL SERVICES]" -ForegroundColor Green
@@ -81,7 +81,7 @@ run: up status ## Start all services in Docker (production-like)
 	@Write-Host "============================================================" -ForegroundColor Green
 	@Write-Host ""
 	@Write-Host "Backend API:  http://localhost:8080" -ForegroundColor Cyan
-	@Write-Host "Swagger UI:   http://localhost:8080/swagger-ui/index.html" -ForegroundColor Cyan
+	@Write-Host "Scalar UI:    http://localhost:8080/scalar" -ForegroundColor Cyan
 	@Write-Host ""
 	@Write-Host "View logs: make logs" -ForegroundColor Yellow
 	@Write-Host ""
@@ -92,7 +92,7 @@ stop: down ## Stop all services
 	@Write-Host "All services stopped!" -ForegroundColor Yellow
 
 # ===========================================
-# DOCKER - ALL SERVICES
+# PODMAN - ALL SERVICES
 # ===========================================
 
 up: ## Start all Docker services
@@ -136,7 +136,7 @@ rebuild: down ## Rebuild and restart all Docker services
 	@Write-Host "Rebuild complete!" -ForegroundColor Green
 
 # ===========================================
-# DOCKER - INDIVIDUAL SERVICES
+# PODMAN - INDIVIDUAL SERVICES
 # ===========================================
 
 backend-logs: ## Show backend logs

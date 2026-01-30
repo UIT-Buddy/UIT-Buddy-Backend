@@ -13,8 +13,6 @@ import com.uit.buddy.dto.request.auth.VerifyOtpRequest;
 import com.uit.buddy.dto.response.auth.AuthResponse;
 import com.uit.buddy.dto.response.auth.TempTokenResponse;
 import com.uit.buddy.service.auth.AuthService;
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -24,7 +22,6 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
-@Tag(name = "Authentication")
 public class AuthController extends AbstractBaseController {
 
     private final AuthService authService;
@@ -61,7 +58,6 @@ public class AuthController extends AbstractBaseController {
     }
 
     @PostMapping("/signup/resend-otp")
-    @Operation(description = "Can be requested once every 2 minutes")
     public ResponseEntity<SuccessResponse> resendSignupOtp(@Valid @RequestBody SignUpRequest request) {
         authService.initiateSignUp(request);
         return success("A new OTP has been sent to your email.");

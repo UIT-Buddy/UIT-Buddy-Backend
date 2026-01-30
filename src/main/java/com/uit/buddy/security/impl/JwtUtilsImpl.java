@@ -123,8 +123,12 @@ public class JwtUtilsImpl implements JwtUtils {
     @Override
     public String generateAccessTokenByRefreshToken(String refreshToken) {
 
-        refreshTokenRepository.findByRefreshToken(refreshToken)
+        RefreshToken token = refreshTokenRepository.findById(refreshToken)
                 .orElseThrow(() -> new AuthException(AuthErrorCode.REFRESH_TOKEN_NOT_FOUND));
+
+        if (token.isRevoked()) {
+            throw new AuthException(AuthErrorCode.REFRESH_TOKEN_EXPIRED);
+        }
 
         String redisKey = "refresh_tokens:" + refreshToken;
 
@@ -171,9 +175,7 @@ public class JwtUtilsImpl implements JwtUtils {
         List<RefreshToken> refreshTokens = refreshTokenRepository.findAllByFamilyTokenAndIsRevoked(familyToken, false);
 
         for (RefreshToken rt : refreshTokens) {
-            if (!rt.isRevoked()) {
-                rt.setRevoked(true);
-            }
+            rt.setRevoked(true);
         }
 
         refreshTokenRepository.saveAll(refreshTokens);
@@ -182,7 +184,7 @@ public class JwtUtilsImpl implements JwtUtils {
 
     @Override
     public void revokeRefreshTokenByRefreshToken(String refreshToken) {
-        RefreshToken storedRefreshToken = refreshTokenRepository.findByRefreshToken(refreshToken)
+        RefreshToken storedRefreshToken = refreshTokenRepository.findById(refreshToken)
                 .orElseThrow(() -> new AuthException(AuthErrorCode.REFRESH_TOKEN_NOT_FOUND));
         if (storedRefreshToken.isRevoked()) {
             throw new AuthException(AuthErrorCode.SUSPICIOUS_DETECTED);

@@ -1,13 +1,15 @@
 package com.uit.buddy.service.auth.impl;
 
 import com.uit.buddy.entity.redis.PasswordResetToken;
+import com.uit.buddy.entity.redis.PendingAccount;
 import com.uit.buddy.entity.redis.SignUpToken;
 import com.uit.buddy.entity.redis.TempToken;
 import com.uit.buddy.exception.auth.AuthErrorCode;
 import com.uit.buddy.exception.auth.AuthException;
 import com.uit.buddy.repository.redis.PasswordResetTokenRepository;
-import com.uit.buddy.repository.redis.SignUpTokenRepository;
+import com.uit.buddy.repository.redis.PendingAccountRepository;
 import com.uit.buddy.repository.redis.TempTokenRepository;
+import com.uit.buddy.repository.redis.SignUpTokenRepository;
 import com.uit.buddy.service.auth.OtpService;
 import com.uit.buddy.service.email.EmailService;
 import lombok.RequiredArgsConstructor;
@@ -26,6 +28,7 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 public class OtpServiceImpl implements OtpService {
 
+    private final PendingAccountRepository pendingAccountRepository;
     private final SignUpTokenRepository signUpTokenRepository;
     private final PasswordResetTokenRepository passwordResetTokenRepository;
     private final TempTokenRepository tempTokenRepository;
@@ -49,6 +52,9 @@ public class OtpServiceImpl implements OtpService {
 
     @Value("${app.temp-token.expiration-seconds}")
     private long tempTokenExpirationSeconds;
+
+    @Value("${app.pending-account.expiration-seconds}")
+    private Long pendingAccountExpirationSeconds;
 
     private static final String OTP_RESEND_PREFIX = "otp_resend:";
 
@@ -128,8 +134,18 @@ public class OtpServiceImpl implements OtpService {
             throw new AuthException(AuthErrorCode.TOO_MANY_OTP_REQUESTS);
         }
 
-        // Revoke old OTPs before creating new one
         revokeOldOtps(mssv, "signup_otp");
+
+        PendingAccount pendingAccount = PendingAccount.builder()
+                .mssv(mssv)
+                .email(email)
+                .isRevoked(false)
+                .ttl(pendingAccountExpirationSeconds)
+                .build();
+
+        pendingAccountRepository.save(pendingAccount);
+
+        log.info("Pending account created for mssv: {}", mssv);
 
         String otp = generateOtp();
 
@@ -173,6 +189,13 @@ public class OtpServiceImpl implements OtpService {
 
         if (result == 0) {
             throw new AuthException(AuthErrorCode.OTP_INVALID);
+        }
+
+        PendingAccount pendingAccount = pendingAccountRepository.findByMssv(mssv)
+                .orElseThrow(() -> new AuthException(AuthErrorCode.PENDING_ACCOUNT_NOT_FOUND));
+
+        if (pendingAccount.isRevoked()) {
+            throw new AuthException(AuthErrorCode.PENDING_ACCOUNT_EXPIRED);
         }
 
         // Generate temp token
