@@ -33,6 +33,7 @@ public class OtpServiceImpl implements OtpService {
     private final EmailService emailService;
     private final RedisScript<Long> verifyOtpScript;
     private final RedisScript<String> validateTempTokenScript;
+    private final RedisScript<Long> revokeOldOtpScript;
 
     @Value("${app.otp.length}")
     private int otpLength;
@@ -57,8 +58,12 @@ public class OtpServiceImpl implements OtpService {
             throw new AuthException(AuthErrorCode.TOO_MANY_OTP_REQUESTS);
         }
 
-        String otp = generateOtp();
         String mssv = email.replace("@gm.uit.edu.vn", "");
+
+        // Revoke old OTPs before creating new one
+        revokeOldOtps(mssv, "password_reset_otp");
+
+        String otp = generateOtp();
 
         PasswordResetToken token = PasswordResetToken.builder()
                 .otp(otp)
@@ -80,12 +85,18 @@ public class OtpServiceImpl implements OtpService {
     public void verifyOtp(String email, String otp) {
         String mssv = email.replace("@gm.uit.edu.vn", "");
 
-        Long result = redisTemplate.execute(
-                verifyOtpScript,
-                Collections.singletonList("password_reset_otp:*"),
-                mssv,
-                otp,
-                String.valueOf(maxOtpAttempts));
+        Long result;
+        try {
+            result = redisTemplate.execute(
+                    verifyOtpScript,
+                    Collections.singletonList("password_reset_otp:*"),
+                    mssv,
+                    otp,
+                    String.valueOf(maxOtpAttempts));
+        } catch (Exception e) {
+            log.error("Redis error during OTP verification for email: {}", email, e);
+            throw new AuthException(AuthErrorCode.OTP_NOT_FOUND);
+        }
 
         if (result == null || result == -1) {
             throw new AuthException(AuthErrorCode.OTP_NOT_FOUND);
@@ -117,6 +128,9 @@ public class OtpServiceImpl implements OtpService {
             throw new AuthException(AuthErrorCode.TOO_MANY_OTP_REQUESTS);
         }
 
+        // Revoke old OTPs before creating new one
+        revokeOldOtps(mssv, "signup_otp");
+
         String otp = generateOtp();
 
         SignUpToken token = SignUpToken.builder()
@@ -136,12 +150,18 @@ public class OtpServiceImpl implements OtpService {
 
     @Override
     public String verifySignupOtp(String mssv, String otp) {
-        Long result = redisTemplate.execute(
-                verifyOtpScript,
-                Collections.singletonList("signup_otp:*"),
-                mssv,
-                otp,
-                String.valueOf(maxOtpAttempts));
+        Long result;
+        try {
+            result = redisTemplate.execute(
+                    verifyOtpScript,
+                    Collections.singletonList("signup_otp:*"),
+                    mssv,
+                    otp,
+                    String.valueOf(maxOtpAttempts));
+        } catch (Exception e) {
+            log.error("Redis error during OTP verification for mssv: {}", mssv, e);
+            throw new AuthException(AuthErrorCode.OTP_NOT_FOUND);
+        }
 
         if (result == null || result == -1) {
             throw new AuthException(AuthErrorCode.OTP_NOT_FOUND);
@@ -174,9 +194,15 @@ public class OtpServiceImpl implements OtpService {
     public String validateTempToken(String token) {
         String redisKey = "temp_token:" + token;
 
-        String mssv = redisTemplate.execute(
-                validateTempTokenScript,
-                Collections.singletonList(redisKey));
+        String mssv;
+        try {
+            mssv = redisTemplate.execute(
+                    validateTempTokenScript,
+                    Collections.singletonList(redisKey));
+        } catch (Exception e) {
+            log.error("Redis error during temp token validation for token: {}", token, e);
+            throw new AuthException(AuthErrorCode.TEMP_TOKEN_INVALID);
+        }
 
         if (mssv == null) {
             throw new AuthException(AuthErrorCode.TEMP_TOKEN_INVALID);
@@ -200,6 +226,21 @@ public class OtpServiceImpl implements OtpService {
     private void setResendCooldown(String email) {
         String key = OTP_RESEND_PREFIX + email;
         redisTemplate.opsForValue().set(key, "1", resendCooldownSeconds, TimeUnit.SECONDS);
+    }
+
+    private void revokeOldOtps(String mssv, String otpType) {
+        try {
+            Long revokedCount = redisTemplate.execute(
+                    revokeOldOtpScript,
+                    Collections.singletonList(otpType + ":*"),
+                    mssv);
+            if (revokedCount != null && revokedCount > 0) {
+                log.info("Revoked {} old OTP(s) for mssv: {}", revokedCount, mssv);
+            }
+        } catch (Exception e) {
+            log.error("Error revoking old OTPs for mssv: {}", mssv, e);
+            // Don't throw exception, this is just cleanup
+        }
     }
 
     private String generateTempToken() {

@@ -40,10 +40,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         try {
             final String jwt = authHeader.substring(7);
-            final String userEmail = jwtUtils.extractMssv(jwt);
+            final String mssv = jwtUtils.extractMssv(jwt);
 
-            if (userEmail != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-                User user = userRepository.findByEmail(userEmail).orElse(null);
+            if (mssv != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+                User user = userRepository.findByMssv(mssv).orElse(null);
 
                 if (user != null) {
                     JwtUserDetails userDetails = new JwtUserDetails(user);
