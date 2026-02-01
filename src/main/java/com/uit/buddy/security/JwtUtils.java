@@ -2,7 +2,6 @@ package com.uit.buddy.security;
 
 import io.jsonwebtoken.Claims;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 
 public interface JwtUtils {
@@ -19,16 +18,13 @@ public interface JwtUtils {
 
     String generateRefreshTokenByJwtUserDetails(Map<String, Object> extraClaims, JwtUserDetails userDetails);
 
-    Map<String, String> generateRefreshTokenByJwtUserDetails(JwtUserDetails userDetails, String familyToken,
-            Boolean rememberMe);
+    Map<String, String> generateRefreshTokenByJwtUserDetails(JwtUserDetails userDetails, Boolean rememberMe);
 
     boolean validateAccessToken(String accessToken, JwtUserDetails userDetails);
 
     String generateAccessTokenByRefreshToken(String refreshToken);
 
     void revokeRefreshTokenByRefreshToken(String refreshToken);
-
-    CompletableFuture<Void> revokeRefreshTokenByFamilyToken(String familyToken);
 
     void revokeAllRefreshTokensByMssv(String mssv);
 }

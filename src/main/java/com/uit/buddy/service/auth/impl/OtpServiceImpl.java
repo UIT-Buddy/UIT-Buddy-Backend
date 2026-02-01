@@ -1,14 +1,12 @@
 package com.uit.buddy.service.auth.impl;
 
-import com.uit.buddy.entity.redis.PasswordResetToken;
-import com.uit.buddy.entity.redis.PendingAccount;
-import com.uit.buddy.entity.redis.SignUpToken;
-import com.uit.buddy.entity.redis.TempToken;
+import com.uit.buddy.entity.auth.PasswordResetToken;
+import com.uit.buddy.entity.auth.PendingAccount;
+import com.uit.buddy.entity.auth.SignUpToken;
 import com.uit.buddy.exception.auth.AuthErrorCode;
 import com.uit.buddy.exception.auth.AuthException;
 import com.uit.buddy.repository.redis.PasswordResetTokenRepository;
 import com.uit.buddy.repository.redis.PendingAccountRepository;
-import com.uit.buddy.repository.redis.TempTokenRepository;
 import com.uit.buddy.repository.redis.SignUpTokenRepository;
 import com.uit.buddy.service.auth.OtpService;
 import com.uit.buddy.service.email.EmailService;
@@ -31,11 +29,9 @@ public class OtpServiceImpl implements OtpService {
     private final PendingAccountRepository pendingAccountRepository;
     private final SignUpTokenRepository signUpTokenRepository;
     private final PasswordResetTokenRepository passwordResetTokenRepository;
-    private final TempTokenRepository tempTokenRepository;
     private final RedisTemplate<String, Object> redisTemplate;
     private final EmailService emailService;
     private final RedisScript<Long> verifyOtpScript;
-    private final RedisScript<String> validateTempTokenScript;
     private final RedisScript<Long> revokeOldOtpScript;
 
     @Value("${app.otp.length}")
@@ -49,9 +45,6 @@ public class OtpServiceImpl implements OtpService {
 
     @Value("${app.otp.resend-cooldown-seconds}")
     private long resendCooldownSeconds;
-
-    @Value("${app.temp-token.expiration-seconds}")
-    private long tempTokenExpirationSeconds;
 
     @Value("${app.pending-account.expiration-seconds}")
     private Long pendingAccountExpirationSeconds;
@@ -165,7 +158,7 @@ public class OtpServiceImpl implements OtpService {
     }
 
     @Override
-    public String verifySignupOtp(String mssv, String otp) {
+    public void verifySignupOtp(String mssv, String otp) {
         Long result;
         try {
             result = redisTemplate.execute(
@@ -198,45 +191,6 @@ public class OtpServiceImpl implements OtpService {
             throw new AuthException(AuthErrorCode.PENDING_ACCOUNT_EXPIRED);
         }
 
-        // Generate temp token
-        String tempTokenValue = generateTempToken();
-        TempToken tempToken = TempToken.builder()
-                .token(tempTokenValue)
-                .mssv(mssv)
-                .isRevoked(false)
-                .ttl(tempTokenExpirationSeconds)
-                .build();
-
-        tempTokenRepository.save(tempToken);
-
-        log.info("Signup OTP verified for mssv: {}, temp token generated", mssv);
-        return tempTokenValue;
-    }
-
-    @Override
-    public String validateTempToken(String token) {
-        String redisKey = "temp_token:" + token;
-
-        String mssv;
-        try {
-            mssv = redisTemplate.execute(
-                    validateTempTokenScript,
-                    Collections.singletonList(redisKey));
-        } catch (Exception e) {
-            log.error("Redis error during temp token validation for token: {}", token, e);
-            throw new AuthException(AuthErrorCode.TEMP_TOKEN_INVALID);
-        }
-
-        if (mssv == null) {
-            throw new AuthException(AuthErrorCode.TEMP_TOKEN_INVALID);
-        }
-
-        return mssv;
-    }
-
-    @Override
-    public void consumeTempToken(String token) {
-        tempTokenRepository.findById(token).ifPresent(tempTokenRepository::delete);
     }
 
     // Helper methods
@@ -262,19 +216,7 @@ public class OtpServiceImpl implements OtpService {
             }
         } catch (Exception e) {
             log.error("Error revoking old OTPs for mssv: {}", mssv, e);
-            // Don't throw exception, this is just cleanup
         }
-    }
-
-    private String generateTempToken() {
-        SecureRandom random = new SecureRandom();
-        byte[] bytes = new byte[32];
-        random.nextBytes(bytes);
-        StringBuilder token = new StringBuilder();
-        for (byte b : bytes) {
-            token.append(String.format("%02x", b));
-        }
-        return token.toString();
     }
 
     private String generateOtp() {

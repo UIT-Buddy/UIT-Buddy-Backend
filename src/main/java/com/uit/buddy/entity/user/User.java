@@ -1,4 +1,4 @@
-package com.uit.buddy.entity.auth;
+package com.uit.buddy.entity.user;
 
 import com.uit.buddy.entity.AbstractBaseEntity;
 
@@ -16,7 +16,7 @@ import java.time.LocalDateTime;
 @Builder
 public class User extends AbstractBaseEntity {
 
-    @Column(name = "email", nullable = false, unique = true, length = 50)
+    @Column(name = "email")
     private String email;
 
     @Column(name = "mssv", nullable = false, unique = true, length = 10)

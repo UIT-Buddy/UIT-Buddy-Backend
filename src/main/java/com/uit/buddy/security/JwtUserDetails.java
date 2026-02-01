@@ -1,9 +1,10 @@
 package com.uit.buddy.security;
 
-import com.uit.buddy.entity.auth.User;
 import lombok.Getter;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
+
+import com.uit.buddy.entity.user.User;
 
 import java.util.Collection;
 import java.util.List;

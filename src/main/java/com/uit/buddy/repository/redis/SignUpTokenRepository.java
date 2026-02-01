@@ -1,8 +1,9 @@
 package com.uit.buddy.repository.redis;
 
-import com.uit.buddy.entity.redis.SignUpToken;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.stereotype.Repository;
+
+import com.uit.buddy.entity.auth.SignUpToken;
 
 import java.util.Optional;
 

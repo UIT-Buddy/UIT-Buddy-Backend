@@ -43,6 +43,7 @@ public class SecurityConfig {
                                                                 "/api/auth/refresh-token",
                                                                 "/api/auth/forgot-password",
                                                                 "/api/auth/reset-password",
+                                                                "/v3/api-docs/**",
                                                                 "/scalar/**",
                                                                 "/scalar.html")
                                                 .permitAll()

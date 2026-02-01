@@ -1,4 +1,4 @@
-package com.uit.buddy.entity.redis;
+package com.uit.buddy.entity.auth;
 
 import lombok.*;
 import org.springframework.data.annotation.Id;

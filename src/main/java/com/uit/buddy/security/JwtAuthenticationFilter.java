@@ -1,8 +1,8 @@
 package com.uit.buddy.security;
 
-import com.uit.buddy.entity.auth.User;
+import com.uit.buddy.entity.user.User;
 import com.uit.buddy.exception.auth.AuthErrorCode;
-import com.uit.buddy.repository.auth.UserRepository;
+import com.uit.buddy.repository.user.UserRepository;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;

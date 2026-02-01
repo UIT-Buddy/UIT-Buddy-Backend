@@ -1,7 +1,8 @@
 package com.uit.buddy.mapper.auth;
 
 import com.uit.buddy.dto.response.auth.AuthResponse;
-import com.uit.buddy.entity.auth.User;
+import com.uit.buddy.entity.user.User;
+
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.Named;

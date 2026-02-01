@@ -1,4 +1,4 @@
-package com.uit.buddy.entity.redis;
+package com.uit.buddy.entity.auth;
 
 import lombok.*;
 import org.springframework.data.annotation.Id;
@@ -15,9 +15,6 @@ import org.springframework.data.redis.core.index.Indexed;
 public class RefreshToken {
     @Id
     private String refreshToken;
-
-    @Indexed
-    private String familyToken;
 
     @Indexed
     private String mssv;

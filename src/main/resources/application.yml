@@ -14,10 +14,3 @@ spring:
       static-locations: classpath:/static/
   config:
     import: optional:file:.env[.properties]
-
-springdoc:
-  api-docs:
-    path: /v3/api-docs
-  swagger-ui:
-    enabled: true
-    path: /swagger-ui.html

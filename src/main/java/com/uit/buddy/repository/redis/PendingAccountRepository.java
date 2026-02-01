@@ -1,8 +1,9 @@
 package com.uit.buddy.repository.redis;
 
-import com.uit.buddy.entity.redis.PendingAccount;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.stereotype.Repository;
+
+import com.uit.buddy.entity.auth.PendingAccount;
 
 import java.util.Optional;
 

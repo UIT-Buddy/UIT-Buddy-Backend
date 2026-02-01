@@ -14,6 +14,7 @@ public enum AuthErrorCode {
         ACCOUNT_NOT_ACTIVATED("AUTH_005", "Account is not activated. Please verify your email", HttpStatus.FORBIDDEN),
         MSSV_NOT_FOUND("AUTH_006", "mssv not found", HttpStatus.NOT_FOUND),
         INVALID_MSSV_FORMAT("AUTH_007", "Invalid mssv format. mssv must be 8-10 digits", HttpStatus.BAD_REQUEST),
+        REFRESH_TOKEN_REQUIRED("AUTH_008", "Refresh token is required", HttpStatus.BAD_REQUEST),
 
         // OTP (Email based)
         OTP_EXPIRED("AUTH_100", "OTP has expired. Please request a new one", HttpStatus.BAD_REQUEST),
@@ -38,10 +39,9 @@ public enum AuthErrorCode {
         TOKEN_INVALID("AUTH_301", "Invalid token", HttpStatus.UNAUTHORIZED),
         TOKEN_MISSING("AUTH_302", "Token is required", HttpStatus.UNAUTHORIZED),
         REFRESH_TOKEN_INVALID("AUTH_303", "Invalid or expired refresh token", HttpStatus.UNAUTHORIZED),
-        TEMP_TOKEN_INVALID("AUTH_304", "Invalid or expired temporary token", HttpStatus.BAD_REQUEST),
-        REFRESH_TOKEN_NOT_FOUND("AUTH_305", "Refresh token not found", HttpStatus.NOT_FOUND),
-        REFRESH_TOKEN_EXPIRED("AUTH_306", "Refresh token has expired", HttpStatus.UNAUTHORIZED),
-        SUSPICIOUS_DETECTED("AUTH_307", "Suspicious activity detected. All tokens have been revoked",
+        REFRESH_TOKEN_NOT_FOUND("AUTH_304", "Refresh token not found", HttpStatus.NOT_FOUND),
+        REFRESH_TOKEN_EXPIRED("AUTH_305", "Refresh token has expired", HttpStatus.UNAUTHORIZED),
+        SUSPICIOUS_DETECTED("AUTH_306", "Suspicious activity detected. All tokens have been revoked",
                         HttpStatus.UNAUTHORIZED),
 
         // Security & Rate Limiting

@@ -1,6 +1,7 @@
 package com.uit.buddy.exception;
 
 import com.uit.buddy.dto.base.ErrorResponse;
+import com.uit.buddy.exception.auth.AuthErrorCode;
 import com.uit.buddy.exception.system.SystemErrorCode;
 
 import lombok.extern.slf4j.Slf4j;
@@ -10,6 +11,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingRequestHeaderException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.servlet.NoHandlerFoundException;
@@ -109,5 +111,32 @@ public class GlobalExceptionHandler {
                 .build();
 
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+    }
+
+    @ExceptionHandler(MissingRequestHeaderException.class)
+    public ResponseEntity<ErrorResponse> handleMissingRequestHeader(MissingRequestHeaderException ex) {
+        log.error("Missing request header: {}", ex.getMessage());
+
+        if (ex.getHeaderName().equals("X-Refresh-Token")) {
+            ErrorResponse response = ErrorResponse.builder()
+                    .statusCode(AuthErrorCode.REFRESH_TOKEN_REQUIRED.getHttpStatus().value())
+                    .message(AuthErrorCode.REFRESH_TOKEN_REQUIRED.getMessage())
+                    .errorCode(AuthErrorCode.REFRESH_TOKEN_REQUIRED.getCode())
+                    .build();
+
+            return ResponseEntity
+                    .status(AuthErrorCode.REFRESH_TOKEN_REQUIRED.getHttpStatus())
+                    .body(response);
+        }
+
+        ErrorResponse response = ErrorResponse.builder()
+                .statusCode(HttpStatus.BAD_REQUEST.value())
+                .message("Required request header is missing: " + ex.getHeaderName())
+                .errorCode(SystemErrorCode.VALIDATION_ERROR.getCode())
+                .build();
+
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(response);
     }
 }

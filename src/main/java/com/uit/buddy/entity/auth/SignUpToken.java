@@ -1,4 +1,4 @@
-package com.uit.buddy.entity.redis;
+package com.uit.buddy.entity.auth;
 
 import lombok.*;
 import org.springframework.data.annotation.Id;
@@ -6,13 +6,13 @@ import org.springframework.data.redis.core.RedisHash;
 import org.springframework.data.redis.core.TimeToLive;
 import org.springframework.data.redis.core.index.Indexed;
 
-@RedisHash("password_reset_otp")
+@RedisHash("signup_otp")
 @Getter
 @Setter
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class PasswordResetToken {
+public class SignUpToken {
 
     @Id
     private String otp;

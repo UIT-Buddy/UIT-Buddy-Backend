@@ -12,24 +12,21 @@ import org.springframework.stereotype.Component;
 
 import com.uit.buddy.security.JwtUserDetails;
 import com.uit.buddy.security.JwtUtils;
-import com.uit.buddy.entity.redis.RefreshToken;
+import com.uit.buddy.entity.auth.RefreshToken;
 import com.uit.buddy.exception.auth.AuthErrorCode;
 import com.uit.buddy.exception.auth.AuthException;
 import com.uit.buddy.repository.redis.RefreshTokenRepository;
 
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.script.RedisScript;
-import org.springframework.scheduling.annotation.Async;
 
 import java.security.Key;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 import java.util.Collections;
 import java.util.List;
-import java.util.UUID;
 
 @Component
 @RequiredArgsConstructor
@@ -142,11 +139,6 @@ public class JwtUtilsImpl implements JwtUtils {
             throw new AuthException(AuthErrorCode.REFRESH_TOKEN_EXPIRED);
         }
 
-        if (result == 0) {
-            revokeAllRefreshTokensByFamilyTokenInRefreshToken(refreshToken);
-            throw new AuthException(AuthErrorCode.SUSPICIOUS_DETECTED);
-        }
-
         // Generate new access token
         Map<String, Object> claims = new HashMap<>();
 
@@ -161,25 +153,6 @@ public class JwtUtilsImpl implements JwtUtils {
                 .setExpiration(new Date(System.currentTimeMillis() + jwtExpiration))
                 .signWith(getSignInKey(), SignatureAlgorithm.HS256)
                 .compact();
-    }
-
-    private void revokeAllRefreshTokensByFamilyTokenInRefreshToken(String refreshToken) {
-        Claims claims = extractAllClaims(refreshToken);
-        String familyToken = claims.get("family_token", String.class);
-        revokeRefreshTokenByFamilyToken(familyToken);
-    }
-
-    @Override
-    @Async("taskExecutor")
-    public CompletableFuture<Void> revokeRefreshTokenByFamilyToken(String familyToken) {
-        List<RefreshToken> refreshTokens = refreshTokenRepository.findAllByFamilyTokenAndIsRevoked(familyToken, false);
-
-        for (RefreshToken rt : refreshTokens) {
-            rt.setRevoked(true);
-        }
-
-        refreshTokenRepository.saveAll(refreshTokens);
-        return CompletableFuture.completedFuture(null);
     }
 
     @Override
@@ -206,25 +179,13 @@ public class JwtUtilsImpl implements JwtUtils {
     }
 
     @Override
-    public Map<String, String> generateRefreshTokenByJwtUserDetails(JwtUserDetails userDetails, String familyToken,
-            Boolean rememberMe) {
-
-        if (familyToken != null) {
-            List<RefreshToken> refreshTokens = refreshTokenRepository.findAllByFamilyToken(familyToken);
-            for (RefreshToken rt : refreshTokens) {
-                rt.setRevoked(true);
-            }
-            refreshTokenRepository.saveAll(refreshTokens);
-        }
+    public Map<String, String> generateRefreshTokenByJwtUserDetails(JwtUserDetails userDetails, Boolean rememberMe) {
 
         long refreshTokenExpiresIn = rememberMe ? jwtRefreshTokenExpiresInWithRememberme : jwtRefreshTokenExpiresIn;
-
-        String newFamilyToken = (familyToken != null) ? familyToken : UUID.randomUUID().toString();
         String mssv = userDetails.getMssv();
         String email = userDetails.getEmail();
 
         Map<String, Object> extraClaims = new HashMap<>();
-        extraClaims.put("family_token", newFamilyToken);
         extraClaims.put("email", email);
 
         String refreshToken = Jwts.builder()
@@ -237,14 +198,12 @@ public class JwtUtilsImpl implements JwtUtils {
 
         RefreshToken refreshTokenEntity = RefreshToken.builder()
                 .refreshToken(refreshToken)
-                .familyToken(newFamilyToken)
                 .mssv(mssv)
                 .email(email)
                 .ttl(refreshTokenExpiresIn / 1000)
                 .build();
 
         refreshTokenRepository.save(refreshTokenEntity);
-
-        return Map.of("refresh_token", refreshToken, "family_token", newFamilyToken);
+        return Map.of("refresh_token", refreshToken);
     }
 }

@@ -2,20 +2,18 @@ package com.uit.buddy.service.auth.impl;
 
 import com.uit.buddy.dto.request.auth.ChangePasswordRequest;
 import com.uit.buddy.dto.request.auth.ForgotPasswordRequest;
-import com.uit.buddy.dto.request.auth.PasswordSettingRequest;
+import com.uit.buddy.dto.request.auth.CompleteSignUpRequest;
 import com.uit.buddy.dto.request.auth.ResetPasswordRequest;
-import com.uit.buddy.dto.request.auth.VerifyOtpRequest;
 import com.uit.buddy.dto.request.auth.SignInRequest;
 import com.uit.buddy.dto.request.auth.SignUpRequest;
 import com.uit.buddy.dto.response.auth.AuthResponse;
-import com.uit.buddy.dto.response.auth.TempTokenResponse;
-import com.uit.buddy.entity.auth.User;
-import com.uit.buddy.entity.redis.PendingAccount;
+import com.uit.buddy.entity.auth.PendingAccount;
+import com.uit.buddy.entity.user.User;
 import com.uit.buddy.exception.auth.AuthErrorCode;
 import com.uit.buddy.exception.auth.AuthException;
 import com.uit.buddy.mapper.auth.AuthMapper;
-import com.uit.buddy.repository.auth.UserRepository;
 import com.uit.buddy.repository.redis.PendingAccountRepository;
+import com.uit.buddy.repository.user.UserRepository;
 import com.uit.buddy.security.JwtUserDetails;
 import com.uit.buddy.security.JwtUtils;
 import com.uit.buddy.service.auth.AuthService;
@@ -23,7 +21,6 @@ import com.uit.buddy.service.auth.OtpService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -42,9 +39,6 @@ public class AuthServiceImpl implements AuthService {
     private final JwtUtils jwtUtils;
     private final OtpService otpService;
     private final AuthMapper authMapper;
-
-    @Value("${app.temp-token.expiration-seconds}")
-    private long tempTokenExpirationSeconds;
 
     @Override
     public void initiateSignUp(SignUpRequest request) {
@@ -65,41 +59,16 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
-    public TempTokenResponse verifySignupOtp(VerifyOtpRequest request) {
-
+    @Transactional
+    public AuthResponse completeSignUp(CompleteSignUpRequest request) {
         String mssv = request.getMssv();
         String otp = request.getOtp();
+        String email = mssv + "@gm.uit.edu.vn";
 
-        log.info("Verifying signup OTP for mssv: {}", mssv);
+        log.info("Completing signup for mssv: {}", mssv);
 
         if (!mssv.matches("^[0-9]{8,10}$")) {
             throw new AuthException(AuthErrorCode.INVALID_MSSV_FORMAT);
-        }
-
-        String tempToken = otpService.verifySignupOtp(mssv, otp);
-        String email = mssv + "@gm.uit.edu.vn";
-
-        return TempTokenResponse.builder()
-                .tempToken(tempToken)
-                .mssv(mssv)
-                .email(email)
-                .expiresIn(tempTokenExpirationSeconds)
-                .build();
-    }
-
-    @Override
-    @Transactional
-    public AuthResponse completeSignUp(PasswordSettingRequest request) {
-        log.info("Completing signup with temp token");
-
-        String mssv = otpService.validateTempToken(request.getTempToken());
-        String email = mssv + "@gm.uit.edu.vn";
-
-        PendingAccount pendingAccount = pendingAccountRepository.findByMssv(mssv)
-                .orElseThrow(() -> new AuthException(AuthErrorCode.PENDING_ACCOUNT_NOT_FOUND));
-
-        if (pendingAccount.isRevoked()) {
-            throw new AuthException(AuthErrorCode.PENDING_ACCOUNT_EXPIRED);
         }
 
         if (!request.getPassword().equals(request.getConfirmPassword())) {
@@ -110,11 +79,19 @@ public class AuthServiceImpl implements AuthService {
             throw new AuthException(AuthErrorCode.WEAK_PASSWORD);
         }
 
+        PendingAccount pendingAccount = pendingAccountRepository.findByMssv(mssv)
+                .orElseThrow(() -> new AuthException(AuthErrorCode.PENDING_ACCOUNT_NOT_FOUND));
+
+        if (pendingAccount.isRevoked()) {
+            throw new AuthException(AuthErrorCode.PENDING_ACCOUNT_EXPIRED);
+        }
+
         if (userRepository.existsByMssv(mssv)) {
-            otpService.consumeTempToken(request.getTempToken());
             pendingAccountRepository.deleteById(mssv);
             throw new AuthException(AuthErrorCode.MSSV_ALREADY_EXISTS);
         }
+
+        otpService.verifySignupOtp(mssv, otp);
 
         User user = User.builder()
                 .email(email)
@@ -126,13 +103,12 @@ public class AuthServiceImpl implements AuthService {
         user = userRepository.save(user);
         log.info("User created successfully: {}", email);
 
-        otpService.consumeTempToken(request.getTempToken());
         pendingAccountRepository.deleteById(mssv);
         log.info("Pending account deleted for mssv: {}", mssv);
 
         JwtUserDetails userDetails = new JwtUserDetails(user);
         String accessToken = jwtUtils.generateToken(userDetails);
-        Map<String, String> refreshTokenData = jwtUtils.generateRefreshTokenByJwtUserDetails(userDetails, null, false);
+        Map<String, String> refreshTokenData = jwtUtils.generateRefreshTokenByJwtUserDetails(userDetails, false);
 
         return authMapper.toAuthResponse(user, accessToken, refreshTokenData.get("refresh_token"));
     }
@@ -156,7 +132,8 @@ public class AuthServiceImpl implements AuthService {
 
         JwtUserDetails userDetails = new JwtUserDetails(user);
         String accessToken = jwtUtils.generateToken(userDetails);
-        Map<String, String> refreshTokenData = jwtUtils.generateRefreshTokenByJwtUserDetails(userDetails, null, false);
+        Boolean rememberMe = request.getRememberMe() != null ? request.getRememberMe() : false;
+        Map<String, String> refreshTokenData = jwtUtils.generateRefreshTokenByJwtUserDetails(userDetails, rememberMe);
 
         return authMapper.toAuthResponse(user, accessToken, refreshTokenData.get("refresh_token"));
     }
@@ -171,10 +148,7 @@ public class AuthServiceImpl implements AuthService {
 
         JwtUserDetails userDetails = new JwtUserDetails(user);
 
-        String familyToken = jwtUtils.extractClaim(refreshToken, claims -> claims.get("family_token", String.class));
-
-        Map<String, String> refreshTokenData = jwtUtils.generateRefreshTokenByJwtUserDetails(userDetails, familyToken,
-                false);
+        Map<String, String> refreshTokenData = jwtUtils.generateRefreshTokenByJwtUserDetails(userDetails, false);
 
         return authMapper.toAuthResponse(user, newAccessToken, refreshTokenData.get("refresh_token"));
     }

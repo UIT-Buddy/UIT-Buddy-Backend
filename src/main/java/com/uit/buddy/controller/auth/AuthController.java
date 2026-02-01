@@ -4,14 +4,12 @@ import com.uit.buddy.controller.AbstractBaseController;
 import com.uit.buddy.dto.base.SingleResponse;
 import com.uit.buddy.dto.base.SuccessResponse;
 import com.uit.buddy.dto.request.auth.ChangePasswordRequest;
+import com.uit.buddy.dto.request.auth.CompleteSignUpRequest;
 import com.uit.buddy.dto.request.auth.ForgotPasswordRequest;
-import com.uit.buddy.dto.request.auth.PasswordSettingRequest;
 import com.uit.buddy.dto.request.auth.ResetPasswordRequest;
 import com.uit.buddy.dto.request.auth.SignInRequest;
 import com.uit.buddy.dto.request.auth.SignUpRequest;
-import com.uit.buddy.dto.request.auth.VerifyOtpRequest;
 import com.uit.buddy.dto.response.auth.AuthResponse;
-import com.uit.buddy.dto.response.auth.TempTokenResponse;
 import com.uit.buddy.service.auth.AuthService;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
@@ -32,16 +30,9 @@ public class AuthController extends AbstractBaseController {
         return success("OTP has been sent to your student email. Please check your inbox!");
     }
 
-    @PostMapping("/signup/verify-otp")
-    public ResponseEntity<SingleResponse<TempTokenResponse>> verifySignupOtp(
-            @Valid @RequestBody VerifyOtpRequest request) {
-        TempTokenResponse response = authService.verifySignupOtp(request);
-        return successSingle(response, "OTP verified! Please set your password within 10 minutes.");
-    }
-
-    @PostMapping("/signup/set-password")
-    public ResponseEntity<SingleResponse<AuthResponse>> setPassword(
-            @Valid @RequestBody PasswordSettingRequest request,
+    @PostMapping("/signup/complete")
+    public ResponseEntity<SingleResponse<AuthResponse>> completeSignUp(
+            @Valid @RequestBody CompleteSignUpRequest request,
             HttpServletResponse httpResponse) {
         AuthResponse response = authService.completeSignUp(request);
         httpResponse.setHeader("X-Refresh-Token", response.getRefreshToken());

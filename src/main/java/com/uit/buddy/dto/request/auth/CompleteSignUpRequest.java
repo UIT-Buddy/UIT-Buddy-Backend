@@ -12,10 +12,16 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class PasswordSettingRequest {
+public class CompleteSignUpRequest {
 
-    @NotBlank(message = "Token is required")
-    private String tempToken;
+    @NotBlank(message = "mssv is required")
+    @Size(min = 8, max = 10, message = "mssv must be 8-10 characters")
+    @Pattern(regexp = "^[0-9]+$", message = "mssv must contain only digits")
+    private String mssv;
+
+    @NotBlank(message = "OTP is required")
+    @Size(min = 6, max = 6, message = "OTP must be 6 digits")
+    private String otp;
 
     @NotBlank(message = "Password is required")
     @Size(min = 8, max = 50, message = "Password must be between 8 and 50 characters")

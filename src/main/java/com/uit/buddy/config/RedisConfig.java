@@ -36,11 +36,6 @@ public class RedisConfig {
     }
 
     @Bean
-    public RedisScript<String> validateTempTokenScript() {
-        return RedisScript.of(new ClassPathResource("scripts/validate_temp_token.lua"), String.class);
-    }
-
-    @Bean
     public RedisScript<Long> revokeOldOtpScript() {
         return RedisScript.of(
                 new ClassPathResource("scripts/revoke_old_otp.lua"),
