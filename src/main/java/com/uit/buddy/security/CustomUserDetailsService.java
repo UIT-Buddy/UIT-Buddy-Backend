@@ -1,7 +1,8 @@
 package com.uit.buddy.security;
 
-import com.uit.buddy.entity.auth.User;
-import com.uit.buddy.repository.auth.UserRepository;
+import com.uit.buddy.entity.user.User;
+import com.uit.buddy.repository.user.UserRepository;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -19,7 +20,7 @@ public class CustomUserDetailsService implements UserDetailsService {
         User user = userRepository.findByEmail(username)
                 .or(() -> userRepository.findByMssv(username))
                 .orElseThrow(() -> new UsernameNotFoundException("User not found: " + username));
-
+        //
         return new JwtUserDetails(user);
     }
 }

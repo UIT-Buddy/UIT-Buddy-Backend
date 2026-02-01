@@ -1,7 +1,9 @@
 package com.uit.buddy.security;
 
-import com.uit.buddy.entity.auth.User;
-import com.uit.buddy.repository.auth.UserRepository;
+import com.uit.buddy.entity.user.User;
+import com.uit.buddy.exception.auth.AuthErrorCode;
+import com.uit.buddy.repository.user.UserRepository;
+
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -38,27 +40,47 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         try {
             final String jwt = authHeader.substring(7);
-            final String userEmail = jwtUtils.extractUsername(jwt);
+            final String mssv = jwtUtils.extractMssv(jwt);
 
-            if (userEmail != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-                User user = userRepository.findByEmail(userEmail).orElse(null);
+            if (mssv != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+                User user = userRepository.findByMssv(mssv).orElse(null);
 
                 if (user != null) {
                     JwtUserDetails userDetails = new JwtUserDetails(user);
 
-                    if (jwtUtils.isTokenValid(jwt, userDetails)) {
+                    if (jwtUtils.validateAccessToken(jwt, userDetails)) {
                         UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
                                 userDetails,
                                 null,
                                 userDetails.getAuthorities());
                         authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                         SecurityContextHolder.getContext().setAuthentication(authToken);
+                    } else {
+                        // Token invalid
+                        request.setAttribute("errorCode", AuthErrorCode.TOKEN_INVALID.getCode());
+                        request.setAttribute("errorMessage", AuthErrorCode.TOKEN_INVALID.getMessage());
                     }
+                } else {
+                    // User not found
+                    request.setAttribute("errorCode", AuthErrorCode.TOKEN_INVALID.getCode());
+                    request.setAttribute("errorMessage", AuthErrorCode.TOKEN_INVALID.getMessage());
                 }
             }
+        } catch (io.jsonwebtoken.ExpiredJwtException e) {
+            // Token expired
+            request.setAttribute("errorCode", AuthErrorCode.TOKEN_EXPIRED.getCode());
+            request.setAttribute("errorMessage", AuthErrorCode.TOKEN_EXPIRED.getMessage());
+            logger.error("JWT token expired: " + e.getMessage());
+        } catch (io.jsonwebtoken.MalformedJwtException e) {
+            // Malformed token
+            request.setAttribute("errorCode", AuthErrorCode.TOKEN_INVALID.getCode());
+            request.setAttribute("errorMessage", AuthErrorCode.TOKEN_INVALID.getMessage());
+            logger.error("Invalid JWT token: " + e.getMessage());
         } catch (Exception e) {
-            // Log error but don't block the filter chain
-            logger.error("Cannot set user authentication: {}", e);
+            // Other errors
+            request.setAttribute("errorCode", AuthErrorCode.TOKEN_INVALID.getCode());
+            request.setAttribute("errorMessage", AuthErrorCode.TOKEN_INVALID.getMessage());
+            logger.error("Cannot set user authentication: " + e.getMessage());
         }
 
         filterChain.doFilter(request, response);

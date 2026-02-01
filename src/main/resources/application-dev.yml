@@ -44,10 +44,34 @@ spring:
           timeout: 5000
           writetimeout: 5000
 
-jwt:
-  secret: ${DEV_JWT_SECRET}
-  expiration: 86400000 # 24 hours
-  refresh-expiration: 604800000 # 7 days
+  threads:
+    virtual:
+      enabled: true
+
+app:
+  default-locale: ${APP_DEFAULT_LOCALE:vi}
+  default-timezone: ${APP_DEFAULT_TIMEZONE:Asia/Ho_Chi_Minh}
+  jwt:
+    secret: ${JWT_SECRET_KEY}
+    token:
+      expires-in: ${JWT_ACCESS_EXPIRES_IN}
+    refresh-token:
+      expires-in: ${JWT_REFRESH_EXPIRES_IN}
+      expires-in-with-rememberme: ${JWT_REFRESH_EXPIRES_IN_WITH_REMEMBERME}
+  otp:
+    length: ${OTP_LENGTH:6}
+    expiration-seconds: ${OTP_EXPIRATION_SECONDS:300}
+    max-attempts: ${OTP_MAX_ATTEMPTS:5}
+    resend-cooldown-seconds: ${OTP_RESEND_COOLDOWN_SECONDS:120}
+  temp-token:
+    expiration-seconds: ${TEMP_TOKEN_EXPIRATION_SECONDS:600}
+  pending-account:
+    expiration-seconds: ${PENDING_ACCOUNT_EXPIRATION_SECONDS:86400}
+
+scalar:
+  path: ${SCALAR_PATH:/docs}
+  url: ${SCALAR_URL:/v3/api-docs}
+  enabled: ${SCALAR_ENABLED:true}
 
 # Logging
 logging:

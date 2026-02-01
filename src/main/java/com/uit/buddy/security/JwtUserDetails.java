@@ -1,10 +1,10 @@
 package com.uit.buddy.security;
 
-import com.uit.buddy.entity.auth.User;
 import lombok.Getter;
 import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
+
+import com.uit.buddy.entity.user.User;
 
 import java.util.Collection;
 import java.util.List;
@@ -19,8 +19,6 @@ public class JwtUserDetails implements UserDetails {
     private final String password;
     private final String fullName;
     private final Collection<? extends GrantedAuthority> authorities;
-    private final boolean enabled;
-    private final boolean accountNonLocked;
 
     public JwtUserDetails(User user) {
         this.id = user.getId();
@@ -28,10 +26,7 @@ public class JwtUserDetails implements UserDetails {
         this.mssv = user.getMssv();
         this.password = user.getPassword();
         this.fullName = user.getFullName();
-        this.authorities = List.of(
-                new SimpleGrantedAuthority("ROLE_" + user.getRole().name()));
-        this.enabled = user.getIsActivated();
-        this.accountNonLocked = !user.getIsLocked();
+        this.authorities = List.of();
     }
 
     @Override
@@ -56,16 +51,11 @@ public class JwtUserDetails implements UserDetails {
 
     @Override
     public boolean isAccountNonLocked() {
-        return accountNonLocked;
+        return true;
     }
 
     @Override
     public boolean isCredentialsNonExpired() {
         return true;
-    }
-
-    @Override
-    public boolean isEnabled() {
-        return enabled;
     }
 }

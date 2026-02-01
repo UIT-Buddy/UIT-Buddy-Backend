@@ -10,9 +10,9 @@ import lombok.experimental.SuperBuilder;
 @Data
 @EqualsAndHashCode(callSuper = true)
 @SuperBuilder
+@JsonPropertyOrder({ "statusCode", "message", "data" })
 @NoArgsConstructor
 @AllArgsConstructor
-@JsonPropertyOrder({ "statusCode", "message", "data" })
 public class SingleResponse<T> extends AbstractBaseResponse {
     private T data;
 }

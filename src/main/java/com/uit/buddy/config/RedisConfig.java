@@ -1,13 +1,12 @@
 package com.uit.buddy.config;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.script.RedisScript;
 import org.springframework.data.redis.serializer.RedisSerializer;
-import org.springframework.data.redis.serializer.StringRedisSerializer;
 
 @Configuration
 public class RedisConfig {
@@ -17,24 +16,30 @@ public class RedisConfig {
         RedisTemplate<String, Object> template = new RedisTemplate<>();
         template.setConnectionFactory(connectionFactory);
 
-        // Serialize for key/ hashkey
-        StringRedisSerializer stringSerializer = new StringRedisSerializer();
-        template.setKeySerializer(stringSerializer);
-        template.setHashKeySerializer(stringSerializer);
-
-        // Serialize for value/ hashvalue
-        RedisSerializer<Object> jsonSerializer = RedisSerializer.json();
-        template.setValueSerializer(jsonSerializer);
-        template.setHashValueSerializer(jsonSerializer);
+        template.setKeySerializer(RedisSerializer.string());
+        template.setHashKeySerializer(RedisSerializer.string());
+        template.setValueSerializer(RedisSerializer.string());
+        template.setHashValueSerializer(RedisSerializer.string());
 
         template.afterPropertiesSet();
         return template;
     }
 
     @Bean
-    public ObjectMapper redisObjectMapper() {
-        ObjectMapper mapper = new ObjectMapper();
-        mapper.registerModule(new JavaTimeModule());
-        return mapper;
+    public RedisScript<Long> revokeTokenScript() {
+        return RedisScript.of(new ClassPathResource("scripts/revoke_token.lua"), Long.class);
     }
+
+    @Bean
+    public RedisScript<Long> verifyOtpScript() {
+        return RedisScript.of(new ClassPathResource("scripts/verify_otp.lua"), Long.class);
+    }
+
+    @Bean
+    public RedisScript<Long> revokeOldOtpScript() {
+        return RedisScript.of(
+                new ClassPathResource("scripts/revoke_old_otp.lua"),
+                Long.class);
+    }
+
 }

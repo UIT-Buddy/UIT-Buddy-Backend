@@ -12,9 +12,9 @@ import java.util.List;
 @Data
 @EqualsAndHashCode(callSuper = true)
 @SuperBuilder
+@JsonPropertyOrder({ "statusCode", "message", "data", "paging" })
 @NoArgsConstructor
 @AllArgsConstructor
-@JsonPropertyOrder({ "statusCode", "message", "data", "paging" })
 public class PageResponse<T> extends AbstractBaseResponse {
     private List<T> data;
     private PagingResponse paging;

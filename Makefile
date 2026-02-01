@@ -1,29 +1,9 @@
-# ===========================================
-# UIT-Buddy Backend - Makefile
-# ===========================================
-# Unified management for development and production
-#
-# Quick Start:
-#   make run    - Start all services in Docker (production-like)
-#   make local  - Start DB in Docker + Backend locally (development)
-#   make help   - Show all available commands
-# ===========================================
-
 .DEFAULT_GOAL := help
 
 SHELL := powershell.exe
 .SHELLFLAGS := -NoProfile -Command
 
-# ===========================================
-# HELP
-# ===========================================
-
 help: ## Show this help message
-	@Write-Host ""
-	@Write-Host "============================================================" -ForegroundColor Cyan
-	@Write-Host "       UIT-Buddy Backend - Makefile Commands" -ForegroundColor Cyan
-	@Write-Host "============================================================" -ForegroundColor Cyan
-	@Write-Host ""
 	@Write-Host "[QUICK START]" -ForegroundColor Green
 	@Write-Host "  make run                - Start ALL services in Docker (production-like)"
 	@Write-Host "  make local              - Start DB in Docker + Backend locally (development)"
@@ -50,7 +30,8 @@ help: ## Show this help message
 	@Write-Host ""
 	@Write-Host "[LOCAL DEVELOPMENT]" -ForegroundColor Green
 	@Write-Host "  make local              - Start infra + run backend locally"
-	@Write-Host "  make dev                - Run backend locally with dev profile"
+	@Write-Host "  make dev                - Start only DB containers (for DevTools)"
+	@Write-Host "  make run-local          - Run backend locally with dev profile"
 	@Write-Host "  make debug              - Run backend with debug port 5005"
 	@Write-Host ""
 	@Write-Host "[BUILD & TEST]" -ForegroundColor Green
@@ -69,10 +50,6 @@ help: ## Show this help message
 	@Write-Host "============================================================" -ForegroundColor Cyan
 	@Write-Host ""
 
-# ===========================================
-# QUICK START COMMANDS
-# ===========================================
-
 run: up status ## Start all services in Docker (production-like)
 	@Write-Host ""
 	@Write-Host "============================================================" -ForegroundColor Green
@@ -80,7 +57,7 @@ run: up status ## Start all services in Docker (production-like)
 	@Write-Host "============================================================" -ForegroundColor Green
 	@Write-Host ""
 	@Write-Host "Backend API:  http://localhost:8080" -ForegroundColor Cyan
-	@Write-Host "Swagger UI:   http://localhost:8080/swagger-ui/index.html" -ForegroundColor Cyan
+	@Write-Host "Scalar UI:    http://localhost:8080/scalar" -ForegroundColor Cyan
 	@Write-Host ""
 	@Write-Host "View logs: make logs" -ForegroundColor Yellow
 	@Write-Host ""
@@ -90,9 +67,6 @@ local: infra-up _wait-db _run-local ## Start DB in Docker + Backend locally (dev
 stop: down ## Stop all services
 	@Write-Host "All services stopped!" -ForegroundColor Yellow
 
-# ===========================================
-# DOCKER - ALL SERVICES
-# ===========================================
 
 up: ## Start all Docker services
 	@Write-Host "Starting all services..." -ForegroundColor Cyan
@@ -135,7 +109,7 @@ rebuild: down ## Rebuild and restart all Docker services
 	@Write-Host "Rebuild complete!" -ForegroundColor Green
 
 # ===========================================
-# DOCKER - INDIVIDUAL SERVICES
+# PODMAN - INDIVIDUAL SERVICES
 # ===========================================
 
 backend-logs: ## Show backend logs
@@ -149,10 +123,6 @@ postgres-logs: ## Show PostgreSQL logs
 
 redis-logs: ## Show Redis logs
 	docker compose logs -f redis
-
-# ===========================================
-# INFRASTRUCTURE ONLY
-# ===========================================
 
 infra-up: ## Start only PostgreSQL and Redis (for local development)
 	@Write-Host "Starting infrastructure services..." -ForegroundColor Cyan
@@ -168,10 +138,6 @@ infra-down: ## Stop PostgreSQL and Redis
 	@Write-Host "Stopping infrastructure services..." -ForegroundColor Yellow
 	docker compose stop postgres redis
 
-# ===========================================
-# LOCAL DEVELOPMENT
-# ===========================================
-
 _wait-db:
 	@Write-Host "Waiting for database to be ready..." -ForegroundColor Yellow
 	@Start-Sleep -Seconds 5
@@ -184,17 +150,28 @@ _run-local:
 	@Write-Host ""
 	@powershell -ExecutionPolicy Bypass -File .\scripts\run-local.ps1 -Profile dev
 
-dev: ## Run backend locally with dev profile (requires infra running)
+dev: infra-up ## Start only DB containers (for Spring DevTools development)
+	@Write-Host ""
+	@Write-Host "============================================================" -ForegroundColor Green
+	@Write-Host "Development environment ready!" -ForegroundColor Green
+	@Write-Host "============================================================" -ForegroundColor Green
+	@Write-Host ""
+	@Write-Host "PostgreSQL: localhost:5433" -ForegroundColor Cyan
+	@Write-Host "Redis:      localhost:6379" -ForegroundColor Cyan
+	@Write-Host ""
+	@Write-Host "Now run your Spring Boot app from IDE or:" -ForegroundColor Yellow
+	@Write-Host "  make run-local" -ForegroundColor Yellow
+	@Write-Host ""
+	@Write-Host "Spring DevTools will auto-reload on code changes!" -ForegroundColor Green
+	@Write-Host ""
+
+run-local: ## Run backend locally with dev profile (requires infra running)
 	@Write-Host "Running backend with dev profile..." -ForegroundColor Cyan
-	@powershell -ExecutionPolicy Bypass -File .\scripts\run-local.ps1 -Profile dev
+	.\mvnw.cmd spring-boot:run "-Dspring-boot.run.profiles=dev"
 
 debug: ## Run backend with debug port 5005
 	@Write-Host "Running backend in debug mode (port 5005)..." -ForegroundColor Cyan
 	.\mvnw.cmd spring-boot:run "-Dspring-boot.run.profiles=dev" "-Dspring-boot.run.jvmArguments=-Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=n,address=*:5005"
-
-# ===========================================
-# BUILD & TEST
-# ===========================================
 
 build: ## Build project (mvn clean package)
 	@Write-Host "Building project..." -ForegroundColor Cyan
@@ -222,10 +199,6 @@ clean-maven: ## Clean Maven build files
 deps: ## Show dependency tree
 	.\mvnw.cmd dependency:tree
 
-# ===========================================
-# UTILITIES
-# ===========================================
-
 shell-postgres: ## Open PostgreSQL shell
 	@Write-Host "Connecting to PostgreSQL..." -ForegroundColor Cyan
 	docker compose exec postgres psql -U postgres -d buddy_db
@@ -234,15 +207,11 @@ shell-redis: ## Open Redis CLI
 	@Write-Host "Connecting to Redis..." -ForegroundColor Cyan
 	docker compose exec redis redis-cli
 
-# ===========================================
-# PHONY TARGETS
-# ===========================================
-
 .PHONY: help run local stop \
 	up down restart logs status clean clean-all rebuild \
 	backend-logs backend-restart postgres-logs redis-logs \
 	infra-up infra-down \
-	dev debug \
+	dev run-local debug \
 	build build-skip-test test compile clean-maven deps \
 	shell-postgres shell-redis \
 	_wait-db _run-local

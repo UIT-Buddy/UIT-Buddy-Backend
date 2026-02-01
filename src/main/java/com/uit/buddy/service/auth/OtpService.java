@@ -10,9 +10,5 @@ public interface OtpService {
 
     void sendSignupOtp(String mssv);
 
-    String verifySignupOtp(String mssv, String otp);
-
-    String validateTempToken(String tempToken);
-
-    void consumeTempToken(String tempToken);
+    void verifySignupOtp(String mssv, String otp);
 }

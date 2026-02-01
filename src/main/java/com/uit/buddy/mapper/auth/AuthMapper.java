@@ -1,7 +1,8 @@
 package com.uit.buddy.mapper.auth;
 
 import com.uit.buddy.dto.response.auth.AuthResponse;
-import com.uit.buddy.entity.auth.User;
+import com.uit.buddy.entity.user.User;
+
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.Named;
@@ -15,7 +16,5 @@ public interface AuthMapper {
 
     @Named("toUserInfo")
     @Mapping(target = "id", expression = "java(user.getId().toString())")
-    @Mapping(target = "role", expression = "java(user.getRole().name())")
-    @Mapping(target = "status", expression = "java(user.getStatus().name())")
     AuthResponse.UserInfo toUserInfo(User user);
 }
