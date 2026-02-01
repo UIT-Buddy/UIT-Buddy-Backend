@@ -2,30 +2,36 @@
 
 ### Sign in
 
-Nhập mssv, trả về accesstoken, userinfo trong response và refresh token ở header
+Input mssv, return accesstoken, userinfo in response and refresh token in header
 
 ### Sign up initiate
 
-Nhập mssv, gửi otp qua mail, otp được lưu vào redis với timeout 5p
+Input mssv, send sign-up-otp to mail, otp is stored redis with timeout 5minutes
 
 ### Sign up complete
 
-Nhập mssv, otp, mật khẩu và confirmed mật khẩu, trả về accesstoken, userinfo trong response và refresh token ở header
+Input mssv, otp, password và confirmed password, return accesstoken, userinfo in response and refresh token in header
 
 ### Refresh token
-Đính refresh token ở header, trả về access token mới
+
+Require refresh token in header, return new access token
 
 ### Sign out
-Xóa refresh token trong redis, accesstoken vẫn còn duy trì cho đến khi ttl
+
+Delete refresh token in redis, accesstoken still works till the ttl timeout
 
 ### Resend otp
-Check ng dùng đã đăng kí chưa, chưa thì gửi lại otp (thời gian 3p cooldown), tối đa 5 lần nhập cho 1 otp
+
+Check if the user has registered, if not system will send otp (3 minutes cooldown), maximum 5 times per input
 
 ### Forgot password
-Nhập mssv, gửi otp qua mail, otp được lưu vào redis với timeout 5p
+
+Input mssv, send forgot-password-otp to email, otp is stored redis with timeout 5minutes
 
 ### Reset password
-Nhập mssv, otp, mật khẩu và confirmed mật khẩu, trả về success/fail
+
+Input mssv, reset-password-otp, password và confirmed password, return success/fail
 
 ### me
-Lấy thông tin user từ accesstoken
+
+Get userinfo via accesstoken
