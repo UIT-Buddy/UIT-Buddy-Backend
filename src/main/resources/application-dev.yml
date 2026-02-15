@@ -12,9 +12,19 @@ spring:
       connection-timeout: 5000
       max-lifetime: 50000
 
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    baseline-version: 0
+    locations: classpath:db/migration
+    validate-on-migrate: true
+    clean-disabled: true
+    default-schema: public
+    schemas: public
+
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: none
     show-sql: true
     open-in-view: false
     properties:
@@ -51,22 +61,6 @@ spring:
 app:
   default-locale: ${APP_DEFAULT_LOCALE:vi}
   default-timezone: ${APP_DEFAULT_TIMEZONE:Asia/Ho_Chi_Minh}
-  jwt:
-    secret: ${JWT_SECRET_KEY}
-    token:
-      expires-in: ${JWT_ACCESS_EXPIRES_IN}
-    refresh-token:
-      expires-in: ${JWT_REFRESH_EXPIRES_IN}
-      expires-in-with-rememberme: ${JWT_REFRESH_EXPIRES_IN_WITH_REMEMBERME}
-  otp:
-    length: ${OTP_LENGTH:6}
-    expiration-seconds: ${OTP_EXPIRATION_SECONDS:300}
-    max-attempts: ${OTP_MAX_ATTEMPTS:5}
-    resend-cooldown-seconds: ${OTP_RESEND_COOLDOWN_SECONDS:120}
-  temp-token:
-    expiration-seconds: ${TEMP_TOKEN_EXPIRATION_SECONDS:600}
-  pending-account:
-    expiration-seconds: ${PENDING_ACCOUNT_EXPIRATION_SECONDS:86400}
 
 scalar:
   path: ${SCALAR_PATH:/docs}
@@ -81,3 +75,4 @@ logging:
     org.springframework.web: DEBUG
     org.hibernate.SQL: DEBUG
     org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+    org.flywaydb: DEBUG
