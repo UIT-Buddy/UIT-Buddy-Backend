@@ -33,6 +33,9 @@ public class Student extends AbstractAuditEntity {
     @Column(name = "avatar_url", length = 255)
     private String avatarUrl;
 
+    @Column(name = "bio", length = 100)
+    private String bio;
+
     @Column(name = "comet_uid", nullable = false, length = 100)
     private String cometUid;
 
@@ -45,4 +48,7 @@ public class Student extends AbstractAuditEntity {
 
     @Column(name = "encrypted_wstoken", length = 512)
     private String encryptedWstoken;
+
+    @Column(name = "fcm_token", length = 255)
+    private String fcmToken;
 }

@@ -34,3 +34,7 @@ build/
 
 ### Environment Variables ###
 .env
+
+### Firebase ###
+**/firebase/*.json
+firebase-adminsdk-*.json

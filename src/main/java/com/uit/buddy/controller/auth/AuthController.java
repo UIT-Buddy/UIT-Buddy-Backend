@@ -92,4 +92,5 @@ public class AuthController extends AbstractBaseController {
         authService.signOut(refreshToken);
         return success("Sign out successfully!");
     }
+
 }

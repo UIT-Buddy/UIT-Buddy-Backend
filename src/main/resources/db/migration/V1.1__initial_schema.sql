@@ -29,6 +29,7 @@ CREATE TABLE students (
     full_name VARCHAR(150) NOT NULL,
     email VARCHAR(150) NOT NULL,
     avatar_url VARCHAR(255),
+    bio TEXT,
     comet_uid VARCHAR(100) NOT NULL,
     home_class_code VARCHAR(20) NOT NULL,
     encrypted_wstoken VARCHAR(512),

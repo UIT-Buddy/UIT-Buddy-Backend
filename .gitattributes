@@ -1,2 +1,7 @@
-/mvnw text eol=lf
+# Ép các file script luôn dùng LF để không bị lỗi trên Docker/Linux
+mvnw text eol=lf
+*.sh text eol=lf
+
+# Các file Windows thì cứ giữ CRLF
+*.bat text eol=crlf
 *.cmd text eol=crlf

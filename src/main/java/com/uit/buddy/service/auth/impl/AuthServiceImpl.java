@@ -2,6 +2,7 @@ package com.uit.buddy.service.auth.impl;
 
 import com.uit.buddy.client.CometChatClient;
 import com.uit.buddy.client.UitClient;
+import com.uit.buddy.constant.AppConstants;
 import com.uit.buddy.dto.request.auth.CompleteSignUpRequest;
 import com.uit.buddy.dto.request.auth.ForgetPasswordRequest;
 import com.uit.buddy.dto.request.auth.SignInRequest;
@@ -91,7 +92,7 @@ public class AuthServiceImpl implements AuthService {
             throw new AuthException(AuthErrorCode.INVALID_CREDENTIALS, "Cannot extract MSSV from Moodle response");
         }
 
-        if (studentRepository.existsByMssv(mssv)) {
+        if (studentRepository.existsById(mssv)) {
             throw new AuthException(AuthErrorCode.STUDENT_ALREADY_EXISTS);
         }
 
@@ -113,7 +114,7 @@ public class AuthServiceImpl implements AuthService {
         log.info("Generated signup token for MSSV: {}", mssv);
 
         PendingAccount pendingAccount = PendingAccount.builder()
-                .mssv(mssv) // mssv is now the @Id
+                .mssv(mssv)
                 .signupToken(signupToken)
                 .encryptedWstoken(wsTokenEncryptionService.encryptWstoken(request.wstoken()))
                 .fullName(siteInfo.fullname())
@@ -139,7 +140,7 @@ public class AuthServiceImpl implements AuthService {
             throw new AuthException(AuthErrorCode.PASSWORD_MISMATCH);
         }
 
-        if (studentRepository.existsByMssv(request.mssv())) {
+        if (studentRepository.existsById(request.mssv())) {
             throw new AuthException(AuthErrorCode.STUDENT_ALREADY_EXISTS);
         }
 
@@ -178,8 +179,9 @@ public class AuthServiceImpl implements AuthService {
         Student student = Student.builder()
                 .mssv(request.mssv())
                 .fullName(pendingAccount.getFullName())
-                .email(request.mssv() + "@gm.uit.edu.vn")
+                .email(request.mssv() + AppConstants.STUDENT_EMAIL_DOMAIN)
                 .avatarUrl(avatarUrl)
+                .bio(null)
                 .cometUid(request.mssv())
                 .encryptedWstoken(pendingAccount.getEncryptedWstoken())
                 .password(passwordEncoder.encode(request.password()))
@@ -191,8 +193,23 @@ public class AuthServiceImpl implements AuthService {
             log.info("Successfully created student: {} with homeClassCode: {}", request.mssv(), homeClassCode);
         } catch (Exception e) {
             log.error("Failed to save student: {}", request.mssv(), e);
+
             // Rollback CometChat user
-            cometChatClient.deleteUser(request.mssv());
+            try {
+                cometChatClient.deleteUser(request.mssv());
+                log.info("Successfully rolled back CometChat user for MSSV: {}", request.mssv());
+            } catch (Exception ex) {
+                log.error("Failed to rollback CometChat user for MSSV: {}", request.mssv(), ex);
+            }
+
+            // Rollback Cloudinary avatar
+            try {
+                cloudinaryService.deleteAvatar(request.mssv());
+                log.info("Successfully rolled back Cloudinary avatar for MSSV: {}", request.mssv());
+            } catch (Exception ex) {
+                log.error("Failed to rollback Cloudinary avatar for MSSV: {}", request.mssv(), ex);
+            }
+
             throw new AuthException(
                     AuthErrorCode.EXTERNAL_SERVICE_ERROR,
                     "Failed to create account. Please try again.");
@@ -213,7 +230,7 @@ public class AuthServiceImpl implements AuthService {
     public AuthResponse signIn(SignInRequest request) {
         log.info("Sign in attempt for MSSV: {}", request.mssv());
 
-        Student student = studentRepository.findByMssv(request.mssv())
+        Student student = studentRepository.findById(request.mssv())
                 .orElseThrow(() -> new AuthException(AuthErrorCode.STUDENT_NOT_FOUND));
 
         if (!passwordEncoder.matches(request.password(), student.getPassword())) {
@@ -235,7 +252,7 @@ public class AuthServiceImpl implements AuthService {
     public void forgetPassword(ForgetPasswordRequest request) {
         log.info("Forget password request for MSSV: {}", request.mssv());
 
-        Student student = studentRepository.findByMssv(request.mssv())
+        Student student = studentRepository.findById(request.mssv())
                 .orElseThrow(() -> new AuthException(AuthErrorCode.STUDENT_NOT_FOUND));
 
         String otpCode = otpUtils.generateNumericOtp(otpLength);
@@ -289,8 +306,7 @@ public class AuthServiceImpl implements AuthService {
                     String.format("Invalid OTP. %d attempt(s) remaining.", remainingAttempts));
         }
 
-        // OTP is valid, proceed to reset password
-        Student student = studentRepository.findByMssv(mssv)
+        Student student = studentRepository.findById(mssv)
                 .orElseThrow(() -> new AuthException(AuthErrorCode.STUDENT_NOT_FOUND));
 
         student.setPassword(passwordEncoder.encode(newPassword));
@@ -320,7 +336,7 @@ public class AuthServiceImpl implements AuthService {
                     "Refresh token has been revoked or expired");
         }
 
-        Student student = studentRepository.findByMssv(mssv)
+        Student student = studentRepository.findById(mssv)
                 .orElseThrow(() -> new AuthException(AuthErrorCode.STUDENT_NOT_FOUND));
 
         String newAccessToken = jwtUtils.generateAccessToken(mssv);
@@ -354,7 +370,7 @@ public class AuthServiceImpl implements AuthService {
     public String getDecryptedWstoken(String mssv) {
         log.debug("Getting decrypted token for MSSV: {}", mssv);
 
-        Student student = studentRepository.findByMssv(mssv)
+        Student student = studentRepository.findById(mssv)
                 .orElseThrow(() -> new AuthException(AuthErrorCode.STUDENT_NOT_FOUND));
 
         if (student.getEncryptedWstoken() == null || student.getEncryptedWstoken().isBlank()) {
@@ -413,28 +429,29 @@ public class AuthServiceImpl implements AuthService {
     }
 
     private void createCometChatUser(String mssv, String fullName, String avatarUrl) {
+        log.debug("[Auth Service] Preparing CometChat request - mssv: {}, fullName: {}, avatarUrl: {}",
+                mssv, fullName, avatarUrl);
+
         try {
             CometChatUserRequest cometChatRequest = new CometChatUserRequest(
                     mssv,
                     fullName != null ? fullName : mssv,
                     avatarUrl);
+            log.debug("[Auth Service] CometChat request created: {}", cometChatRequest);
+
             cometChatClient.createUser(cometChatRequest);
-            log.info("Successfully created CometChat user for MSSV: {}", mssv);
-        } catch (RestClientException e) {
-            log.error("Failed to connect to CometChat API for MSSV: {}", mssv, e);
-            throw new AuthException(
-                    AuthErrorCode.EXTERNAL_SERVICE_ERROR,
-                    "Cannot connect to chat service. Please try again later.");
+            log.info("[Auth Service] Successfully created CometChat user for MSSV: {}", mssv);
         } catch (ExternalClientException e) {
-            log.error("CometChat API error for MSSV: {}", mssv, e);
-            throw new AuthException(
-                    AuthErrorCode.EXTERNAL_SERVICE_ERROR,
-                    "Failed to initialize chat service. Please try again later.");
-        } catch (Exception e) {
-            log.error("Unexpected error creating CometChat user for MSSV: {}", mssv, e);
-            throw new AuthException(
-                    AuthErrorCode.EXTERNAL_SERVICE_ERROR,
-                    "Failed to initialize chat service. Please try again later.");
+            if (e.getMessage() != null && e.getMessage().contains("already exists")) {
+                log.warn("[Auth Service] CometChat user already exists for MSSV: {}. Continuing signup...", mssv);
+                // User already exists in CometChat, continue with signup
+                return;
+            }
+            log.error("[Auth Service] CometChat integration failed for MSSV: {}. Error: {}", mssv, e.getMessage());
+            throw new AuthException(AuthErrorCode.EXTERNAL_SERVICE_ERROR, "Failed to initialize chat service");
+        } catch (RestClientException e) {
+            log.error("[Auth Service] CometChat connection failed for MSSV: {}. Error: {}", mssv, e.getMessage());
+            throw new AuthException(AuthErrorCode.EXTERNAL_SERVICE_ERROR, "Failed to connect to chat service");
         }
     }
 
@@ -448,30 +465,15 @@ public class AuthServiceImpl implements AuthService {
             }
 
             return courses.stream()
-                    .filter(course -> course.fullName() != null &&
-                            course.fullName().toUpperCase().contains("CVHT"))
-                    .peek(course -> log.info("Found CVHT course: fullName={}, shortName={}, idNumber={}",
-                            course.fullName(), course.shortName(), course.idNumber()))
+                    .filter(course -> course.fullName() != null && course.fullName().toUpperCase().contains("CVHT"))
                     .map(EnrolledCourseResponse::shortName)
-                    .filter(shortName -> shortName != null && !shortName.isBlank())
                     .findFirst()
                     .orElse(null);
 
-        } catch (RestClientException e) {
-            log.error("Failed to connect to Moodle API for user courses: {}", e.getMessage(), e);
-            throw new AuthException(
-                    AuthErrorCode.EXTERNAL_SERVICE_ERROR,
-                    "Cannot connect to Moodle. Please try again later.");
-        } catch (ExternalClientException e) {
-            log.error("Moodle API error fetching courses for MSSV: {}", mssv, e);
-            throw new AuthException(
-                    AuthErrorCode.EXTERNAL_SERVICE_ERROR,
-                    "Failed to retrieve student information from Moodle. Please try again later.");
-        } catch (Exception e) {
-            log.error("Unexpected error fetching user courses for MSSV: {}", mssv, e);
-            throw new AuthException(
-                    AuthErrorCode.EXTERNAL_SERVICE_ERROR,
-                    "Failed to retrieve student information. Please try again later.");
+        } catch (ExternalClientException | RestClientException e) {
+            log.error("[Auth Service] Moodle API error for MSSV: {}. Error: {}", mssv, e.getMessage());
+            throw new AuthException(AuthErrorCode.EXTERNAL_SERVICE_ERROR,
+                    "Failed to retrieve student information from Moodle");
         }
     }
 }

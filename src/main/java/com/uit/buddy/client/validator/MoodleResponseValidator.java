@@ -4,10 +4,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.uit.buddy.dto.response.client.MoodleErrorResponse;
 import com.uit.buddy.exception.client.ExternalClientErrorCode;
 import com.uit.buddy.exception.client.ExternalClientException;
+import static com.uit.buddy.constant.MoodleApiConstants.*;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
+import java.util.Map;
 
 @Component
 @Slf4j
@@ -21,21 +23,18 @@ public class MoodleResponseValidator {
             return;
         }
 
-        try {
-            MoodleErrorResponse errorResponse = objectMapper.convertValue(response, MoodleErrorResponse.class);
+        if (response instanceof Map<?, ?> map) {
 
-            if (hasError(errorResponse)) {
-                handleMoodleError(errorResponse);
+            if (map.containsKey(KEY_EXCEPTION) || map.containsKey(KEY_ERROR_CODE)) {
+                try {
+                    MoodleErrorResponse errorResponse = objectMapper.convertValue(response, MoodleErrorResponse.class);
+                    handleMoodleError(errorResponse);
+                } catch (IllegalArgumentException e) {
+                    log.debug(
+                            "[Moodle Validation] Response contains error keys but is not a standard MoodleErrorResponse");
+                }
             }
-        } catch (ExternalClientException e) {
-            throw e;
-        } catch (Exception e) {
-            log.debug("[Moodle Validation] Could not validate response for errors: {}", e.getMessage());
         }
-    }
-
-    private boolean hasError(MoodleErrorResponse errorResponse) {
-        return errorResponse.exception() != null || errorResponse.errorcode() != null;
     }
 
     private void handleMoodleError(MoodleErrorResponse errorResponse) {
@@ -54,9 +53,9 @@ public class MoodleResponseValidator {
         }
 
         return switch (moodleErrorCode) {
-            case "invalidtoken", "invalidlogin" -> ExternalClientErrorCode.UNAUTHORIZED_REQUEST;
-            case "accessexception", "nopermission" -> ExternalClientErrorCode.FORBIDDEN_REQUEST;
-            case "invalidparameter", "invalidrecord" -> ExternalClientErrorCode.BAD_REQUEST;
+            case ERROR_INVALID_TOKEN, ERROR_INVALID_LOGIN -> ExternalClientErrorCode.UNAUTHORIZED_REQUEST;
+            case ERROR_ACCESS_EXCEPTION, ERROR_NO_PERMISSION -> ExternalClientErrorCode.FORBIDDEN_REQUEST;
+            case ERROR_INVALID_PARAMETER, ERROR_INVALID_RECORD -> ExternalClientErrorCode.BAD_REQUEST;
             default -> ExternalClientErrorCode.INVALID_RESPONSE;
         };
     }

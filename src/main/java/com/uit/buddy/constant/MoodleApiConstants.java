@@ -14,5 +14,16 @@ public final class MoodleApiConstants {
     public static final String PARAM_WSTOKEN = "wstoken";
     public static final String PARAM_WSFUNCTION = "wsfunction";
     public static final String PARAM_MOODLEWSRESTFORMAT = "moodlewsrestformat";
+    public static final String PARAM_USERID = "userid";
 
+    // Response Error Keys
+    public static final String KEY_EXCEPTION = "exception";
+    public static final String KEY_ERROR_CODE = "errorcode";
+
+    public static final String ERROR_INVALID_TOKEN = "invalidtoken";
+    public static final String ERROR_INVALID_LOGIN = "invalidlogin";
+    public static final String ERROR_ACCESS_EXCEPTION = "accessexception";
+    public static final String ERROR_NO_PERMISSION = "nopermission";
+    public static final String ERROR_INVALID_PARAMETER = "invalidparameter";
+    public static final String ERROR_INVALID_RECORD = "invalidrecord";
 }

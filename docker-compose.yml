@@ -4,12 +4,11 @@ services:
     image: postgres:17-alpine
     container_name: buddy-postgres
     environment:
-      POSTGRES_DB: ${POSTGRES_DB:-buddy_db}
-      POSTGRES_USER: ${POSTGRES_USER:-postgres}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres123}
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     ports:
-      - "5433:5433"
-    command: -p 5433
+      - ${HOST_POSTGRES_PORT}:5432
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
@@ -17,7 +16,7 @@ services:
     image: redis:8-alpine
     container_name: buddy-redis
     ports:
-      - "6379:6379"
+      - ${HOST_REDIS_PORT}:6379
     volumes:
       - redis_data:/data
     command: redis-server --appendonly yes
@@ -26,57 +25,13 @@ services:
     build: .
     container_name: buddy-backend
     ports:
-      - "8080:8080"
+      - ${HOST_SERVER_PORT}:8000
+    env_file:
+      - .env
     environment:
-      SPRING_PROFILES_ACTIVE: dev
-      # Server
-      DEV_PORT: 8080
-      # Database
-      DEV_DATABASE_URL: jdbc:postgresql://postgres:5433/buddy_db
-      DEV_DATABASE_USERNAME: postgres
-      DEV_DATABASE_PASSWORD: ${POSTGRES_PASSWORD:-postgres123}
-      # Redis
-      DEV_REDIS_HOST: redis
-      DEV_REDIS_PORT: 6379
-      # Mail
-      DEV_MAIL_HOST: ${DEV_MAIL_HOST}
-      DEV_MAIL_PORT: ${DEV_MAIL_PORT:-587}
-      DEV_MAIL_USERNAME: ${DEV_MAIL_USERNAME}
-      DEV_MAIL_PASSWORD: ${DEV_MAIL_PASSWORD}
-      # JWT
-      JWT_SECRET: ${JWT_SECRET}
-      JWT_ACCESS_TOKEN_EXPIRATION: ${JWT_ACCESS_TOKEN_EXPIRATION:-900000}
-      JWT_REFRESH_TOKEN_EXPIRATION: ${JWT_REFRESH_TOKEN_EXPIRATION:-604800000}
-      JWT_REFRESH_TOKEN_REMEMBER_ME_EXPIRATION: ${JWT_REFRESH_TOKEN_REMEMBER_ME_EXPIRATION:-2592000000}
-      # Encryption
-      ENCRYPTION_SECRET: ${ENCRYPTION_SECRET}
-      APP_ENCRYPTION_ALGORITHM: ${APP_ENCRYPTION_ALGORITHM:-AES/GCM/NoPadding}
-      # OTP
-      OTP_LENGTH: ${OTP_LENGTH:-6}
-      OTP_EXPIRATION_SECONDS: ${OTP_EXPIRATION_SECONDS:-300}
-      OTP_MAX_ATTEMPTS: ${OTP_MAX_ATTEMPTS:-3}
-      OTP_RESEND_COOLDOWN_SECONDS: ${OTP_RESEND_COOLDOWN_SECONDS:-60}
-      # Pending Account
-      PENDING_ACCOUNT_EXPIRATION_SECONDS: ${PENDING_ACCOUNT_EXPIRATION_SECONDS:-300}
-      # UIT API
-      UIT_API_URL: ${UIT_API_URL:-https://courses.uit.edu.vn}
-      UIT_MOODLE_SERVER_PATH: ${UIT_MOODLE_SERVER_PATH:-/webservice/rest/server.php}
-      UIT_REST_FORMAT: ${UIT_REST_FORMAT:-json}
-      # CometChat
-      COMETCHAT_API_URL: ${COMETCHAT_API_URL:-https://api-us.cometchat.io/v3}
-      COMETCHAT_API_KEY: ${COMETCHAT_API_KEY}
-      COMETCHAT_APP_ID: ${COMETCHAT_APP_ID}
-      # App
-      APP_DEFAULT_LOCALE: ${APP_DEFAULT_LOCALE:-vi}
-      APP_DEFAULT_TIMEZONE: ${APP_DEFAULT_TIMEZONE:-Asia/Ho_Chi_Minh}
-      # Scalar
-      SCALAR_PATH: ${SCALAR_PATH:-/docs}
-      SCALAR_URL: ${SCALAR_URL:-/v3/api-docs}
-      SCALAR_ENABLED: ${SCALAR_ENABLED:-true}
-      # Cloudinary
-      CLOUDINARY_CLOUD_NAME: ${CLOUDINARY_CLOUD_NAME}
-      CLOUDINARY_API_KEY: ${CLOUDINARY_API_KEY}
-      CLOUDINARY_API_SECRET: ${CLOUDINARY_API_SECRET}
+      - DEV_DATABASE_URL=jdbc:postgresql://postgres:5432/${POSTGRES_DB}
+      - DEV_REDIS_HOST=redis
+      - DEV_REDIS_PORT=6379
     depends_on:
       - postgres
       - redis
