@@ -1,15 +1,9 @@
 package com.uit.buddy.dto.base;
 
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
-import lombok.experimental.SuperBuilder;
+import com.fasterxml.jackson.annotation.JsonInclude;
 
-@Data
-@EqualsAndHashCode(callSuper = true)
-@SuperBuilder
-@NoArgsConstructor
-public class SuccessResponse extends AbstractBaseResponse {
-
-    private String message;
+@JsonInclude(JsonInclude.Include.NON_NULL)
+public record SuccessResponse(
+        Integer statusCode,
+        String message) {
 }

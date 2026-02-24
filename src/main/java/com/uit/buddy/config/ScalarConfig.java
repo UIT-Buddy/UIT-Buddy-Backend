@@ -9,6 +9,8 @@ public class ScalarConfig implements WebMvcConfigurer {
 
     @Override
     public void addViewControllers(ViewControllerRegistry registry) {
+        registry.addViewController("/docs").setViewName("forward:/scalar.html");
+        registry.addViewController("/docs/").setViewName("forward:/scalar.html");
         registry.addViewController("/scalar").setViewName("forward:/scalar.html");
         registry.addViewController("/scalar/").setViewName("forward:/scalar.html");
     }

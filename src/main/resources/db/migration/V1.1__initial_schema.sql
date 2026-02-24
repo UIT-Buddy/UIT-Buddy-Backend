@@ -32,6 +32,7 @@ CREATE TABLE students (
     comet_uid VARCHAR(100) NOT NULL,
     home_class_code VARCHAR(20) NOT NULL,
     encrypted_wstoken VARCHAR(512),
+    password VARCHAR(255) NOT NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
@@ -47,11 +48,6 @@ CREATE TABLE course_categories (
 CREATE TABLE courses (
     course_code VARCHAR(20) PRIMARY KEY,
     course_name VARCHAR(150) NOT NULL,
-    credits INTEGER,
-    process_weight INTEGER,
-    midterm_weight INTEGER,
-    final_weight INTEGER,
-    lab_weight INTEGER,
     faculty_code VARCHAR(20),
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
@@ -75,6 +71,9 @@ CREATE TABLE curriculum_courses (
     curriculum_code VARCHAR(50) NOT NULL,
     course_code VARCHAR(20) NOT NULL,
     category_code VARCHAR(20) NOT NULL,
+    credits INTEGER,
+    theory_credits INTEGER,
+    lab_credits INTEGER,
     is_mandatory BOOLEAN NOT NULL DEFAULT TRUE,
     prerequisite_course_code VARCHAR(20),
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,

@@ -1,31 +1,21 @@
 package com.uit.buddy.dto.base;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
-import lombok.experimental.SuperBuilder;
 
 import java.util.List;
 
-@Data
-@EqualsAndHashCode(callSuper = true)
-@SuperBuilder
+@JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonPropertyOrder({ "statusCode", "message", "data", "paging" })
-@NoArgsConstructor
-@AllArgsConstructor
-public class PageResponse<T> extends AbstractBaseResponse {
-    private List<T> data;
-    private PagingResponse paging;
-
-    @Data
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class PagingResponse {
-        private int page;
-        private int limit;
-        private long total;
-        private int totalPages;
+public record PageResponse<T>(
+        Integer statusCode,
+        String message,
+        List<T> data,
+        PagingInfo paging) {
+    public record PagingInfo(
+            int page,
+            int limit,
+            long total,
+            int totalPages) {
     }
 }

@@ -26,10 +26,10 @@ public class HomeClass extends AbstractAuditEntity {
     @Column(name = "advisor_name", length = 150)
     private String advisorName;
 
-    @Column(name = "major_code", length = 20, nullable = false, insertable = false, updatable = false)
+    @Column(name = "major_code", length = 20, nullable = false)
     private String majorCode;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "major_code", referencedColumnName = "major_code", foreignKey = @ForeignKey(name = "fk_home_class_major"))
+    @JoinColumn(name = "major_code", referencedColumnName = "major_code", foreignKey = @ForeignKey(name = "fk_home_class_major"), insertable = false, updatable = false)
     private Major major;
 }

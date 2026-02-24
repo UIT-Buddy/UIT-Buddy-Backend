@@ -18,11 +18,10 @@ public class ResponseFactory {
                         HttpStatus status,
                         String message,
                         T data) {
-                return SingleResponse.<T>builder()
-                                .statusCode(status.value())
-                                .message(message)
-                                .data(data)
-                                .build();
+                return new SingleResponse<>(
+                                status.value(),
+                                message,
+                                data);
         }
 
         public <T> PageResponse<T> createPageResponse(
@@ -33,12 +32,11 @@ public class ResponseFactory {
                         int size,
                         long totalElements,
                         int totalPages) {
-                return PageResponse.<T>builder()
-                                .statusCode(status.value())
-                                .message(message)
-                                .data(data)
-                                .paging(new PageResponse.PagingResponse(page, size, totalElements, totalPages))
-                                .build();
+                return new PageResponse<>(
+                                status.value(),
+                                message,
+                                data,
+                                new PageResponse.PagingInfo(page, size, totalElements, totalPages));
         }
 
         public <T> ResponseEntity<SingleResponse<T>> successSingle(
@@ -49,26 +47,32 @@ public class ResponseFactory {
         }
 
         public ResponseEntity<SuccessResponse> success(String message) {
-                SuccessResponse response = SuccessResponse.builder()
-                                .statusCode(HttpStatus.OK.value())
-                                .message(message)
-                                .build();
+                SuccessResponse response = new SuccessResponse(
+                                HttpStatus.OK.value(),
+                                message);
                 return ResponseEntity.ok(response);
         }
 
         public ResponseEntity<SuccessResponse> success(HttpStatus status, String message) {
-                SuccessResponse response = SuccessResponse.builder()
-                                .statusCode(status.value())
-                                .message(message)
-                                .build();
+                SuccessResponse response = new SuccessResponse(
+                                status.value(),
+                                message);
                 return ResponseEntity.status(status).body(response);
         }
 
         public ResponseEntity<ErrorResponse> error(HttpStatus status, String message) {
-                ErrorResponse response = ErrorResponse.builder()
-                                .statusCode(status.value())
-                                .message(message)
-                                .build();
+                ErrorResponse response = new ErrorResponse(
+                                status.value(),
+                                message,
+                                null);
+                return ResponseEntity.status(status).body(response);
+        }
+
+        public ResponseEntity<ErrorResponse> error(HttpStatus status, String message, String errorCode) {
+                ErrorResponse response = new ErrorResponse(
+                                status.value(),
+                                message,
+                                errorCode);
                 return ResponseEntity.status(status).body(response);
         }
 }

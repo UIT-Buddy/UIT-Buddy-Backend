@@ -25,8 +25,10 @@ public class Student extends AbstractAuditEntity {
     private String fullName;
 
     @Column(name = "email", nullable = false, length = 150)
-    @Setter(AccessLevel.NONE)
     private String email;
+
+    @Column(name = "password", nullable = false, length = 255)
+    private String password;
 
     @Column(name = "avatar_url", length = 255)
     private String avatarUrl;
@@ -34,20 +36,13 @@ public class Student extends AbstractAuditEntity {
     @Column(name = "comet_uid", nullable = false, length = 100)
     private String cometUid;
 
-    @Column(name = "home_class_code", length = 20, nullable = false, insertable = false, updatable = false)
+    @Column(name = "home_class_code", length = 20, nullable = false)
     private String homeClassCode;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "home_class_code", referencedColumnName = "home_class_code", foreignKey = @ForeignKey(name = "fk_student_home_class"))
+    @JoinColumn(name = "home_class_code", referencedColumnName = "home_class_code", foreignKey = @ForeignKey(name = "fk_student_home_class"), insertable = false, updatable = false, nullable = false)
     private HomeClass homeClass;
 
     @Column(name = "encrypted_wstoken", length = 512)
     private String encryptedWstoken;
-
-    @PrePersist
-    private void generateEmail() {
-        if (this.mssv != null && this.email == null) {
-            this.email = this.mssv + "@gm.uit.edu.vn";
-        }
-    }
 }
