@@ -1,0 +1,33 @@
+INSERT INTO faculties (faculty_code, faculty_name, office_location, created_at, updated_at) VALUES
+('BMTL', 'Bộ môn Toán - Lý', 'Phòng A319, Tòa nhà A', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('CNPM', 'Khoa Công nghệ Phần mềm', 'Phòng E7.2, Tòa nhà E', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('HTTT', 'Khoa Hệ thống Thông tin', 'Tầng 9, Tòa nhà E', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('KTMT', 'Khoa Kỹ thuật Máy tính', 'Tầng 6, Tòa nhà E', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('KTTT', 'Khoa Khoa học và Kỹ thuật thông tin', 'Phòng E10.2, Tòa nhà E', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('KHMT', 'Khoa Khoa học Máy tính', 'Phòng E5.2, Tòa nhà E', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('MMT&TT', 'Khoa Mạng máy tính và Truyền thông', 'Phòng E8.2, Tòa nhà E', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('P.DTDH', 'Phòng Đào tạo Đại học', 'Phòng A102, Tòa nhà A', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('TTNN', 'Trung tâm Ngoại ngữ', 'Phòng E1.4, Tòa nhà E', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('BMAV', 'Bộ môn Anh văn', 'Phòng E1.3, Tòa nhà E', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('GDQP', 'Bộ môn Giáo dục Quốc phòng', 'Phòng A201, Tòa nhà A', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('GDTC', 'Bộ môn Giáo dục Thể chất', 'Phòng A202, Tòa nhà A', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
+
+INSERT INTO majors (major_code, major_name, faculty_code, major_number_code, created_at, updated_at) VALUES
+('KHMT', 'Khoa học máy tính', 'KHMT', '7480101', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('KHTN', 'Khoa học máy tính - Tài năng', 'KHMT', '7480101', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('TTNT', 'Trí tuệ nhân tạo', 'KHMT', '7480107', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('TTTN', 'Trí tuệ nhân tạo - Tài năng', 'KHMT', '7480107', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('MMTT', 'Mạng máy tính và truyền thông dữ liệu', 'MMT&TT', '7480102', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('KTPM', 'Kỹ thuật phần mềm', 'CNPM', '7480103', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('TTDPT', 'Truyền thông Đa phương tiện', 'CNPM', '7320104', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('HTTT', 'Hệ thống thông tin', 'HTTT', '7480104', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('HTTT_TT', 'Hệ thống thông tin (Tiên tiến)', 'HTTT', '7480104_TT', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('TMDT', 'Thương mại điện tử', 'HTTT', '7340122', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('CNTT', 'Công nghệ thông tin', 'P.DTDH', '7480201', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('CNTTVN', 'Công nghệ thông tin (Việt Nhật)', 'CNPM', '7480201_VN', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('KHDL', 'Khoa học dữ liệu', 'KTTT', '7460108', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('ATTT', 'An toàn thông tin', 'MMT&TT', '7480202', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('ATTN', 'An toàn thông tin - Tài năng', 'MMT&TT', '7480202', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('KTMT', 'Kỹ thuật máy tính', 'KTMT', '7480106', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('TKVM', 'Thiết kế Vi mạch', 'KTMT', '752020A1', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('TKTN', 'Thiết kế Vi mạch - Tài năng', 'KTMT', '752020A1', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);

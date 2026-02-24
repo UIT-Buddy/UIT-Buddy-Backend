@@ -1,0 +1,112 @@
+server:
+  port: ${DEV_PORT:8080}
+
+spring:
+  datasource:
+    url: ${DEV_DATABASE_URL:jdbc:postgresql://localhost:5433/buddy_db}
+    username: ${DEV_DATABASE_USERNAME:postgres}
+    password: ${DEV_DATABASE_PASSWORD:postgres123}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 20
+      connection-timeout: 5000
+      max-lifetime: 50000
+
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    baseline-version: 0
+    locations: classpath:db/migration
+    validate-on-migrate: false
+    clean-disabled: true
+    default-schema: public
+    schemas: public
+
+  jpa:
+    hibernate:
+      ddl-auto: none
+    show-sql: true
+    open-in-view: false
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+  data:
+    redis:
+      host: ${DEV_REDIS_HOST:localhost}
+      port: ${DEV_REDIS_PORT:6379}
+      timeout: 60000
+
+  mail:
+    host: ${DEV_MAIL_HOST}
+    port: ${DEV_MAIL_PORT:587}
+    username: ${DEV_MAIL_USERNAME}
+    password: ${DEV_MAIL_PASSWORD}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
+          connectiontimeout: 5000
+          timeout: 5000
+          writetimeout: 5000
+
+  threads:
+    virtual:
+      enabled: true
+
+app:
+  default-locale: ${APP_DEFAULT_LOCALE:vi}
+  default-timezone: ${APP_DEFAULT_TIMEZONE:Asia/Ho_Chi_Minh}
+
+  uit:
+    api-url: ${UIT_API_URL:https://courses.uit.edu.vn}
+    moodle-server-path: ${UIT_MOODLE_SERVER_PATH:/webservice/rest/server.php}
+    rest-format: ${UIT_REST_FORMAT:json}
+
+  cometchat:
+    api-url: ${COMETCHAT_API_URL:https://api-us.cometchat.io/v3}
+    api-key: ${COMETCHAT_API_KEY}
+    app-id: ${COMETCHAT_APP_ID}
+
+  jwt:
+    secret: ${JWT_SECRET}
+    access-token-expiration: ${JWT_ACCESS_TOKEN_EXPIRATION:900000}
+    refresh-token-expiration: ${JWT_REFRESH_TOKEN_EXPIRATION:604800000}
+    refresh-token-remember-me-expiration: ${JWT_REFRESH_TOKEN_REMEMBER_ME_EXPIRATION:2592000000}
+
+  encryption:
+    secret: ${ENCRYPTION_SECRET}
+    algorithm: ${APP_ENCRYPTION_ALGORITHM}
+
+  otp:
+    length: ${OTP_LENGTH:6}
+    expiration-seconds: ${OTP_EXPIRATION_SECONDS:300}
+    max-attempts: ${OTP_MAX_ATTEMPTS:3}
+    resend-cooldown-seconds: ${OTP_RESEND_COOLDOWN_SECONDS:60}
+
+  pending-account:
+    expiration-seconds: ${PENDING_ACCOUNT_EXPIRATION_SECONDS:300}
+
+cloudinary:
+  cloud-name: ${CLOUDINARY_CLOUD_NAME}
+  api-key: ${CLOUDINARY_API_KEY}
+  api-secret: ${CLOUDINARY_API_SECRET}
+
+scalar:
+  path: ${SCALAR_PATH:/docs}
+  url: ${SCALAR_URL:/v3/api-docs}
+  enabled: ${SCALAR_ENABLED:true}
+
+# Logging
+logging:
+  level:
+    root: INFO
+    com.uit.buddy: DEBUG
+    org.springframework.web: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+    org.flywaydb: DEBUG
