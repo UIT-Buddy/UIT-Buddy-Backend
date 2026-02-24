@@ -4,7 +4,7 @@ public interface JwtUtils {
 
     String generateAccessToken(String mssv);
 
-    String generateRefreshToken(String mssv);
+    String generateRefreshToken(String mssv, boolean rememberMe);
 
     String getMssvFromToken(String token);
 

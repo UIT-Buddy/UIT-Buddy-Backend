@@ -55,9 +55,9 @@ public class UitClientImpl extends AbstractBaseClient implements UitClient {
 
     private Map<String, String> buildBaseParams(String wstoken, String function) {
         Map<String, String> params = new HashMap<>();
-        params.put("wstoken", wstoken);
-        params.put("wsfunction", function);
-        params.put("moodlewsrestformat", restFormat);
+        params.put(MoodleApiConstants.PARAM_WSTOKEN, wstoken);
+        params.put(MoodleApiConstants.PARAM_WSFUNCTION, function);
+        params.put(MoodleApiConstants.PARAM_MOODLEWSRESTFORMAT, restFormat);
         return params;
     }
 }

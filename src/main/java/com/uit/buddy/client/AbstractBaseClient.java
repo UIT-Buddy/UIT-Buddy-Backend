@@ -10,6 +10,7 @@ import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
+import java.lang.reflect.Array;
 import java.net.ConnectException;
 import java.net.SocketTimeoutException;
 import java.util.List;
@@ -44,10 +45,55 @@ public abstract class AbstractBaseClient {
     protected <T> List<T> getList(String path, Class<T> elementType, Map<String, String> queryParams,
             HttpHeaders headers) {
         String url = buildUrl(path, queryParams);
-        @SuppressWarnings("unchecked")
-        Class<T[]> arrayType = (Class<T[]>) java.lang.reflect.Array.newInstance(elementType, 0).getClass();
-        T[] array = executeRequest(url, HttpMethod.GET, new HttpEntity<>(headers), arrayType);
-        return array != null ? List.of(array) : List.of();
+
+        try {
+            log.info("[External Call] GET to: {}", url);
+
+            HttpHeaders finalHeaders = new HttpHeaders();
+            if (headers != null) {
+                finalHeaders.putAll(headers);
+            }
+            if (finalHeaders.getAccept().isEmpty()) {
+                finalHeaders.setAccept(List.of(MediaType.APPLICATION_JSON));
+            }
+
+            HttpEntity<?> entity = new HttpEntity<>(finalHeaders);
+
+            Object arrayInstance = Array.newInstance(elementType, 0);
+            Class<?> arrayClass = arrayInstance.getClass();
+
+            ResponseEntity<?> response = restTemplate.exchange(url, HttpMethod.GET, entity, arrayClass);
+            Object body = response.getBody();
+
+            if (body == null) {
+                return List.of();
+            }
+
+            validateResponse(body);
+
+            int length = Array.getLength(body);
+            List<T> result = new java.util.ArrayList<>(length);
+            for (int i = 0; i < length; i++) {
+                result.add(elementType.cast(Array.get(body, i)));
+            }
+            return result;
+
+        } catch (HttpClientErrorException e) {
+            log.error("[External Call Error] GET to {} - Client error: {}", url, e.getStatusCode());
+            throw mapClientError(e);
+        } catch (HttpServerErrorException e) {
+            log.error("[External Call Error] GET to {} - Server error: {}", url, e.getStatusCode());
+            throw new ExternalClientException(ExternalClientErrorCode.EXTERNAL_SERVICE_ERROR,
+                    "External service error: " + e.getStatusCode(), e);
+        } catch (ResourceAccessException e) {
+            log.error("[External Call Error] GET to {} - Connection error", url);
+            throw mapConnectionError(e);
+        } catch (ExternalClientException e) {
+            throw e;
+        } catch (Exception e) {
+            log.error("[External Call Error] GET to {} - Unexpected error: {}", url, e.getMessage());
+            throw new ExternalClientException(ExternalClientErrorCode.UNKNOWN_ERROR, "Unexpected error", e);
+        }
     }
 
     private <T> T executeRequest(String url, HttpMethod method, HttpEntity<?> entity, Class<T> responseType) {

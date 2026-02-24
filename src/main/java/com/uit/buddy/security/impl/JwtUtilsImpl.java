@@ -1,5 +1,6 @@
 package com.uit.buddy.security.impl;
 
+import com.uit.buddy.constant.RedisConstants;
 import com.uit.buddy.entity.redis.RefreshToken;
 import com.uit.buddy.repository.auth.RefreshTokenRepository;
 import com.uit.buddy.security.JwtUtils;
@@ -23,13 +24,11 @@ import java.util.function.Function;
 public class JwtUtilsImpl implements JwtUtils {
 
     private static final String CLAIM_TYPE = "token_type";
-    private static final String TYPE_ACCESS = "ACCESS_TOKEN";
-    private static final String TYPE_REFRESH = "REFRESH_TOKEN";
-    private static final String REFRESH_TOKEN_KEY_PATTERN = "refresh_token:*";
 
     private final SecretKey secretKey;
     private final long accessTokenExpiration;
     private final long refreshTokenExpiration;
+    private final long refreshTokenRememberMeExpiration;
     private final RefreshTokenRepository refreshTokenRepository;
     private final RedisTemplate<String, Object> redisTemplate;
     private final RedisScript<Long> revokeRefreshTokenScript;
@@ -39,6 +38,7 @@ public class JwtUtilsImpl implements JwtUtils {
             @Value("${app.jwt.secret}") String jwtSecret,
             @Value("${app.jwt.access-token-expiration}") long accessTokenExpiration,
             @Value("${app.jwt.refresh-token-expiration}") long refreshTokenExpiration,
+            @Value("${app.jwt.refresh-token-remember-me-expiration}") long refreshTokenRememberMeExpiration,
             RefreshTokenRepository refreshTokenRepository,
             RedisTemplate<String, Object> redisTemplate,
             RedisScript<Long> revokeRefreshTokenScript) {
@@ -46,6 +46,7 @@ public class JwtUtilsImpl implements JwtUtils {
         this.secretKey = Keys.hmacShaKeyFor(jwtSecret.getBytes(StandardCharsets.UTF_8));
         this.accessTokenExpiration = accessTokenExpiration;
         this.refreshTokenExpiration = refreshTokenExpiration;
+        this.refreshTokenRememberMeExpiration = refreshTokenRememberMeExpiration;
         this.refreshTokenRepository = refreshTokenRepository;
         this.redisTemplate = redisTemplate;
         this.revokeRefreshTokenScript = revokeRefreshTokenScript;
@@ -67,23 +68,24 @@ public class JwtUtilsImpl implements JwtUtils {
 
     @Override
     public String generateAccessToken(String mssv) {
-        return createToken(mssv, accessTokenExpiration, TYPE_ACCESS);
+        return createToken(mssv, accessTokenExpiration, RedisConstants.TOKEN_TYPE_ACCESS);
     }
 
     @Override
-    public String generateRefreshToken(String mssv) {
+    public String generateRefreshToken(String mssv, boolean rememberMe) {
         refreshTokenRepository.deleteByMssv(mssv);
 
-        String refreshToken = createToken(mssv, refreshTokenExpiration, TYPE_REFRESH);
+        long expiration = rememberMe ? refreshTokenRememberMeExpiration : refreshTokenExpiration;
+        String refreshToken = createToken(mssv, expiration, RedisConstants.TOKEN_TYPE_REFRESH);
 
         RefreshToken token = RefreshToken.builder()
                 .refreshToken(refreshToken)
                 .mssv(mssv)
-                .ttl(TimeUnit.MILLISECONDS.toSeconds(refreshTokenExpiration))
+                .ttl(TimeUnit.MILLISECONDS.toSeconds(expiration))
                 .build();
         refreshTokenRepository.save(token);
 
-        log.debug("Generated and saved refresh token for user");
+        log.debug("Generated and saved refresh token for user (rememberMe: {})", rememberMe);
         return refreshToken;
     }
 
@@ -98,7 +100,7 @@ public class JwtUtilsImpl implements JwtUtils {
         try {
             Long deletedCount = redisTemplate.execute(
                     revokeRefreshTokenScript,
-                    Collections.singletonList(REFRESH_TOKEN_KEY_PATTERN),
+                    Collections.singletonList(RedisConstants.REFRESH_TOKEN_KEY_PATTERN),
                     mssv);
             log.info("All sessions revoked for MSSV: {} (deleted {} tokens)", mssv, deletedCount);
         } catch (Exception e) {

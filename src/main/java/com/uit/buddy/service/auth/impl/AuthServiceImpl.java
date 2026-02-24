@@ -201,7 +201,7 @@ public class AuthServiceImpl implements AuthService {
         pendingAccountRepository.delete(pendingAccount);
 
         String accessToken = jwtUtils.generateAccessToken(request.mssv());
-        String refreshToken = jwtUtils.generateRefreshToken(request.mssv());
+        String refreshToken = jwtUtils.generateRefreshToken(request.mssv(), false);
 
         StudentResponse studentResponse = studentMapper.toStudentResponse(student);
 
@@ -220,8 +220,10 @@ public class AuthServiceImpl implements AuthService {
             throw new AuthException(AuthErrorCode.INVALID_CREDENTIALS);
         }
 
+        boolean rememberMe = request.rememberMe() != null && request.rememberMe();
+
         String accessToken = jwtUtils.generateAccessToken(request.mssv());
-        String refreshToken = jwtUtils.generateRefreshToken(request.mssv());
+        String refreshToken = jwtUtils.generateRefreshToken(request.mssv(), rememberMe);
 
         StudentResponse studentResponse = studentMapper.toStudentResponse(student);
 

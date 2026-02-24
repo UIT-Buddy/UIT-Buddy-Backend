@@ -76,6 +76,7 @@ app:
     secret: ${JWT_SECRET}
     access-token-expiration: ${JWT_ACCESS_TOKEN_EXPIRATION:900000}
     refresh-token-expiration: ${JWT_REFRESH_TOKEN_EXPIRATION:604800000}
+    refresh-token-remember-me-expiration: ${JWT_REFRESH_TOKEN_REMEMBER_ME_EXPIRATION:2592000000}
 
   encryption:
     secret: ${ENCRYPTION_SECRET}

@@ -2,6 +2,7 @@ package com.uit.buddy.client.impl;
 
 import com.uit.buddy.client.AbstractBaseClient;
 import com.uit.buddy.client.CometChatClient;
+import com.uit.buddy.constant.CometChatApiConstants;
 import com.uit.buddy.dto.request.client.CometChatUserRequest;
 import com.uit.buddy.dto.response.client.CometChatUserResponse;
 import com.uit.buddy.exception.client.ExternalClientErrorCode;
@@ -34,18 +35,14 @@ public class CometChatClientImpl extends AbstractBaseClient implements CometChat
     public CometChatUserResponse createUser(CometChatUserRequest request) {
         try {
             log.info("[CometChat] Creating user with uid: {}", request.uid());
-            log.debug("[CometChat] Request object type: {}", request.getClass().getName());
-            log.debug("[CometChat] Request details - uid: {}, name: {}, avatar: {}",
-                    request.uid(), request.name(), request.avatar());
 
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.APPLICATION_JSON);
-            headers.set("apiKey", apiKey);
-            headers.set("appId", appId);
+            HttpHeaders headers = createHeaders();
 
-            log.debug("[CometChat] Headers: {}", headers);
-
-            CometChatUserResponse response = post("/users", request, CometChatUserResponse.class, headers);
+            CometChatUserResponse response = post(
+                    CometChatApiConstants.USERS_ENDPOINT,
+                    request,
+                    CometChatUserResponse.class,
+                    headers);
 
             if (response == null) {
                 log.error("[CometChat] Received null response when creating user");
@@ -73,11 +70,10 @@ public class CometChatClientImpl extends AbstractBaseClient implements CometChat
         try {
             log.info("[CometChat] Deleting user with uid: {}", uid);
 
-            HttpHeaders headers = new HttpHeaders();
-            headers.set("apiKey", apiKey);
-            headers.set("appId", appId);
+            HttpHeaders headers = createHeaders();
+            String endpoint = String.format(CometChatApiConstants.USER_BY_UID_ENDPOINT, uid);
 
-            delete("/users/" + uid, headers);
+            delete(endpoint, headers);
 
             log.info("[CometChat] Successfully deleted user: {}", uid);
 
@@ -86,5 +82,13 @@ public class CometChatClientImpl extends AbstractBaseClient implements CometChat
         } catch (Exception e) {
             log.warn("[CometChat] Unexpected error deleting user {}: {}", uid, e.getMessage());
         }
+    }
+
+    private HttpHeaders createHeaders() {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.set(CometChatApiConstants.API_KEY_HEADER, apiKey);
+        headers.set(CometChatApiConstants.APP_ID_HEADER, appId);
+        return headers;
     }
 }
