@@ -1,22 +1,23 @@
 package com.uit.buddy.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.web.client.RestTemplate;
 import org.springframework.web.servlet.LocaleResolver;
 import org.springframework.web.servlet.i18n.AcceptHeaderLocaleResolver;
-import static java.nio.charset.StandardCharsets.UTF_8;
 
 import java.util.Locale;
 import java.util.TimeZone;
 
 @Configuration
 @Slf4j
+@RequiredArgsConstructor
 public class AppConfig {
 
     @Bean
@@ -30,21 +31,8 @@ public class AppConfig {
 
     @Bean
     public ObjectMapper objectMapper() {
-        return new ObjectMapper();
-    }
-
-    @Bean
-    public RestTemplate restTemplate() {
-        RestTemplate restTemplate = new RestTemplate();
-        restTemplate.getInterceptors().add((request, body, execution) -> {
-            if (body != null && body.length > 0) {
-                log.debug("=== [OUTBOUND REQUEST] ===");
-                log.debug("Method: {}, URI: {}", request.getMethod(), request.getURI());
-                log.debug("Body: {}", new String(body, UTF_8));
-                log.debug("==========================");
-            }
-            return execution.execute(request, body);
-        });
-        return restTemplate;
+        ObjectMapper mapper = new ObjectMapper();
+        mapper.registerModule(new JavaTimeModule());
+        return mapper;
     }
 }

@@ -3,44 +3,33 @@ server:
 
 spring:
   datasource:
-    url: ${DEV_DATABASE_URL:jdbc:postgresql://localhost:5433/buddy_db}
-    username: ${DEV_DATABASE_USERNAME:postgres}
-    password: ${DEV_DATABASE_PASSWORD:postgres123}
+    url: ${DEV_DATABASE_URL}
+    username: ${DEV_DATABASE_USERNAME}
+    password: ${DEV_DATABASE_PASSWORD}
     driver-class-name: org.postgresql.Driver
     hikari:
       maximum-pool-size: 20
       connection-timeout: 5000
-      max-lifetime: 50000
 
   flyway:
     enabled: true
-    baseline-on-migrate: true
-    baseline-version: 0
     locations: classpath:db/migration
-    validate-on-migrate: false
-    clean-disabled: true
-    default-schema: public
-    schemas: public
+    baseline-on-migrate: true
 
   jpa:
     hibernate:
       ddl-auto: none
-    show-sql: true
+    show-sql: false
     open-in-view: false
-    properties:
-      hibernate:
-        format_sql: true
-        dialect: org.hibernate.dialect.PostgreSQLDialect
 
   data:
     redis:
       host: ${DEV_REDIS_HOST:localhost}
       port: ${DEV_REDIS_PORT:6379}
-      timeout: 60000
 
   mail:
     host: ${DEV_MAIL_HOST}
-    port: ${DEV_MAIL_PORT:587}
+    port: ${DEV_MAIL_PORT}
     username: ${DEV_MAIL_USERNAME}
     password: ${DEV_MAIL_PASSWORD}
     properties:
@@ -61,6 +50,9 @@ spring:
 app:
   default-locale: ${APP_DEFAULT_LOCALE:vi}
   default-timezone: ${APP_DEFAULT_TIMEZONE:Asia/Ho_Chi_Minh}
+
+  openapi:
+    docs-url: ${APP_OPENAPI_DOCS_URL:http://localhost:8080}
 
   uit:
     api-url: ${UIT_API_URL:https://courses.uit.edu.vn}
@@ -91,6 +83,10 @@ app:
   pending-account:
     expiration-seconds: ${PENDING_ACCOUNT_EXPIRATION_SECONDS:300}
 
+  firebase:
+    config-path: ${APP_CONFIG_PATH}
+    app-name: ${APP_NAME}
+
 cloudinary:
   cloud-name: ${CLOUDINARY_CLOUD_NAME}
   api-key: ${CLOUDINARY_API_KEY}
@@ -106,7 +102,4 @@ logging:
   level:
     root: INFO
     com.uit.buddy: DEBUG
-    org.springframework.web: DEBUG
-    org.hibernate.SQL: DEBUG
-    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
     org.flywaydb: DEBUG

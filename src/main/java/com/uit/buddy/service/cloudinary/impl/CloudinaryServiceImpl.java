@@ -28,20 +28,23 @@ public class CloudinaryServiceImpl implements CloudinaryService {
 
     @Override
     public String uploadAvatarFromUrl(String imageUrl, String publicId) {
-        log.info("Uploading avatar directly from URL for MSSV: {}", publicId);
         return executeUpload(imageUrl, publicId);
     }
 
     @Override
     public String createDefaultAvatar(String mssv) {
-        log.info("Creating default avatar copy for MSSV: {}", mssv);
+        return executeUpload(CloudinaryConstants.DEFAULT_AVATAR_URL, mssv);
+    }
 
+    @Override
+    public void deleteAvatar(String publicId) {
         try {
-            return executeUpload(CloudinaryConstants.DEFAULT_AVATAR_URL, mssv);
-
+            log.info("[Cloudinary Service] Initiating cleanup for publicId: {}", publicId);
+            String fullPath = CloudinaryConstants.FOLDER_AVATARS + "/" + publicId;
+            Map<?, ?> result = cloudinary.uploader().destroy(fullPath, Map.of());
+            log.info("[Cloudinary Service] Cleanup result for {}: {}", publicId, result.get("result"));
         } catch (Exception e) {
-            log.error("Failed to create default avatar copy for MSSV: {}. Falling back to constant URL.", mssv);
-            return CloudinaryConstants.DEFAULT_AVATAR_URL;
+            log.error("[Cloudinary Service] Failed to delete image {}: {}", publicId, e.getMessage());
         }
     }
 

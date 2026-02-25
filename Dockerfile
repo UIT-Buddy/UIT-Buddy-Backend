@@ -1,17 +1,23 @@
-# Build stage
-FROM maven:3.9-eclipse-temurin-25 AS build
+FROM maven:3.9-eclipse-temurin-25 AS builder
 
-COPY src /home/app/src
-COPY pom.xml /home/app
+WORKDIR /app
 
-# Build and list the target directory to verify JAR creation
-RUN mvn -f /home/app/pom.xml clean package -DskipTests=true && ls -la /home/app/target/
+COPY pom.xml .
+RUN mvn dependency:go-offline -B
+COPY src ./src
+RUN mvn clean package -DskipTests -B
 
-# Package stage
-FROM eclipse-temurin:25-jre
+RUN java -Djarmode=layertools -jar target/*.jar extract
 
-COPY --from=build /home/app/target/buddy-0.0.1-SNAPSHOT.jar /usr/local/lib/app.jar
+FROM eclipse-temurin:25-jre AS runtime
 
-EXPOSE 8080
+WORKDIR /app
 
-ENTRYPOINT ["java", "-jar", "/usr/local/lib/app.jar"]
+COPY --from=builder /app/dependencies/ ./
+COPY --from=builder /app/spring-boot-loader/ ./
+COPY --from=builder /app/snapshot-dependencies/ ./
+COPY --from=builder /app/application/ ./
+
+EXPOSE 8000
+
+ENTRYPOINT ["java", "org.springframework.boot.loader.launch.JarLauncher"]
