@@ -37,6 +37,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/auth/reset-password").permitAll()
                         .requestMatchers("/api/auth/refresh-token").permitAll()
                         .requestMatchers("/api/auth/signout").authenticated()
+                        .requestMatchers("/api/notifications/send").permitAll()
                         .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/docs/**", "/scalar/**", "/scalar.html")
                         .permitAll()
                         .anyRequest().authenticated())

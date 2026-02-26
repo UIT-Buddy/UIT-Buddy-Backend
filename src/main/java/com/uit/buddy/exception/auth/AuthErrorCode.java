@@ -23,7 +23,7 @@ public enum AuthErrorCode {
     // Password errors
     WEAK_PASSWORD("AUTH_009", "Password does not meet security requirements", HttpStatus.BAD_REQUEST),
     PASSWORD_MISMATCH("AUTH_010", "Passwords do not match", HttpStatus.BAD_REQUEST),
-    PENDING_ACCOUNT_NOT_FOUND("AUTH_011", "Pending account not found or expired", HttpStatus.NOT_FOUND),
+    PENDING_ACCOUNT_NOT_FOUND("AUTH_011", "MSSV doens't not match WsToken", HttpStatus.NOT_FOUND),
 
     // OTP errors
     OTP_EXPIRED("AUTH_012", "OTP has expired", HttpStatus.BAD_REQUEST),
