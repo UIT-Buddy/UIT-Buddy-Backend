@@ -48,7 +48,4 @@ public class Student extends AbstractAuditEntity {
 
     @Column(name = "encrypted_wstoken", length = 512)
     private String encryptedWstoken;
-
-    @Column(name = "fcm_token", length = 255)
-    private String fcmToken;
 }

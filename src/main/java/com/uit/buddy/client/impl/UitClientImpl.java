@@ -45,7 +45,6 @@ public class UitClientImpl extends AbstractBaseClient implements UitClient {
     public SiteInfoResponse fetchSiteInfo(String wstoken) {
         Map<String, String> queryParams = buildBaseParams(wstoken, MoodleApiConstants.FUNCTION_GET_SITE_INFO);
         SiteInfoResponse response = get(moodleServerPath, SiteInfoResponse.class, queryParams, null);
-        validateResponse(response);
         return response;
     }
 
@@ -61,7 +60,6 @@ public class UitClientImpl extends AbstractBaseClient implements UitClient {
                 queryParams,
                 null);
 
-        validateResponse(response);
         return response;
     }
 

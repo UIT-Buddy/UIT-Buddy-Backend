@@ -11,6 +11,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.ClassPathResource;
 
 import java.io.IOException;
+import java.io.InputStream;
 
 @Configuration
 @Slf4j
@@ -23,24 +24,31 @@ public class FcmConfig {
     private String appName;
 
     @Bean
-    public FirebaseMessaging firebaseMessaging() throws IOException {
-        FirebaseApp firebaseApp = FirebaseApp.getApps().stream()
+    public FirebaseMessaging firebaseMessaging(FirebaseApp firebaseApp) {
+        return FirebaseMessaging.getInstance(firebaseApp);
+    }
+
+    @Bean
+    public FirebaseApp firebaseApp() throws IOException {
+        return FirebaseApp.getApps().stream()
                 .filter(app -> app.getName().equals(appName))
                 .findFirst()
                 .orElseGet(() -> {
                     try {
-                        log.info("[Firebase] Initializing new Firebase App: {}", appName);
+                        log.info("[Firebase] Initializing Firebase App: {} from resources: {}", appName, configPath);
+
+                        InputStream serviceAccount = new ClassPathResource(configPath).getInputStream();
+
                         FirebaseOptions options = FirebaseOptions.builder()
-                                .setCredentials(GoogleCredentials.fromStream(
-                                        new ClassPathResource(configPath).getInputStream()))
+                                .setCredentials(GoogleCredentials.fromStream(serviceAccount))
                                 .build();
+
                         return FirebaseApp.initializeApp(options, appName);
                     } catch (IOException e) {
-                        log.error("[Firebase] Error initializing Firebase: {}", e.getMessage());
-                        throw new RuntimeException(e);
+                        log.error("[Firebase] Critical: Could not read service account file at {}. Error: {}",
+                                configPath, e.getMessage());
+                        throw new RuntimeException("Firebase initialization failed", e);
                     }
                 });
-
-        return FirebaseMessaging.getInstance(firebaseApp);
     }
 }
