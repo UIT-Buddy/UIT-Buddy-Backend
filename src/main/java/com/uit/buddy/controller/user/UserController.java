@@ -66,4 +66,12 @@ public class UserController extends AbstractBaseController {
 
         return successSingle(null, "FCM token synced successfully!");
     }
+    @GetMapping("/{mssv}")
+    @Operation(summary = "Get other student profile", description = "Fetch detailed information of other student")
+    public ResponseEntity<SingleResponse<UserResponse>> getOtherStudentProfile(@PathVariable String mssv)
+    {
+        log.info("[User Controller] Fetching profile for student has mssv: {}", mssv);
+        UserResponse response = userService.getMyProfile(mssv);
+        return successSingle(response, "User profile retrieved successfully");
+    }
 }
