@@ -28,11 +28,11 @@ public class AuthController extends AbstractBaseController {
 
     private final AuthService authService;
 
-    @PostMapping("/signup/validate")
+    @PostMapping("/signup/init")
     @Operation(summary = "Validate Moodle Token", description = "Check if the provided wstoken is valid and extract student info")
     public ResponseEntity<SingleResponse<ValidateTokenResponse>> validateToken(
             @Valid @RequestBody ValidateTokenRequest request) {
-        ValidateTokenResponse response = authService.validateToken(request);
+        ValidateTokenResponse response = authService.initSignUp(request);
         return successSingle(response, "Token validated successfully. Please complete signup within 5 minutes.");
     }
 

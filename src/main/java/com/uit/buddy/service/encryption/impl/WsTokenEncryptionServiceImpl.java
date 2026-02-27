@@ -1,5 +1,7 @@
 package com.uit.buddy.service.encryption.impl;
 
+import com.uit.buddy.exception.system.SystemErrorCode;
+import com.uit.buddy.exception.system.SystemException;
 import com.uit.buddy.service.encryption.WsTokenEncryptionService;
 import com.uit.buddy.util.EncryptionUtils;
 import lombok.RequiredArgsConstructor;
@@ -16,7 +18,7 @@ public class WsTokenEncryptionServiceImpl implements WsTokenEncryptionService {
     @Override
     public String encryptWstoken(String plainWstoken) {
         if (plainWstoken == null || plainWstoken.isBlank()) {
-            throw new IllegalArgumentException("Wstoken cannot be null or empty");
+            throw new SystemException(SystemErrorCode.INVALID_PARAMETER, "WsToken cannot be empty");
         }
 
         log.debug("Encrypting wstoken");
@@ -26,7 +28,7 @@ public class WsTokenEncryptionServiceImpl implements WsTokenEncryptionService {
     @Override
     public String decryptWstoken(String encryptedWstoken) {
         if (encryptedWstoken == null || encryptedWstoken.isBlank()) {
-            throw new IllegalArgumentException("Encrypted wstoken cannot be null or empty");
+            throw new SystemException(SystemErrorCode.INVALID_PARAMETER, "WsToken cannot be empty");
         }
 
         log.debug("Decrypting wstoken");

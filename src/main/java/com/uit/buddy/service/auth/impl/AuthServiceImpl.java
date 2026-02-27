@@ -33,6 +33,7 @@ import com.uit.buddy.security.JwtUtils;
 import com.uit.buddy.service.auth.AuthService;
 import com.uit.buddy.service.email.EmailService;
 import com.uit.buddy.service.encryption.WsTokenEncryptionService;
+import com.uit.buddy.service.fcm.FcmService;
 import com.uit.buddy.service.cloudinary.CloudinaryService;
 import com.uit.buddy.util.OtpUtils;
 import lombok.RequiredArgsConstructor;
@@ -41,6 +42,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.MailException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestClientException;
 
@@ -65,6 +67,7 @@ public class AuthServiceImpl implements AuthService {
     private final StudentMapper studentMapper;
     private final EmailService emailService;
     private final WsTokenEncryptionService wsTokenEncryptionService;
+    private final FcmService fcmService;
     private final OtpUtils otpUtils;
     private final CloudinaryService cloudinaryService;
 
@@ -82,17 +85,16 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     @Transactional
-    public ValidateTokenResponse validateToken(ValidateTokenRequest request) {
+    public ValidateTokenResponse initSignUp(ValidateTokenRequest request) {
         log.info("Validating token for authentication");
 
-        SiteInfoResponse siteInfo = fetchSiteInfo(request.wstoken());
-
+        SiteInfoResponse siteInfo = validateMoodleToken(request.wstoken());
         String mssv = siteInfo.username();
-        if (mssv == null || mssv.isBlank()) {
-            throw new AuthException(AuthErrorCode.INVALID_CREDENTIALS, "Cannot extract MSSV from Moodle response");
-        }
 
-        if (studentRepository.existsById(mssv)) {
+        Student existingStudent = studentRepository.findById(mssv).orElse(null);
+        if (existingStudent != null) {
+            log.info("Student {} already exists, silent syncing Moodle data", mssv);
+            syncExistingStudent(existingStudent, request.wstoken(), siteInfo.fullname());
             throw new AuthException(AuthErrorCode.STUDENT_ALREADY_EXISTS);
         }
 
@@ -150,14 +152,12 @@ public class AuthServiceImpl implements AuthService {
                 .orElseThrow(() -> new AuthException(AuthErrorCode.PENDING_ACCOUNT_NOT_FOUND));
 
         if (!pendingAccount.getSignupToken().equals(request.signupToken())) {
-            log.error("SignupToken mismatch for MSSV: {}", request.mssv());
             throw new AuthException(
                     AuthErrorCode.INVALID_CREDENTIALS,
                     "Invalid signup token. Please validate your token again.");
         }
 
         if (!pendingAccount.getMssv().equals(request.mssv())) {
-            log.error("MSSV mismatch in pending account", request.mssv());
             throw new AuthException(
                     AuthErrorCode.INVALID_CREDENTIALS,
                     "Invalid signup request. MSSV does not match.");
@@ -190,6 +190,9 @@ public class AuthServiceImpl implements AuthService {
 
         try {
             studentRepository.save(student);
+            if (request.fcmToken() != null && !request.fcmToken().isBlank()) {
+                fcmService.syncDeviceToken(request.mssv(), request.fcmToken());
+            }
             log.info("Successfully created student: {} with homeClassCode: {}", request.mssv(), homeClassCode);
         } catch (Exception e) {
             log.error("Failed to save student: {}", request.mssv(), e);
@@ -235,6 +238,20 @@ public class AuthServiceImpl implements AuthService {
 
         if (!passwordEncoder.matches(request.password(), student.getPassword())) {
             throw new AuthException(AuthErrorCode.INVALID_CREDENTIALS);
+        }
+
+        String decryptedWstoken = wsTokenEncryptionService.decryptWstoken(student.getEncryptedWstoken());
+
+        try {
+            uitClient.fetchSiteInfo(decryptedWstoken);
+        } catch (ExternalClientException e) {
+            log.warn("Wstoken invalid for MSSV: {}. User needs to re-authenticate with Moodle", request.mssv());
+            throw new AuthException(AuthErrorCode.INVALID_WSTOKEN,
+                    "Your Moodle token has expired. Please re-authenticate.");
+        }
+
+        if (request.fcmToken() != null && !request.fcmToken().isBlank()) {
+            fcmService.syncDeviceToken(request.mssv(), request.fcmToken());
         }
 
         boolean rememberMe = request.rememberMe() != null && request.rememberMe();
@@ -475,5 +492,23 @@ public class AuthServiceImpl implements AuthService {
             throw new AuthException(AuthErrorCode.EXTERNAL_SERVICE_ERROR,
                     "Failed to retrieve student information from Moodle");
         }
+    }
+
+    private SiteInfoResponse validateMoodleToken(String wstoken) {
+        SiteInfoResponse siteInfo = fetchSiteInfo(wstoken);
+
+        if (siteInfo.username() == null || siteInfo.username().isBlank()) {
+            throw new AuthException(AuthErrorCode.INVALID_CREDENTIALS, "Cannot extract MSSV from Moodle response");
+        }
+
+        return siteInfo;
+    }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void syncExistingStudent(Student student, String wstoken, String fullName) {
+        student.setEncryptedWstoken(wsTokenEncryptionService.encryptWstoken(wstoken));
+        student.setFullName(fullName);
+        studentRepository.saveAndFlush(student);
+        log.info("[Sync] Successfully committed new token for existing student: {}", student.getMssv());
     }
 }

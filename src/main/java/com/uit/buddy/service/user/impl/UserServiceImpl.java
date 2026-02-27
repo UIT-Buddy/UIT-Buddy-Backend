@@ -5,8 +5,11 @@ import com.uit.buddy.dto.response.user.UserResponse;
 import com.uit.buddy.entity.user.Student;
 import com.uit.buddy.exception.auth.AuthErrorCode;
 import com.uit.buddy.exception.auth.AuthException;
+import com.uit.buddy.exception.user.UserErrorCode;
+import com.uit.buddy.exception.user.UserException;
 import com.uit.buddy.mapper.user.UserMapper;
 import com.uit.buddy.repository.user.StudentRepository;
+import com.uit.buddy.service.cloudinary.CloudinaryService;
 import com.uit.buddy.service.user.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -14,6 +17,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 @Service
 @RequiredArgsConstructor
@@ -22,6 +26,7 @@ public class UserServiceImpl implements UserService {
 
     private final StudentRepository studentRepository;
     private final UserMapper userMapper;
+    private final CloudinaryService cloudinaryService;
 
     @Override
     @Transactional(readOnly = true)
@@ -29,7 +34,7 @@ public class UserServiceImpl implements UserService {
         log.info("[User Service] Fetching profile for MSSV: {}", mssv);
 
         Student student = studentRepository.findById(mssv)
-                .orElseThrow(() -> new AuthException(AuthErrorCode.STUDENT_NOT_FOUND));
+                .orElseThrow(() -> new UserException(UserErrorCode.STUDENT_NOT_FOUND));
 
         return userMapper.toUserResponse(student);
     }
@@ -40,12 +45,7 @@ public class UserServiceImpl implements UserService {
         log.info("[User Service] Updating profile for MSSV: {}", mssv);
 
         Student student = studentRepository.findById(mssv)
-                .orElseThrow(() -> new AuthException(AuthErrorCode.STUDENT_NOT_FOUND));
-
-        if (request.avatarUrl() != null) {
-            log.debug("[User Service] Updating avatarUrl for MSSV: {}", mssv);
-            student.setAvatarUrl(request.avatarUrl());
-        }
+                .orElseThrow(() -> new UserException(UserErrorCode.STUDENT_NOT_FOUND));
 
         if (request.bio() != null) {
             log.debug("[User Service] Updating bio for MSSV: {}", mssv);
@@ -57,4 +57,26 @@ public class UserServiceImpl implements UserService {
 
         return userMapper.toUserResponse(updatedStudent);
     }
+
+    @Override
+    @Transactional
+    public String uploadAvatar(String mssv, MultipartFile file) {
+        log.info("[User Service] Uploading avatar for MSSV: {}", mssv);
+
+        if (file == null || file.isEmpty()) {
+            throw new UserException(UserErrorCode.FILE_EMPTY);
+        }
+
+        Student student = studentRepository.findById(mssv)
+                .orElseThrow(() -> new UserException(UserErrorCode.STUDENT_NOT_FOUND));
+
+        String avatarUrl = cloudinaryService.uploadAvatar(file, mssv);
+
+        student.setAvatarUrl(avatarUrl);
+        studentRepository.save(student);
+
+        log.info("[User Service] Successfully uploaded avatar for MSSV: {}", mssv);
+        return avatarUrl;
+    }
+
 }

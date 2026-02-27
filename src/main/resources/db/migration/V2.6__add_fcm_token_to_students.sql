@@ -1,1 +1,0 @@
-ALTER TABLE students ADD COLUMN fcm_token VARCHAR(255);

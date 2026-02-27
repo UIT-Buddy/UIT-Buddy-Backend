@@ -34,24 +34,18 @@ public class CometChatClientImpl extends AbstractBaseClient implements CometChat
 
     @Override
     public CometChatUserResponse createUser(CometChatUserRequest request) {
-        log.debug("[CometChat] Request object: {}", request);
-
         CometChatUserResponse response = post(
                 CometChatApiConstants.USERS_ENDPOINT,
                 request,
                 CometChatUserResponse.class,
                 createHeaders());
-
-        log.info("[CometChat] Successfully created user: {}", response.uid());
         return response;
     }
 
     @Override
     public void deleteUser(String uid) {
-        log.info("[CometChat] Deleting user with uid: {}", uid);
         String endpoint = String.format(CometChatApiConstants.USER_BY_UID_ENDPOINT, uid);
         delete(endpoint, createHeaders());
-        log.info("[CometChat] Successfully deleted user: {}", uid);
     }
 
     private HttpHeaders createHeaders() {

@@ -9,7 +9,7 @@ import com.uit.buddy.dto.response.auth.ValidateTokenResponse;
 
 public interface AuthService {
 
-    ValidateTokenResponse validateToken(ValidateTokenRequest request);
+    ValidateTokenResponse initSignUp(ValidateTokenRequest request);
 
     AuthResponse completeSignUp(CompleteSignUpRequest request);
 

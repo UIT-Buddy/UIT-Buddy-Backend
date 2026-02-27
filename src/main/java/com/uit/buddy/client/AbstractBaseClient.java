@@ -7,10 +7,14 @@ import com.uit.buddy.exception.client.ExternalClientException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpRequest;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
+import org.springframework.http.client.ClientHttpResponse;
 import org.springframework.web.client.RestClient;
 
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 
@@ -25,8 +29,11 @@ public abstract class AbstractBaseClient {
         this.objectMapper = objectMapper;
     }
 
+    protected void validateResponse(Object response) {
+    }
+
     protected <T> T get(String path, Class<T> responseType, Map<String, String> queryParams, HttpHeaders headers) {
-        return restClient.get()
+        T response = restClient.get()
                 .uri(uriBuilder -> {
                     uriBuilder.path(path);
                     if (queryParams != null)
@@ -40,35 +47,28 @@ public abstract class AbstractBaseClient {
                 .retrieve()
                 .onStatus(HttpStatusCode::isError, this::handleErrorResponse)
                 .body(responseType);
+
+        validateResponse(response);
+        return response;
     }
 
     protected <T> T post(String path, Object body, Class<T> responseType, HttpHeaders headers) {
-        log.debug("[HTTP POST] URL: {}, Body: {}, Body Class: {}",
-                path, body, body != null ? body.getClass().getName() : "null");
+        String jsonBody = serializeBody(body);
 
-        String jsonBody;
-        try {
-            jsonBody = objectMapper.writeValueAsString(body);
-            log.debug("[HTTP POST] Serialized JSON body: {}", jsonBody);
-        } catch (JsonProcessingException e) {
-            log.error("[HTTP POST] Failed to serialize body: {}", e.getMessage());
-            throw new ExternalClientException(ExternalClientErrorCode.BAD_REQUEST,
-                    "Failed to serialize request body");
-        }
-
-        return restClient.post()
+        T response = restClient.post()
                 .uri(path)
                 .contentType(MediaType.APPLICATION_JSON)
                 .headers(h -> {
-                    if (headers != null) {
+                    if (headers != null)
                         h.putAll(headers);
-                        log.debug("[HTTP POST] Headers: {}", headers);
-                    }
                 })
                 .body(jsonBody)
                 .retrieve()
                 .onStatus(HttpStatusCode::isError, this::handleErrorResponse)
                 .body(responseType);
+
+        validateResponse(response);
+        return response;
     }
 
     protected void delete(String path, HttpHeaders headers) {
@@ -87,7 +87,7 @@ public abstract class AbstractBaseClient {
             ParameterizedTypeReference<List<T>> typeReference,
             Map<String, String> queryParams,
             HttpHeaders headers) {
-        return restClient.get()
+        List<T> response = restClient.get()
                 .uri(uriBuilder -> {
                     uriBuilder.path(path);
                     if (queryParams != null)
@@ -102,52 +102,60 @@ public abstract class AbstractBaseClient {
                 .retrieve()
                 .onStatus(HttpStatusCode::isError, this::handleErrorResponse)
                 .body(typeReference);
+
+        validateResponse(response);
+        return response;
     }
 
-    private void handleErrorResponse(org.springframework.http.HttpRequest request,
-            org.springframework.http.client.ClientHttpResponse response) throws java.io.IOException {
-        HttpStatusCode status = response.getStatusCode();
+    private String serializeBody(Object body) {
+        try {
+            return objectMapper.writeValueAsString(body);
+        } catch (JsonProcessingException e) {
+            log.error("[External Call] Serialization failed: {}", e.getMessage());
+            throw new ExternalClientException(ExternalClientErrorCode.BAD_REQUEST, "Failed to serialize request body");
+        }
+    }
 
-        // Read response body for detailed error information
-        String responseBody = "";
+    private void handleErrorResponse(HttpRequest request, ClientHttpResponse response) throws IOException {
+        HttpStatusCode status = response.getStatusCode();
+        String responseBody = readBody(response);
+
+        log.error("[External Call Error] {} {} - Status: {} - Body: {}",
+                request.getMethod(), request.getURI(), status, responseBody);
+
+        String errorMessage = mapErrorMessage(status, responseBody);
+        throw mapToException(status, errorMessage);
+    }
+
+    private String readBody(ClientHttpResponse response) {
         try {
             byte[] bodyBytes = response.getBody().readAllBytes();
-            if (bodyBytes != null && bodyBytes.length > 0) {
-                responseBody = new String(bodyBytes, java.nio.charset.StandardCharsets.UTF_8);
-                log.error("[External Call Error] {} {} - Status: {} - Response Body: {}",
-                        request.getMethod(), request.getURI(), status, responseBody);
-            } else {
-                log.error("[External Call Error] {} {} - Status: {} - Empty response body",
-                        request.getMethod(), request.getURI(), status);
-            }
-        } catch (Exception e) {
-            log.error("[External Call Error] {} {} - Status: {} - Failed to read body: {}",
-                    request.getMethod(), request.getURI(), status, e.getMessage());
+            return (bodyBytes.length > 0) ? new String(bodyBytes, StandardCharsets.UTF_8) : "";
+        } catch (IOException e) {
+            return "Could not read response body";
         }
+    }
 
-        String errorMessage = switch (status.value()) {
-            case 400 -> {
-                if (responseBody != null && !responseBody.isEmpty()) {
-                    yield responseBody;
-                }
-                yield "Bad request from external service";
-            }
+    private String mapErrorMessage(HttpStatusCode status, String responseBody) {
+        if (status.value() == 400 && responseBody != null && !responseBody.isEmpty()) {
+            return responseBody;
+        }
+        return switch (status.value()) {
             case 401 -> "Unauthorized access to external service";
             case 403 -> "Access forbidden to external service";
             case 404 -> "External resource not found";
             default -> "External service error: " + status;
         };
-
-        throw switch (status.value()) {
-            case 400 -> new ExternalClientException(ExternalClientErrorCode.BAD_REQUEST, errorMessage);
-            case 401 -> new ExternalClientException(ExternalClientErrorCode.UNAUTHORIZED_REQUEST, errorMessage);
-            case 403 -> new ExternalClientException(ExternalClientErrorCode.FORBIDDEN_REQUEST, errorMessage);
-            case 404 -> new ExternalClientException(ExternalClientErrorCode.NOT_FOUND, errorMessage);
-            default -> new ExternalClientException(ExternalClientErrorCode.EXTERNAL_SERVICE_ERROR, errorMessage);
-        };
     }
 
-    protected void validateResponse(Object response) {
-
+    private ExternalClientException mapToException(HttpStatusCode status, String message) {
+        ExternalClientErrorCode errorCode = switch (status.value()) {
+            case 400 -> ExternalClientErrorCode.BAD_REQUEST;
+            case 401 -> ExternalClientErrorCode.UNAUTHORIZED_REQUEST;
+            case 403 -> ExternalClientErrorCode.FORBIDDEN_REQUEST;
+            case 404 -> ExternalClientErrorCode.NOT_FOUND;
+            default -> ExternalClientErrorCode.EXTERNAL_SERVICE_ERROR;
+        };
+        return new ExternalClientException(errorCode, message);
     }
 }
