@@ -1,5 +1,5 @@
 MVN := .\mvnw.cmd
-DOCKER_COMPOSE := docker compose
+DOCKER_COMPOSE := podman compose
 
 .PHONY: dev up down restart build logs db-shell redis-shell clean
 
