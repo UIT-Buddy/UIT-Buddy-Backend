@@ -37,4 +37,5 @@ build/
 
 ### Firebase ###
 **/firebase/*.json
+*.json
 firebase-adminsdk-*.json
