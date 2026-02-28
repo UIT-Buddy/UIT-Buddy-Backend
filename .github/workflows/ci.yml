@@ -31,7 +31,10 @@ jobs:
           cache: maven
 
       - name: Grant execute permission for mvnw
-        run: sed -i 's/\r$//' mvnw && chmod +x mvnw
+        run: |
+          sudo apt-get install -y dos2unix
+          dos2unix mvnw
+          chmod +x mvnw
 
       - name: Build and Test with Maven
         run: ./mvnw test -Dtest="OtpUtilsTest,EncryptionUtilsTest" -DfailIfNoTests=false
@@ -68,7 +71,10 @@ jobs:
           cache: maven
 
       - name: Grant execute permission for mvnw
-        run: sed -i 's/\r$//' mvnw && chmod +x mvnw
+        run: |
+          sudo apt-get install -y dos2unix
+          dos2unix mvnw
+          chmod +x mvnw
 
       - name: Build JAR with Maven
         run: ./mvnw clean package -DskipTests

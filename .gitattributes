@@ -1,7 +1,10 @@
-# Ép các file script luôn dùng LF để không bị lỗi trên Docker/Linux
+# Auto detect text files and perform LF normalization
+* text=auto
+
+# Force script files to always use LF on checkout (Linux/Docker compatible)
 mvnw text eol=lf
 *.sh text eol=lf
 
-# Các file Windows thì cứ giữ CRLF
+# Force Windows batch files to use CRLF
 *.bat text eol=crlf
 *.cmd text eol=crlf
