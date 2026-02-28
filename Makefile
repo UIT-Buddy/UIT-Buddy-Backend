@@ -35,3 +35,4 @@ logs:
 clean:
 	$(MVN) clean
 	$(DOCKER_COMPOSE) down -v --remove-orphans
+	
