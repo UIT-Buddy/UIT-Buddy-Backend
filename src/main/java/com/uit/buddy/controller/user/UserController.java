@@ -1,17 +1,24 @@
 package com.uit.buddy.controller.user;
 
 import com.uit.buddy.controller.AbstractBaseController;
+import com.uit.buddy.dto.base.PageResponse;
 import com.uit.buddy.dto.base.SingleResponse;
 import com.uit.buddy.dto.request.user.UpdateUserRequest;
 import com.uit.buddy.dto.request.user.FcmTokenRequest;
+import com.uit.buddy.dto.response.user.FoundUserResponse;
 import com.uit.buddy.dto.response.user.UserResponse;
 import com.uit.buddy.service.user.UserService;
 import com.uit.buddy.service.fcm.FcmService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -74,4 +81,19 @@ public class UserController extends AbstractBaseController {
         UserResponse response = userService.getMyProfile(mssv);
         return successSingle(response, "User profile retrieved successfully");
     }
+    @GetMapping("search")
+    @Operation(summary = "Search student", description = "Search information of other student with keyword and filter")
+    public ResponseEntity<PageResponse<FoundUserResponse>> searchStudentByKeywordAndFilters(
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "15") int limit,
+            @RequestParam(defaultValue = "desc") String sortType,
+            @RequestParam(defaultValue = "created_at") String sortBy,
+            @RequestParam(required = false) String keyword
+        )
+    {
+        Pageable pageable = createPageable(page, limit, sortType, sortBy);
+        Page<FoundUserResponse> responses = userService.searchStudentByKeyword(keyword, pageable);
+        return paging(responses, "Search user with keyword and filter successfully");
+    }
+
 }
