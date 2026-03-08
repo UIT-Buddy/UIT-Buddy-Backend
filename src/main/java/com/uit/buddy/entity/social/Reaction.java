@@ -2,6 +2,7 @@ package com.uit.buddy.entity.social;
 
 import com.uit.buddy.entity.AbstractBaseEntity;
 import com.uit.buddy.entity.user.Student;
+import com.uit.buddy.enums.ReactionType;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -27,6 +28,10 @@ public class Reaction extends AbstractBaseEntity {
 
     @Column(name = "post_id", length = 50, insertable = false, updatable = false)
     private String postId;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "reaction_type", nullable = false, length = 20)
+    private ReactionType reactionType;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "post_id", referencedColumnName = "id", foreignKey = @ForeignKey(name = "fk_reaction_post"))
