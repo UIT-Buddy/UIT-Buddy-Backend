@@ -3,7 +3,6 @@ package com.uit.buddy.entity.user;
 import com.uit.buddy.entity.AbstractBaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
-import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "device_tokens", indexes = {

@@ -7,6 +7,8 @@ public final class CloudinaryConstants {
     }
 
     public static final String FOLDER_AVATARS = "avatars";
+    public static final String FOLDER_POST_IMAGES = "posts/images";
+    public static final String FOLDER_POST_VIDEOS = "posts/videos";
 
     // Cloudinary upload parameter keys
     public static final String PARAM_PUBLIC_ID = "public_id";
@@ -17,19 +19,11 @@ public final class CloudinaryConstants {
 
     // Resource types
     public static final String RESOURCE_TYPE_IMAGE = "image";
+    public static final String RESOURCE_TYPE_VIDEO = "video";
 
     // Response keys
     public static final String RESPONSE_SECURE_URL = "secure_url";
     public static final String RESPONSE_RESULT = "result";
-
-    // Default avatar URL
-    public static final String DEFAULT_AVATAR_URL = "https://res.cloudinary.com/dgogrzt5d/image/upload/v1771910699/avatar-trang-4_jdjzjm.jpg";
-
-    // Image sizes
-    public static final int AVATAR_SIZE = 400;
-    public static final int THUMBNAIL_SIZE = 150;
-    public static final int POST_IMAGE_WIDTH = 1200;
-    public static final int POST_IMAGE_HEIGHT = 800;
 
     // Transformation presets
     public static final String CROP_FILL = "fill";
@@ -37,8 +31,4 @@ public final class CloudinaryConstants {
     public static final String CROP_LIMIT = "limit";
     public static final String GRAVITY_FACE = "face";
     public static final String GRAVITY_CENTER = "center";
-
-    // Image validation
-    public static final long MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
-    public static final String[] ALLOWED_IMAGE_TYPES = { "image/jpeg", "image/jpg", "image/png", "image/webp" };
 }

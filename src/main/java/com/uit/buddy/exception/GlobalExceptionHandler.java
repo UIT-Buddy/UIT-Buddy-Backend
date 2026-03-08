@@ -2,16 +2,23 @@ package com.uit.buddy.exception;
 
 import com.uit.buddy.dto.base.ErrorResponse;
 import com.uit.buddy.exception.system.SystemErrorCode;
+import com.uit.buddy.exception.user.UserErrorCode;
 
 import lombok.extern.slf4j.Slf4j;
+
+import org.springframework.validation.BindException;
 import org.springframework.dao.DataAccessException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.TransactionSystemException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import org.springframework.web.multipart.MultipartException;
+import org.springframework.web.multipart.support.MissingServletRequestPartException;
 import org.springframework.web.servlet.NoHandlerFoundException;
 
 import java.util.HashMap;
@@ -69,28 +76,97 @@ public class GlobalExceptionHandler {
         public ResponseEntity<ErrorResponse> handleMethodNotSupported(HttpRequestMethodNotSupportedException ex) {
                 log.warn("Method not supported: {} for {}", ex.getMethod(), ex.getMessage());
 
-                String message = String.format("HTTP method %s is not supported for this endpoint", ex.getMethod());
-
                 ErrorResponse response = new ErrorResponse(
-                                HttpStatus.METHOD_NOT_ALLOWED.value(),
-                                message,
+                                SystemErrorCode.METHOD_NOT_ALLOWED.getHttpStatus().value(),
+                                SystemErrorCode.METHOD_NOT_ALLOWED.getMessage(),
                                 SystemErrorCode.METHOD_NOT_ALLOWED.getCode());
 
-                return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED).body(response);
+                return ResponseEntity.status(SystemErrorCode.METHOD_NOT_ALLOWED.getHttpStatus()).body(response);
         }
 
         @ExceptionHandler(NoHandlerFoundException.class)
         public ResponseEntity<ErrorResponse> handleNotFound(NoHandlerFoundException ex) {
                 log.warn("No handler found: {} {}", ex.getHttpMethod(), ex.getRequestURL());
 
-                String message = String.format("Endpoint not found: %s %s", ex.getHttpMethod(), ex.getRequestURL());
-
                 ErrorResponse response = new ErrorResponse(
-                                HttpStatus.NOT_FOUND.value(),
-                                message,
+                                SystemErrorCode.RESOURCE_NOT_FOUND.getHttpStatus().value(),
+                                SystemErrorCode.RESOURCE_NOT_FOUND.getMessage(),
                                 SystemErrorCode.RESOURCE_NOT_FOUND.getCode());
 
-                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
+                return ResponseEntity.status(SystemErrorCode.RESOURCE_NOT_FOUND.getHttpStatus()).body(response);
+        }
+
+        @ExceptionHandler(TransactionSystemException.class)
+        public ResponseEntity<ErrorResponse> handleTransactionException(TransactionSystemException ex) {
+                Throwable cause = ex.getRootCause();
+
+                if (cause instanceof BaseException) {
+                        BaseException baseEx = (BaseException) cause;
+                        log.warn("Transaction wrapped exception: {} - {}", baseEx.getCode(), baseEx.getMessage());
+
+                        ErrorResponse response = new ErrorResponse(
+                                        baseEx.getHttpStatus().value(),
+                                        baseEx.getMessage(),
+                                        baseEx.getCode());
+
+                        return ResponseEntity.status(baseEx.getHttpStatus()).body(response);
+                }
+
+                log.error("Transaction error: ", ex);
+                ErrorResponse response = new ErrorResponse(
+                                HttpStatus.INTERNAL_SERVER_ERROR.value(),
+                                SystemErrorCode.INTERNAL_ERROR.getMessage(),
+                                SystemErrorCode.INTERNAL_ERROR.getCode());
+
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+        }
+
+        @ExceptionHandler(BindException.class)
+        public ResponseEntity<ErrorResponse> handleBindException(BindException ex) {
+                log.warn("Binding validation failed: {}", ex.getMessage());
+
+                ErrorResponse response = new ErrorResponse(
+                                SystemErrorCode.INVALID_PARAMETER.getHttpStatus().value(),
+                                SystemErrorCode.INVALID_PARAMETER.getMessage(),
+                                SystemErrorCode.INVALID_PARAMETER.getCode());
+
+                return ResponseEntity.status(SystemErrorCode.INVALID_PARAMETER.getHttpStatus()).body(response);
+        }
+
+        @ExceptionHandler(MultipartException.class)
+        public ResponseEntity<ErrorResponse> handleMultipartException(MultipartException ex) {
+                log.warn("Multipart parsing error: {}", ex.getMessage());
+
+                ErrorResponse response = new ErrorResponse(
+                                SystemErrorCode.MULTIPART_ERROR.getHttpStatus().value(),
+                                SystemErrorCode.MULTIPART_ERROR.getMessage(),
+                                SystemErrorCode.MULTIPART_ERROR.getCode());
+
+                return ResponseEntity.status(SystemErrorCode.MULTIPART_ERROR.getHttpStatus()).body(response);
+        }
+
+        @ExceptionHandler(MissingServletRequestPartException.class)
+        public ResponseEntity<ErrorResponse> handleMissingPart(MissingServletRequestPartException ex) {
+                log.warn("Missing request part: {}", ex.getRequestPartName());
+
+                ErrorResponse response = new ErrorResponse(
+                                SystemErrorCode.INVALID_PARAMETER.getHttpStatus().value(),
+                                SystemErrorCode.INVALID_PARAMETER.getMessage(),
+                                SystemErrorCode.INVALID_PARAMETER.getCode());
+
+                return ResponseEntity.status(SystemErrorCode.INVALID_PARAMETER.getHttpStatus()).body(response);
+        }
+
+        @ExceptionHandler(MaxUploadSizeExceededException.class)
+        public ResponseEntity<ErrorResponse> handleMaxSizeException(MaxUploadSizeExceededException ex) {
+                log.warn("File size exceeds maximum: {}", ex.getMessage());
+
+                ErrorResponse response = new ErrorResponse(
+                                UserErrorCode.FILE_TOO_LARGE.getHttpStatus().value(),
+                                UserErrorCode.FILE_TOO_LARGE.getMessage(),
+                                UserErrorCode.FILE_TOO_LARGE.getCode());
+
+                return ResponseEntity.status(UserErrorCode.FILE_TOO_LARGE.getHttpStatus()).body(response);
         }
 
         @ExceptionHandler(Exception.class)
@@ -98,10 +174,10 @@ public class GlobalExceptionHandler {
                 log.error("Unexpected error: ", ex);
 
                 ErrorResponse response = new ErrorResponse(
-                                HttpStatus.INTERNAL_SERVER_ERROR.value(),
+                                SystemErrorCode.INTERNAL_ERROR.getHttpStatus().value(),
                                 SystemErrorCode.INTERNAL_ERROR.getMessage(),
                                 SystemErrorCode.INTERNAL_ERROR.getCode());
 
-                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+                return ResponseEntity.status(SystemErrorCode.INTERNAL_ERROR.getHttpStatus()).body(response);
         }
 }
