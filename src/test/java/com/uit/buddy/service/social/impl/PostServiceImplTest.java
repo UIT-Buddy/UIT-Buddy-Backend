@@ -2,6 +2,9 @@ package com.uit.buddy.service.social.impl;
 
 import com.uit.buddy.dto.request.social.CreatePostRequest;
 import com.uit.buddy.dto.request.social.UpdatePostRequest;
+import com.uit.buddy.dto.response.social.FoundPostResponse;
+import com.uit.buddy.dto.response.social.PostDetailResponse;
+import com.uit.buddy.dto.response.social.PostFeedResponse;
 import com.uit.buddy.dto.response.social.PostResponse;
 import com.uit.buddy.entity.social.Post;
 import com.uit.buddy.entity.user.Student;
@@ -19,12 +22,20 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 import static org.mockito.Mockito.lenient;
@@ -363,4 +374,68 @@ class PostServiceImplTest {
         verify(cloudinaryService).deletePostMedia(postId.toString());
         verify(postRepository, never()).delete(any()); // Transaction rollback
     }
+    @Test
+    @DisplayName("Should return posts when the keyword match")
+    void shouldReturnPostsWhenKeywordMatches() {
+        Pageable pageable = PageRequest.of(0, 10);
+
+        Post p1 = new Post();
+        post.setTitle("Spring Boot Search");
+
+        List<UUID> uuids = List.of(p1.getId());
+
+        when(postRepository.searchPostByKeyword("spring"))
+                .thenReturn(uuids);
+        Page<Post> mockPage =
+                new PageImpl<>(List.of(p1), pageable, 1);
+        when(postRepository.findAll(uuids, pageable))
+                .thenReturn(mockPage);
+        Page<PostFeedResponse> result =
+                postService.searchPost("spring", pageable);
+
+        assertEquals(1, result.getTotalElements());
+        assertEquals("Spring Boot Search",
+                result.getContent().get(0).title());
+    }
+    @Test
+    @DisplayName("Should ranking posts properly when the keyword match")
+    void shouldReturnPostsInCorrectRankWhenKeywordMatches() {
+        Pageable pageable = PageRequest.of(0, 10);
+
+        Post p1 = new Post();
+        post.setTitle("Spring Boot Search");
+        Post p2 = new Post();
+        post.setContent("Spring is a season ");
+        List<UUID> uuids = List.of(p1.getId(), p2.getId());
+
+        when(postRepository.searchPostByKeyword("spring"))
+                .thenReturn(uuids);
+        Page<Post> mockPage =
+                new PageImpl<>(List.of(p1, p2), pageable, 1);
+        when(postRepository.findAll(uuids, pageable))
+                .thenReturn(mockPage);
+        Page<PostFeedResponse> result =
+                postService.searchPost("spring", pageable);
+
+        assertEquals(1, result.getTotalElements());
+        assertEquals("Spring Boot Search",
+                result.getContent().get(0).title());
+    }
+
+    @Test
+    void shouldReturnEmptyWhenKeywordNotFound() {
+
+        Pageable pageable = PageRequest.of(0, 10);
+
+        when(postRepository.searchPostByKeyword("unknown"))
+                .thenReturn(List.of());
+
+        Page<PostFeedResponse> result =
+                postService.searchPost("unknown", pageable);
+
+        assertTrue(result.isEmpty());
+    }
+
+
+
 }
