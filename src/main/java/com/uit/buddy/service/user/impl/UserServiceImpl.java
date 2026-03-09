@@ -4,8 +4,6 @@ import com.uit.buddy.dto.request.user.UpdateUserRequest;
 import com.uit.buddy.dto.response.user.FoundUserResponse;
 import com.uit.buddy.dto.response.user.UserResponse;
 import com.uit.buddy.entity.user.Student;
-import com.uit.buddy.exception.auth.AuthErrorCode;
-import com.uit.buddy.exception.auth.AuthException;
 import com.uit.buddy.exception.user.UserErrorCode;
 import com.uit.buddy.exception.user.UserException;
 import com.uit.buddy.mapper.user.UserMapper;

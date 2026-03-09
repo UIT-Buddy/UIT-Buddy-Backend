@@ -14,6 +14,7 @@ public enum UserErrorCode {
     FILE_TOO_LARGE("USER_004", "File size exceeds maximum limit", HttpStatus.BAD_REQUEST),
     FILE_EMPTY("USER_005", "File cannot be empty", HttpStatus.BAD_REQUEST),
     CAN_NOT_FETCH_USER_PAGE("USER_006", "List of student not found", HttpStatus.BAD_REQUEST);
+
     private final String code;
     private final String message;
     private final HttpStatus httpStatus;

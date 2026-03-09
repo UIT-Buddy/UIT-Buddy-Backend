@@ -35,4 +35,20 @@ logs:
 clean:
 	$(MVN) clean
 	$(DOCKER_COMPOSE) down -v --remove-orphans
+
+# Run all tests
+test:
+	$(MVN) test
+
+test-single:
+	$(MVN) test -Dtest=$(t)
 	
+# Clean and run tests
+test-clean:
+	$(MVN) clean test
+
+# Show test results summary (Windows)
+test-summary:
+	@echo "Checking test reports..."
+	@ls target/surefire-reports/*.xml >/dev/null 2>&1 || echo "No results found."
+

@@ -47,12 +47,15 @@ spring:
     virtual:
       enabled: true
 
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: ${MAX_FILE_SIZE}
+      max-request-size: ${MAX_REQUEST_SIZE}
+
 app:
   default-locale: ${APP_DEFAULT_LOCALE:vi}
   default-timezone: ${APP_DEFAULT_TIMEZONE:Asia/Ho_Chi_Minh}
-
-  openapi:
-    docs-url: ${APP_OPENAPI_DOCS_URL:http://localhost:8080}
 
   uit:
     api-url: ${UIT_API_URL:https://courses.uit.edu.vn}
@@ -91,6 +94,15 @@ cloudinary:
   cloud-name: ${CLOUDINARY_CLOUD_NAME}
   api-key: ${CLOUDINARY_API_KEY}
   api-secret: ${CLOUDINARY_API_SECRET}
+  default-avatar-url: ${CLOUDINARY_DEFAULT_AVATAR_URL}
+  max-image-size: ${CLOUDINARY_MAX_IMAGE_SIZE}
+  max-video-size: ${CLOUDINARY_MAX_VIDEO_SIZE}
+  allowed-image-types: ${CLOUDINARY_ALLOWED_IMAGE_TYPES}
+  allowed-video-types: ${CLOUDINARY_ALLOWED_VIDEO_TYPES}
+  avatar-size: ${CLOUDINARY_AVATAR_SIZE}
+  thumbnail-size: ${CLOUDINARY_THUMBNAIL_SIZE}
+  post-image-width: ${CLOUDINARY_POST_IMAGE_WIDTH}
+  post-image-height: ${CLOUDINARY_POST_IMAGE_HEIGHT}
 
 scalar:
   path: ${SCALAR_PATH:/docs}
