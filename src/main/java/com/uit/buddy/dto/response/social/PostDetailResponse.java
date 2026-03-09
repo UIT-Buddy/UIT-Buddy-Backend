@@ -12,11 +12,11 @@ public record PostDetailResponse(
         String videoUrl,
         AuthorInfo author,
         Long likeCount,
-        Long dislikeCount,
+        Long shareCount,
         Long commentCount,
         List<CommentResponse> comments,
         List<ReactionUserInfo> likedBy,
-        List<ReactionUserInfo> dislikedBy,
+        List<ShareUserInfo> sharedBy,
         LocalDateTime createdAt,
         LocalDateTime updatedAt) {
     public record AuthorInfo(
@@ -26,6 +26,11 @@ public record PostDetailResponse(
     }
 
     public record ReactionUserInfo(
+            String mssv,
+            String fullName,
+            String avatarUrl) {
+    }
+    public record ShareUserInfo(
             String mssv,
             String fullName,
             String avatarUrl) {

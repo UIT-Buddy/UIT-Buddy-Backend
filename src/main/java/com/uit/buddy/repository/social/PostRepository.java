@@ -51,6 +51,7 @@ public interface PostRepository extends CrudRepository<Post, UUID> {
             """, nativeQuery = true)
     List<Post> findNextPage(@Param("cursorTime") LocalDateTime cursorTime, @Param("cursorId") UUID cursorId,
             @Param("limit") int limit);
+
     @Query(value = "SELECT * FROM posts ORDER BY created_at DESC, id DESC LIMIT :limit", nativeQuery = true)
     List<Post> findFirstPage(@Param("limit") int limit);
 }

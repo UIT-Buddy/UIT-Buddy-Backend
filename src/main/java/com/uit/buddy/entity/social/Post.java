@@ -36,12 +36,12 @@ public class Post extends AbstractBaseEntity {
     @Column(name = "video_url", length = 512)
     private String videoUrl;
 
-    @Formula("(select count(*) from comments c where c.post_id = id)")
+    @Column(name = "comment_count")
     private long commentCount;
 
-    @Formula("(select count(*) from reactions r where r.post_id = id)")
+    @Column(name = "like_count")
     private long likeCount;
 
-    @Formula("(select count(*) from shares s where s.post_id = id)")
+    @Column(name = "share_count")
     private long shareCount;
 }
