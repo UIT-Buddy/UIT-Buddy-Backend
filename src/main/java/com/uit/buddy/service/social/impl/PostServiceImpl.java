@@ -1,5 +1,6 @@
 package com.uit.buddy.service.social.impl;
 
+import java.util.List;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -7,6 +8,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.uit.buddy.dto.request.social.CreatePostRequest;
 import com.uit.buddy.dto.request.social.UpdatePostRequest;
+import com.uit.buddy.dto.response.social.PostDetailResponse;
+import com.uit.buddy.dto.response.social.PostFeedResponse;
 import com.uit.buddy.dto.response.social.PostResponse;
 import com.uit.buddy.entity.social.Post;
 import com.uit.buddy.entity.user.Student;
@@ -20,6 +23,7 @@ import com.uit.buddy.repository.social.PostRepository;
 import com.uit.buddy.repository.user.StudentRepository;
 import com.uit.buddy.service.cloudinary.CloudinaryService;
 import com.uit.buddy.service.social.PostService;
+import com.uit.buddy.util.CursorUtils;
 import com.uit.buddy.mapper.social.PostMapper;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -59,6 +63,35 @@ public class PostServiceImpl implements PostService {
         savedPost = postRepository.save(post);
         log.info("[Post Service] Post saved successfully with ID: {}", post.getId());
         return postMapper.toPostResponse(savedPost);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<PostFeedResponse> getPostFeed(String cursor, int limit) {
+        log.info("[Post Service] Fetching post feed. Cursor: {}, Limit: {}", cursor, limit);
+        int fetchSize = limit + 1;
+
+        List<Post> posts;
+
+        if (cursor == null || cursor.isBlank()) {
+            posts = postRepository.findFirstPage(fetchSize);
+        } else {
+            CursorUtils.CursorContents contents = CursorUtils.decode(cursor);
+
+            posts = postRepository.findNextPage(contents.timestamp(), contents.id(), fetchSize);
+        }
+        return posts.stream().map(postMapper::toPostFeedResponse).toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public PostDetailResponse getPostDetail(UUID postId) {
+        log.info("[Post Service] Getting detail for post: {}", postId);
+
+        Post post = postRepository.findById(postId)
+                .orElseThrow(() -> new SocialException(SocialErrorCode.POST_NOT_FOUND, "Post not found"));
+
+        return postMapper.toPostDetailResponse(post);
     }
 
     @Override

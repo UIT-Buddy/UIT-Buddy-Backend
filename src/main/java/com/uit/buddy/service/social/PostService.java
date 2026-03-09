@@ -2,8 +2,11 @@ package com.uit.buddy.service.social;
 
 import com.uit.buddy.dto.request.social.CreatePostRequest;
 import com.uit.buddy.dto.request.social.UpdatePostRequest;
+import com.uit.buddy.dto.response.social.PostDetailResponse;
+import com.uit.buddy.dto.response.social.PostFeedResponse;
 import com.uit.buddy.dto.response.social.PostResponse;
 
+import java.util.List;
 import java.util.UUID;
 
 import org.springframework.web.multipart.MultipartFile;
@@ -15,5 +18,9 @@ public interface PostService {
     PostResponse updatePost(UUID postId, String mssv, UpdatePostRequest request);
 
     void deletePost(UUID postId, String mssv);
+
+    List<PostFeedResponse> getPostFeed(String cursor, int limit);
+
+    PostDetailResponse getPostDetail(UUID postId);
 
 }

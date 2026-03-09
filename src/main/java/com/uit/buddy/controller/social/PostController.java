@@ -1,10 +1,13 @@
 package com.uit.buddy.controller.social;
 
 import com.uit.buddy.controller.AbstractBaseController;
+import com.uit.buddy.dto.base.CursorPageResponse;
 import com.uit.buddy.dto.base.SingleResponse;
 import com.uit.buddy.dto.base.SuccessResponse;
 import com.uit.buddy.dto.request.social.CreatePostRequest;
 import com.uit.buddy.dto.request.social.UpdatePostRequest;
+import com.uit.buddy.dto.response.social.PostDetailResponse;
+import com.uit.buddy.dto.response.social.PostFeedResponse;
 import com.uit.buddy.dto.response.social.PostResponse;
 import com.uit.buddy.enums.FileType;
 import com.uit.buddy.exception.social.SocialErrorCode;
@@ -22,6 +25,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -44,6 +48,31 @@ public class PostController extends AbstractBaseController {
 
         PostResponse response = postService.createPost(mssv, request, request.image(), request.video());
         return successSingle(response, "Post created successfully");
+    }
+
+    @GetMapping
+    @Operation(summary = "Get post feed", description = "Get paginated post feed with cursor-based pagination")
+    public ResponseEntity<CursorPageResponse<PostFeedResponse>> getPostFeed(
+            @RequestParam(required = false) String cursor,
+            @RequestParam(defaultValue = "10") int limit) {
+
+        log.info("[Post Controller] Getting post feed with cursor: {}, limit: {}", cursor, limit);
+
+        List<PostFeedResponse> postList = postService.getPostFeed(cursor, limit);
+
+        return cursorPaging(
+                "Post feed retrieved successfully",
+                postList,
+                limit,
+                post -> post.id().toString());
+    }
+
+    @GetMapping("/{postId}")
+    @Operation(summary = "Get post detail", description = "Get detailed post information with comments and reactions")
+    public ResponseEntity<SingleResponse<PostDetailResponse>> getPostDetail(@PathVariable UUID postId) {
+        log.info("[Post Controller] Getting post detail: {}", postId);
+        PostDetailResponse response = postService.getPostDetail(postId);
+        return successSingle(response, "Post detail retrieved successfully");
     }
 
     @PutMapping("/{postId}")
