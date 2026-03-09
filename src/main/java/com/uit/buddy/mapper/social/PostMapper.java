@@ -1,5 +1,6 @@
 package com.uit.buddy.mapper.social;
 
+import com.uit.buddy.dto.response.social.FoundPostResponse;
 import com.uit.buddy.dto.response.social.PostResponse;
 import com.uit.buddy.entity.social.Post;
 import org.mapstruct.Mapper;
@@ -13,5 +14,10 @@ public interface PostMapper {
     @Mapping(source = "author.fullName", target = "authorName")
     @Mapping(source = "author.avatarUrl", target = "authorAvatar")
     PostResponse toPostResponse(Post post);
+
+    @Mapping(source = "author.mssv", target = "author.mssv")
+    @Mapping(source = "author.fullName", target = "author.fullName")
+    @Mapping(source = "author.avatarUrl", target = "author.avatarUrl")
+    FoundPostResponse toFoundPostResponse(Post post);
 
 }

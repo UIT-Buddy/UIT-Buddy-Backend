@@ -2,10 +2,13 @@ package com.uit.buddy.service.social;
 
 import com.uit.buddy.dto.request.social.CreatePostRequest;
 import com.uit.buddy.dto.request.social.UpdatePostRequest;
+import com.uit.buddy.dto.response.social.FoundPostResponse;
 import com.uit.buddy.dto.response.social.PostResponse;
 
 import java.util.UUID;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.web.multipart.MultipartFile;
 
 public interface PostService {
@@ -16,4 +19,5 @@ public interface PostService {
 
     void deletePost(UUID postId, String mssv);
 
+    Page<FoundPostResponse> searchPost(String keyword, Pageable pageable);
 }

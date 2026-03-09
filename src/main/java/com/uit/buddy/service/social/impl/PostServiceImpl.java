@@ -1,7 +1,12 @@
 package com.uit.buddy.service.social.impl;
 
+import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
+import com.uit.buddy.dto.response.social.FoundPostResponse;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -86,6 +91,14 @@ public class PostServiceImpl implements PostService {
         Post post = getPostAndValidateOwner(postId, mssv);
         cloudinaryService.deletePostMedia(postId.toString());
         postRepository.delete(post);
+    }
+
+    @Override
+    public Page<FoundPostResponse> searchPost(String keyword, Pageable pageable) {
+        List<UUID> finalFoundPosts = postRepository.searchPostByKeyword(keyword);
+        log.info("FINAL POSTS FOUND: {}", finalFoundPosts);
+        Page<Post> page = postRepository.findAll(finalFoundPosts, pageable);
+        return page.map(postMapper::toFoundPostResponse);
     }
 
     private Post getPostAndValidateOwner(UUID postId, String mssv) {

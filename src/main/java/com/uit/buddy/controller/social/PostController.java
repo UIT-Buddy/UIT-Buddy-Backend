@@ -1,11 +1,14 @@
 package com.uit.buddy.controller.social;
 
 import com.uit.buddy.controller.AbstractBaseController;
+import com.uit.buddy.dto.base.PageResponse;
 import com.uit.buddy.dto.base.SingleResponse;
 import com.uit.buddy.dto.base.SuccessResponse;
 import com.uit.buddy.dto.request.social.CreatePostRequest;
 import com.uit.buddy.dto.request.social.UpdatePostRequest;
+import com.uit.buddy.dto.response.social.FoundPostResponse;
 import com.uit.buddy.dto.response.social.PostResponse;
+import com.uit.buddy.dto.response.user.FoundUserResponse;
 import com.uit.buddy.enums.FileType;
 import com.uit.buddy.exception.social.SocialErrorCode;
 import com.uit.buddy.exception.social.SocialException;
@@ -16,6 +19,8 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -67,6 +72,19 @@ public class PostController extends AbstractBaseController {
 
         postService.deletePost(postId, mssv);
         return success("Post deleted successfully");
+    }
+
+    @GetMapping("/search")
+    @Operation(summary = "Search posts", description = "Search posts with keyword and filter")
+    public ResponseEntity<PageResponse<FoundPostResponse>> searchStudentByKeywordAndFilters(
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "15") int limit,
+            @RequestParam(defaultValue = "desc") String sortType,
+            @RequestParam(defaultValue = "createdAt") String sortBy,
+            @RequestParam(required = false) String keyword) {
+        Pageable pageable = createPageable(page, limit, sortType, sortBy);
+        Page<FoundPostResponse> responses = postService.searchPost(keyword, pageable);
+        return paging(responses, "Search posts with keyword and filter successfully");
     }
 
     private void validateMediaFiles(MultipartFile image, MultipartFile video) {
