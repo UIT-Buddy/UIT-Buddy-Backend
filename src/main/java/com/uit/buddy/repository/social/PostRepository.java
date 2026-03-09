@@ -8,16 +8,21 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Repository;
 import com.uit.buddy.entity.social.Post;
+
+
 import org.springframework.data.repository.CrudRepository;
 
+import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Set;
 import java.util.UUID;
 
 @Repository
 public interface PostRepository extends CrudRepository<Post, UUID> {
+
     @Async
     @Query(value = """
+            SELECT * FROM posts
+            WHERE (created_at < :cursorTime) OR (created_at = :cursorTime AND id < :cursorId) ORDER BY created_at DESC, id DESC LIMIT :limit
                 SELECT p.id,
                        ts_rank(
                            setweight(to_tsvector('simple', coalesce(title,'')), 'A') ||
@@ -41,4 +46,9 @@ public interface PostRepository extends CrudRepository<Post, UUID> {
         WHERE p.id IN :uuids
         """)
     Page<Post> findAll(@Param("uuids") List<UUID> uuids, Pageable pageable);
+
+    List<Post> findNextPage(@Param("cursorTime") LocalDateTime cursorTime, @Param("cursorId") UUID cursorId,
+            @Param("limit") int limit);
+    @Query(value = "SELECT * FROM posts ORDER BY created_at DESC, id DESC LIMIT :limit", nativeQuery = true)
+    List<Post> findFirstPage(@Param("limit") int limit);
 }

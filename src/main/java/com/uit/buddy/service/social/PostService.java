@@ -2,9 +2,11 @@ package com.uit.buddy.service.social;
 
 import com.uit.buddy.dto.request.social.CreatePostRequest;
 import com.uit.buddy.dto.request.social.UpdatePostRequest;
-import com.uit.buddy.dto.response.social.FoundPostResponse;
+import com.uit.buddy.dto.response.social.PostDetailResponse;
+import com.uit.buddy.dto.response.social.PostFeedResponse;
 import com.uit.buddy.dto.response.social.PostResponse;
 
+import java.util.List;
 import java.util.UUID;
 
 import org.springframework.data.domain.Page;
@@ -19,5 +21,9 @@ public interface PostService {
 
     void deletePost(UUID postId, String mssv);
 
-    Page<FoundPostResponse> searchPost(String keyword, Pageable pageable);
+    List<PostFeedResponse> getPostFeed(String cursor, int limit);
+
+    PostDetailResponse getPostDetail(UUID postId);
+
+    Page<PostFeedResponse> searchPost(String keyword, Pageable pageable);
 }

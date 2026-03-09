@@ -1,10 +1,9 @@
 package com.uit.buddy.service.social.impl;
 
 import java.util.List;
-import java.util.Set;
 import java.util.UUID;
 
-import com.uit.buddy.dto.response.social.FoundPostResponse;
+import com.uit.buddy.util.CursorUtils;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -12,6 +11,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.uit.buddy.dto.request.social.CreatePostRequest;
 import com.uit.buddy.dto.request.social.UpdatePostRequest;
+import com.uit.buddy.dto.response.social.PostDetailResponse;
+import com.uit.buddy.dto.response.social.PostFeedResponse;
 import com.uit.buddy.dto.response.social.PostResponse;
 import com.uit.buddy.entity.social.Post;
 import com.uit.buddy.entity.user.Student;
@@ -67,6 +68,35 @@ public class PostServiceImpl implements PostService {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public List<PostFeedResponse> getPostFeed(String cursor, int limit) {
+        log.info("[Post Service] Fetching post feed. Cursor: {}, Limit: {}", cursor, limit);
+        int fetchSize = limit + 1;
+
+        List<Post> posts;
+
+        if (cursor == null || cursor.isBlank()) {
+            posts = postRepository.findFirstPage(fetchSize);
+        } else {
+            CursorUtils.CursorContents contents = CursorUtils.decode(cursor);
+
+            posts = postRepository.findNextPage(contents.timestamp(), contents.id(), fetchSize);
+        }
+        return posts.stream().map(postMapper::toPostFeedResponse).toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public PostDetailResponse getPostDetail(UUID postId) {
+        log.info("[Post Service] Getting detail for post: {}", postId);
+
+        Post post = postRepository.findById(postId)
+                .orElseThrow(() -> new SocialException(SocialErrorCode.POST_NOT_FOUND, "Post not found"));
+
+        return postMapper.toPostDetailResponse(post);
+    }
+
+    @Override
     @Transactional
     public PostResponse updatePost(UUID postId, String mssv, UpdatePostRequest request) {
         log.info("[Post Service] Updating post: {}", postId);
@@ -94,11 +124,11 @@ public class PostServiceImpl implements PostService {
     }
 
     @Override
-    public Page<FoundPostResponse> searchPost(String keyword, Pageable pageable) {
+    public Page<PostFeedResponse> searchPost(String keyword, Pageable pageable) {
         List<UUID> finalFoundPosts = postRepository.searchPostByKeyword(keyword);
         log.info("FINAL POSTS FOUND: {}", finalFoundPosts);
         Page<Post> page = postRepository.findAll(finalFoundPosts, pageable);
-        return page.map(postMapper::toFoundPostResponse);
+        return page.map(postMapper::toPostFeedResponse);
     }
 
     private Post getPostAndValidateOwner(UUID postId, String mssv) {
