@@ -1,5 +1,6 @@
 package com.uit.buddy.service.social.impl;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -13,7 +14,6 @@ import com.uit.buddy.dto.request.social.CreatePostRequest;
 import com.uit.buddy.dto.request.social.UpdatePostRequest;
 import com.uit.buddy.dto.response.social.PostDetailResponse;
 import com.uit.buddy.dto.response.social.PostFeedResponse;
-import com.uit.buddy.dto.response.social.PostResponse;
 import com.uit.buddy.entity.social.Post;
 import com.uit.buddy.entity.user.Student;
 import com.uit.buddy.exception.social.SocialErrorCode;
@@ -42,63 +42,62 @@ public class PostServiceImpl implements PostService {
     private final PostMapper postMapper;
     private final CloudinaryService cloudinaryService;
 
-    @Override
-    @Transactional
-    public PostResponse createPost(String mssv, CreatePostRequest request, MultipartFile image, MultipartFile video) {
-        log.info("[Post Service] Create post for mssv: {}", mssv);
+    // @Override
+    // @Transactional
+    // public PostDetailResponse createPost(String mssv, CreatePostRequest request,
+    // MultipartFile image,
+    // MultipartFile video) {
+    // log.info("[Post Service] Create post for mssv: {}", mssv);
 
-        Student author = studentRepository.findById(mssv)
-                .orElseThrow(() -> new UserException(
-                        UserErrorCode.STUDENT_NOT_FOUND,
-                        "Student not found"));
+    // Student author = studentRepository.findById(mssv)
+    // .orElseThrow(() -> new UserException(
+    // UserErrorCode.STUDENT_NOT_FOUND,
+    // "Student not found"));
 
-        Post post = Post.builder()
-                .title(request.title())
-                .content(request.content())
-                .author(author)
-                .build();
+    // Post post = Post.builder()
+    // .title(request.title())
+    // .content(request.content())
+    // .author(author)
+    // .build();
 
-        Post savedPost = postRepository.save(post);
+    // Post savedPost = postRepository.save(post);
 
-        handleMediaUpload(image, video, savedPost);
+    // handleMediaUpload(image, video, savedPost);
 
-        savedPost = postRepository.save(post);
-        log.info("[Post Service] Post saved successfully with ID: {}", post.getId());
-        return postMapper.toPostResponse(savedPost);
-    }
+    // savedPost = postRepository.save(post);
+    // log.info("[Post Service] Post saved successfully with ID: {}", post.getId());
+    // return postMapper.toPostDetailResponse(savedPost);
+    // }
 
     @Override
     @Transactional(readOnly = true)
-    public List<PostFeedResponse> getPostFeed(String cursor, int limit) {
-        log.info("[Post Service] Fetching post feed. Cursor: {}, Limit: {}", cursor, limit);
-        int fetchSize = limit + 1;
-
-        List<Post> posts;
-
-        if (cursor == null || cursor.isBlank()) {
-            posts = postRepository.findFirstPage(fetchSize);
-        } else {
+    public List<PostFeedResponse> getPostFeed(String mssv, String cursor, int limit) {
+        LocalDateTime cursorTime = null;
+        UUID cursorId = null;
+        if (cursor != null && !cursor.isBlank()) {
             CursorUtils.CursorContents contents = CursorUtils.decode(cursor);
-
-            posts = postRepository.findNextPage(contents.timestamp(), contents.id(), fetchSize);
+            cursorTime = contents.timestamp();
+            cursorId = contents.id();
         }
-        return posts.stream().map(postMapper::toPostFeedResponse).toList();
+
+        // Lấy thêm 1 record để kiểm tra hasMore
+        return postRepository.findFeed(mssv, cursorTime, cursorId, limit + 1)
+                .stream()
+                .map(postMapper::toPostFeedResponse)
+                .toList();
     }
 
     @Override
     @Transactional(readOnly = true)
-    public PostDetailResponse getPostDetail(UUID postId) {
-        log.info("[Post Service] Getting detail for post: {}", postId);
-
-        Post post = postRepository.findById(postId)
+    public PostDetailResponse getPostDetail(UUID postId, String mssv) {
+        return postRepository.findDetailWithStatus(postId, mssv)
+                .map(postMapper::toPostDetailResponseFromProjection)
                 .orElseThrow(() -> new SocialException(SocialErrorCode.POST_NOT_FOUND, "Post not found"));
-
-        return postMapper.toPostDetailResponse(post);
     }
 
     @Override
     @Transactional
-    public PostResponse updatePost(UUID postId, String mssv, UpdatePostRequest request) {
+    public PostDetailResponse updatePost(UUID postId, String mssv, UpdatePostRequest request) {
         log.info("[Post Service] Updating post: {}", postId);
 
         Post post = getPostAndValidateOwner(postId, mssv);
@@ -111,8 +110,10 @@ public class PostServiceImpl implements PostService {
             post.setContent(request.content());
         }
 
+        postRepository.save(post);
         log.info("[Post Service] Successfully updated post: {}", postId);
-        return postMapper.toPostResponse(post);
+
+        return getPostDetail(postId, mssv);
     }
 
     @Override
@@ -124,11 +125,14 @@ public class PostServiceImpl implements PostService {
     }
 
     @Override
-    public Page<PostFeedResponse> searchPost(String keyword, Pageable pageable) {
-        List<UUID> finalFoundPosts = postRepository.searchPostByKeyword(keyword);
-        log.info("FINAL POSTS FOUND: {}", finalFoundPosts);
-        Page<Post> page = postRepository.findAll(finalFoundPosts, pageable);
-        return page.map(postMapper::toPostFeedResponse);
+    @Transactional(readOnly = true)
+    public Page<PostFeedResponse> searchPost(String keyword, String mssv, Pageable pageable) {
+        if (keyword == null || keyword.isBlank()) {
+            return postRepository.findAllPosts(mssv, pageable)
+                    .map(postMapper::toPostFeedResponse);
+        }
+        return postRepository.searchPostFull(keyword, mssv, pageable)
+                .map(postMapper::toPostFeedResponse);
     }
 
     private Post getPostAndValidateOwner(UUID postId, String mssv) {
@@ -142,13 +146,14 @@ public class PostServiceImpl implements PostService {
         return post;
     }
 
-    private void handleMediaUpload(MultipartFile image, MultipartFile video, Post post) {
-        String publicId = post.getId().toString();
+    // private void handleMediaUpload(MultipartFile image, MultipartFile video, Post
+    // post) {
+    // String publicId = post.getId().toString();
 
-        if (video != null && !video.isEmpty()) {
-            post.setVideoUrl(cloudinaryService.uploadPostVideo(video, publicId));
-        } else if (image != null && !image.isEmpty()) {
-            post.setImageUrl(cloudinaryService.uploadPostImage(image, publicId));
-        }
-    }
+    // if (video != null && !video.isEmpty()) {
+    // post.setVideoUrl(cloudinaryService.uploadPostVideo(video, publicId));
+    // } else if (image != null && !image.isEmpty()) {
+    // post.setImageUrl(cloudinaryService.uploadPostImage(image, publicId));
+    // }
+    // }
 }
