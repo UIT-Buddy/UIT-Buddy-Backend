@@ -4,6 +4,7 @@ import com.uit.buddy.entity.AbstractBaseEntity;
 import com.uit.buddy.entity.user.Student;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.Formula;
 
 @Entity
 @Table(name = "posts", indexes = {
@@ -34,4 +35,13 @@ public class Post extends AbstractBaseEntity {
 
     @Column(name = "video_url", length = 512)
     private String videoUrl;
+
+    @Column(name = "comment_count")
+    private long commentCount;
+
+    @Column(name = "like_count")
+    private long likeCount;
+
+    @Column(name = "share_count")
+    private long shareCount;
 }

@@ -1,5 +1,6 @@
 package com.uit.buddy.controller;
 
+import com.uit.buddy.dto.base.CursorPageResponse;
 import com.uit.buddy.dto.base.ErrorResponse;
 import com.uit.buddy.dto.base.PageResponse;
 import com.uit.buddy.dto.base.SingleResponse;
@@ -37,6 +38,17 @@ public class ResponseFactory {
                                 message,
                                 data,
                                 new PageResponse.PagingInfo(page, size, totalElements, totalPages));
+        }
+
+        public <T> CursorPageResponse<T> createCursorPageResponse(
+                        HttpStatus status,
+                        String message,
+                        List<T> data,
+                        String cursor,
+                        boolean hasMore,
+                        int limit) {
+                return new CursorPageResponse<>(status.value(), message, data,
+                                new CursorPageResponse.PagingInfo(cursor, hasMore, limit));
         }
 
         public <T> ResponseEntity<SingleResponse<T>> successSingle(

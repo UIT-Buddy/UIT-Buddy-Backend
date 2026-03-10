@@ -11,11 +11,11 @@ public record PostFeedResponse(
         String videoUrl,
         AuthorInfo author,
         Long likeCount,
-        Long dislikeCount,
         Long commentCount,
+        Long shareCount,
         LocalDateTime createdAt) {
     public record AuthorInfo(
-            String mssv,
+            String homeClassCode,
             String fullName,
             String avatarUrl) {
     }

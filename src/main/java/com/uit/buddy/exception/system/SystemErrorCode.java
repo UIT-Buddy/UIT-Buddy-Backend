@@ -15,10 +15,10 @@ public enum SystemErrorCode {
     EXTERNAL_SERVICE_ERROR("SYS_006", "External service error", HttpStatus.SERVICE_UNAVAILABLE),
     INVALID_PARAMETER("SYS_007", "Invalid parameter provided", HttpStatus.BAD_REQUEST),
     MULTIPART_ERROR("SYS_008", "Invalid multipart request. Please check your file upload.", HttpStatus.BAD_REQUEST),
-    UTILITY_CLASS_INSTANTIATION("SYS_009", "Utility class cannot be instantiated", HttpStatus.INTERNAL_SERVER_ERROR);
+    UTILITY_CLASS_INSTANTIATION("SYS_009", "Utility class cannot be instantiated", HttpStatus.INTERNAL_SERVER_ERROR),
+    INVALID_CURSOR_FORMAT("SYS_010", "Invalid cursor format provided", HttpStatus.BAD_REQUEST);
 
     private final String code;
     private final String message;
     private final HttpStatus httpStatus;
-
 }
