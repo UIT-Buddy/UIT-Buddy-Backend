@@ -96,6 +96,35 @@ public class PostServiceImpl implements PostService {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public List<PostFeedResponse> getPostFeed(String cursor, int limit) {
+        log.info("[Post Service] Fetching post feed. Cursor: {}, Limit: {}", cursor, limit);
+        int fetchSize = limit + 1;
+
+        List<Post> posts;
+
+        if (cursor == null || cursor.isBlank()) {
+            posts = postRepository.findFirstPage(fetchSize);
+        } else {
+            CursorUtils.CursorContents contents = CursorUtils.decode(cursor);
+
+            posts = postRepository.findNextPage(contents.timestamp(), contents.id(), fetchSize);
+        }
+        return posts.stream().map(postMapper::toPostFeedResponse).toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public PostDetailResponse getPostDetail(UUID postId) {
+        log.info("[Post Service] Getting detail for post: {}", postId);
+
+        Post post = postRepository.findById(postId)
+                .orElseThrow(() -> new SocialException(SocialErrorCode.POST_NOT_FOUND, "Post not found"));
+
+        return postMapper.toPostDetailResponse(post);
+    }
+
+    @Override
     @Transactional
     public PostDetailResponse updatePost(UUID postId, String mssv, UpdatePostRequest request) {
         log.info("[Post Service] Updating post: {}", postId);
