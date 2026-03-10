@@ -2,8 +2,6 @@ package com.uit.buddy.service.social.impl;
 
 import com.uit.buddy.dto.request.social.CreatePostRequest;
 import com.uit.buddy.dto.request.social.UpdatePostRequest;
-import com.uit.buddy.dto.response.social.FoundPostResponse;
-import com.uit.buddy.dto.response.social.PostDetailResponse;
 import com.uit.buddy.dto.response.social.PostFeedResponse;
 import com.uit.buddy.dto.response.social.PostResponse;
 import com.uit.buddy.entity.social.Post;
@@ -28,7 +26,6 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;

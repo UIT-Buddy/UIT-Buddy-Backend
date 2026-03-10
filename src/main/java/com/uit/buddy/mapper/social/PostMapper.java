@@ -18,11 +18,11 @@ public interface PostMapper {
     PostResponse toPostResponse(Post post);
 
     @Mapping(source = "content", target = "contentSnippet")
-    
     PostFeedResponse toPostFeedResponse(Post post);
 
     PostDetailResponse toPostDetailResponse(Post post);
 
+    @Mapping(source = "homeClassCode", target = "homeClassCode")
     PostFeedResponse.AuthorInfo toFeedAuthor(Student student);
 
     PostDetailResponse.AuthorInfo toDetailAuthor(Student student);

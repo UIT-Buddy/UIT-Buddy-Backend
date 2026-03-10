@@ -15,7 +15,7 @@ public record PostFeedResponse(
         Long shareCount,
         LocalDateTime createdAt) {
     public record AuthorInfo(
-            String mssv,
+            String homeClassCode,
             String fullName,
             String avatarUrl) {
     }
