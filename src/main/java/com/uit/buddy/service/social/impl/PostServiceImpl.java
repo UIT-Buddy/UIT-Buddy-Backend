@@ -13,7 +13,6 @@ import com.uit.buddy.dto.request.social.CreatePostRequest;
 import com.uit.buddy.dto.request.social.UpdatePostRequest;
 import com.uit.buddy.dto.response.social.PostDetailResponse;
 import com.uit.buddy.dto.response.social.PostFeedResponse;
-import com.uit.buddy.dto.response.social.PostResponse;
 import com.uit.buddy.entity.social.Post;
 import com.uit.buddy.entity.user.Student;
 import com.uit.buddy.exception.social.SocialErrorCode;
@@ -44,7 +43,8 @@ public class PostServiceImpl implements PostService {
 
     @Override
     @Transactional
-    public PostResponse createPost(String mssv, CreatePostRequest request, MultipartFile image, MultipartFile video) {
+    public PostDetailResponse createPost(String mssv, CreatePostRequest request, MultipartFile image,
+            MultipartFile video) {
         log.info("[Post Service] Create post for mssv: {}", mssv);
 
         Student author = studentRepository.findById(mssv)
@@ -64,7 +64,7 @@ public class PostServiceImpl implements PostService {
 
         savedPost = postRepository.save(post);
         log.info("[Post Service] Post saved successfully with ID: {}", post.getId());
-        return postMapper.toPostResponse(savedPost);
+        return postMapper.toPostDetailResponse(savedPost);
     }
 
     @Override
@@ -98,7 +98,7 @@ public class PostServiceImpl implements PostService {
 
     @Override
     @Transactional
-    public PostResponse updatePost(UUID postId, String mssv, UpdatePostRequest request) {
+    public PostDetailResponse updatePost(UUID postId, String mssv, UpdatePostRequest request) {
         log.info("[Post Service] Updating post: {}", postId);
 
         Post post = getPostAndValidateOwner(postId, mssv);
@@ -112,7 +112,7 @@ public class PostServiceImpl implements PostService {
         }
 
         log.info("[Post Service] Successfully updated post: {}", postId);
-        return postMapper.toPostResponse(post);
+        return postMapper.toPostDetailResponse(post);
     }
 
     @Override

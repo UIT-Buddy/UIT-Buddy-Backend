@@ -7,15 +7,15 @@ import com.uit.buddy.dto.base.SingleResponse;
 import com.uit.buddy.dto.base.SuccessResponse;
 import com.uit.buddy.dto.request.social.CreatePostRequest;
 import com.uit.buddy.dto.request.social.UpdatePostRequest;
-import com.uit.buddy.dto.response.social.FoundPostResponse;
 import com.uit.buddy.dto.response.social.PostDetailResponse;
 import com.uit.buddy.dto.response.social.PostFeedResponse;
-import com.uit.buddy.dto.response.social.PostResponse;
 import com.uit.buddy.enums.FileType;
 import com.uit.buddy.exception.social.SocialErrorCode;
 import com.uit.buddy.exception.social.SocialException;
 import com.uit.buddy.service.cloudinary.CloudinaryService;
 import com.uit.buddy.service.social.PostService;
+import com.uit.buddy.util.CursorUtils;
+
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -44,13 +44,13 @@ public class PostController extends AbstractBaseController {
 
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @Operation(summary = "Create a new post", description = "Create a new post with optional image and video")
-    public ResponseEntity<SingleResponse<PostResponse>> createPost(
+    public ResponseEntity<SingleResponse<PostDetailResponse>> createPost(
             @Valid @ModelAttribute CreatePostRequest request,
             @AuthenticationPrincipal String mssv) {
         log.info("[Post Controller] Creating post for mssv: {}", mssv);
         validateMediaFiles(request.image(), request.video());
 
-        PostResponse response = postService.createPost(mssv, request, request.image(), request.video());
+        PostDetailResponse response = postService.createPost(mssv, request, request.image(), request.video());
         return successSingle(response, "Post created successfully");
     }
 
@@ -58,7 +58,7 @@ public class PostController extends AbstractBaseController {
     @Operation(summary = "Get post feed", description = "Get paginated post feed with cursor-based pagination")
     public ResponseEntity<CursorPageResponse<PostFeedResponse>> getPostFeed(
             @RequestParam(required = false) String cursor,
-            @RequestParam(defaultValue = "10") int limit) {
+            @RequestParam(defaultValue = "10") int limit, @AuthenticationPrincipal String mssv) {
 
         log.info("[Post Controller] Getting post feed with cursor: {}, limit: {}", cursor, limit);
 
@@ -68,12 +68,13 @@ public class PostController extends AbstractBaseController {
                 "Post feed retrieved successfully",
                 postList,
                 limit,
-                post -> post.id().toString());
+                post -> CursorUtils.encode(post.createdAt(), post.id()));
     }
 
     @GetMapping("/{postId}")
     @Operation(summary = "Get post detail", description = "Get detailed post information with comments and reactions")
-    public ResponseEntity<SingleResponse<PostDetailResponse>> getPostDetail(@PathVariable UUID postId) {
+    public ResponseEntity<SingleResponse<PostDetailResponse>> getPostDetail(@PathVariable UUID postId,
+            @AuthenticationPrincipal String mssv) {
         log.info("[Post Controller] Getting post detail: {}", postId);
         PostDetailResponse response = postService.getPostDetail(postId);
         return successSingle(response, "Post detail retrieved successfully");
@@ -81,12 +82,12 @@ public class PostController extends AbstractBaseController {
 
     @PutMapping("/{postId}")
     @Operation(summary = "Update a post", description = "Update post title and content (files cannot be updated)")
-    public ResponseEntity<SingleResponse<PostResponse>> updatePost(
+    public ResponseEntity<SingleResponse<PostDetailResponse>> updatePost(
             @PathVariable UUID postId,
             @Valid @RequestBody UpdatePostRequest request,
             @AuthenticationPrincipal String mssv) {
         log.info("[Post Controller] Updating post: {} by mssv: {}", postId, mssv);
-        PostResponse response = postService.updatePost(postId, mssv, request);
+        PostDetailResponse response = postService.updatePost(postId, mssv, request);
         return successSingle(response, "Post updated successfully");
     }
 

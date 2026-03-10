@@ -2,7 +2,6 @@ package com.uit.buddy.entity.social;
 
 import com.uit.buddy.entity.AbstractBaseEntity;
 import com.uit.buddy.entity.user.Student;
-import com.uit.buddy.enums.ReactionType;
 import jakarta.persistence.*;
 import lombok.*;
 

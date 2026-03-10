@@ -7,4 +7,6 @@ public final class AppConstants {
     }
 
     public static final String STUDENT_EMAIL_DOMAIN = "@gm.uit.edu.vn";
+
+    public static final int SNIPPET_LENGTH = 200;
 }

@@ -1,9 +1,9 @@
 -- Sample posts from different students
 INSERT INTO posts (id, mssv, title, content, image_url, video_url, created_at, updated_at) VALUES
--- Post 1: Text only
+-- Post 1: Text only (LONG CONTENT FOR TRUNCATE TEST)
 ('550e8400-e29b-41d4-a716-446655440001', '22100001', 
 'Chia sẻ kinh nghiệm học lập trình', 
-'Mình vừa hoàn thành khóa học Java Spring Boot và muốn chia sẻ một số tips học tập hiệu quả. Đầu tiên là nên làm project thực tế thay vì chỉ học lý thuyết. Thứ hai là tham gia các cộng đồng developer để học hỏi kinh nghiệm. Cuối cùng là đừng ngại hỏi khi gặp khó khăn!',
+'Mình vừa hoàn thành khóa học Java Spring Boot và muốn chia sẻ một số tips học tập hiệu quả cho các bạn đang bắt đầu con đường trở thành developer. Đầu tiên và quan trọng nhất là nên làm project thực tế thay vì chỉ học lý thuyết suông. Khi làm project, bạn sẽ gặp rất nhiều vấn đề thực tế mà sách vở không dạy, từ đó học được cách debug, tìm kiếm giải pháp và tư duy giải quyết vấn đề. Thứ hai là tham gia các cộng đồng developer như GitHub, Stack Overflow, các group Facebook về lập trình để học hỏi kinh nghiệm từ những người đi trước. Đừng ngại chia sẻ code của mình và nhận feedback từ cộng đồng. Thứ ba là hãy đọc documentation chính thức thay vì chỉ xem tutorial, vì documentation sẽ giúp bạn hiểu sâu hơn về cách thư viện hoạt động. Thứ tư là practice coding mỗi ngày, dù chỉ 30 phút cũng tốt hơn là học dồn vào cuối tuần. Cuối cùng là đừng ngại hỏi khi gặp khó khăn, nhưng trước khi hỏi hãy tự research kỹ càng để tôn trọng thời gian của người giúp đỡ. Chúc các bạn thành công trên con đường coding!',
 NULL, NULL,
 '2026-03-01 08:00:00', '2026-03-01 08:00:00'),
 
@@ -15,10 +15,10 @@ NULL, NULL,
 NULL,
 '2026-03-02 09:30:00', '2026-03-02 09:30:00'),
 
--- Post 3: With video
+-- Post 3: With video (LONG CONTENT FOR TRUNCATE TEST)
 ('550e8400-e29b-41d4-a716-446655440003', '22100003',
 'Hướng dẫn cài đặt Docker cho người mới bắt đầu',
-'Video hướng dẫn chi tiết cách cài đặt và sử dụng Docker cơ bản. Rất hữu ích cho các bạn đang học môn Công nghệ phần mềm!',
+'Video hướng dẫn chi tiết cách cài đặt và sử dụng Docker cơ bản dành cho người mới bắt đầu. Docker là một platform giúp bạn đóng gói ứng dụng cùng với tất cả dependencies vào một container, đảm bảo ứng dụng chạy nhất quán trên mọi môi trường. Trong video này, mình sẽ hướng dẫn các bạn từng bước: Bước 1 - Cài đặt Docker Desktop trên Windows/Mac, Bước 2 - Hiểu về Docker Image và Container, Bước 3 - Viết Dockerfile đầu tiên, Bước 4 - Build và run container, Bước 5 - Sử dụng Docker Compose để quản lý multi-container application. Video rất hữu ích cho các bạn đang học môn Công nghệ phần mềm hoặc chuẩn bị làm đồ án tốt nghiệp. Sau khi xem video, các bạn sẽ có thể tự tin deploy ứng dụng của mình lên server production. Đừng quên like và subscribe để ủng hộ mình nhé!',
 NULL,
 'https://res.cloudinary.com/demo/video/upload/v1234567890/posts/docker_tutorial.mp4',
 '2026-03-03 14:20:00', '2026-03-03 14:20:00'),
@@ -38,10 +38,10 @@ NULL, NULL,
 NULL,
 '2026-03-05 16:45:00', '2026-03-05 16:45:00'),
 
--- Post 6: Text only
+-- Post 6: Text only (LONG CONTENT FOR TRUNCATE TEST)
 ('550e8400-e29b-41d4-a716-446655440006', '22100001',
 'Review khóa học online về Machine Learning',
-'Mình vừa hoàn thành khóa học ML trên Coursera. Nội dung rất chất lượng, giảng viên giải thích dễ hiểu. Recommend cho các bạn quan tâm đến AI!',
+'Mình vừa hoàn thành khóa học Machine Learning trên Coursera do giáo sư Andrew Ng giảng dạy và muốn chia sẻ trải nghiệm của mình. Khóa học này thực sự rất chất lượng và phù hợp cho người mới bắt đầu tìm hiểu về AI. Nội dung được chia thành nhiều module từ cơ bản đến nâng cao: Linear Regression, Logistic Regression, Neural Networks, Support Vector Machines, Unsupervised Learning, và Recommender Systems. Điểm mạnh nhất của khóa học là cách giảng viên giải thích các khái niệm phức tạp một cách dễ hiểu, kèm theo rất nhiều ví dụ thực tế. Các bài tập programming được thiết kế rất tốt, giúp bạn hiểu sâu về thuật toán thay vì chỉ sử dụng thư viện có sẵn. Tuy nhiên, khóa học yêu cầu kiến thức toán học khá cao, đặc biệt là đại số tuyến tính và giải tích. Mình recommend các bạn nên ôn lại toán trước khi học. Sau khi hoàn thành khóa học, mình cảm thấy tự tin hơn rất nhiều trong việc áp dụng ML vào các project thực tế. Highly recommend cho các bạn quan tâm đến AI và Data Science!',
 NULL, NULL,
 '2026-03-06 11:00:00', '2026-03-06 11:00:00'),
 
@@ -53,10 +53,10 @@ NULL, NULL,
 NULL,
 '2026-03-07 15:30:00', '2026-03-07 15:30:00'),
 
--- Post 8: Text only
+-- Post 8: Text only (LONG CONTENT FOR TRUNCATE TEST)
 ('550e8400-e29b-41d4-a716-446655440008', '22100007',
 'Câu hỏi về thuật toán Dijkstra',
-'Các bạn có thể giải thích cho mình tại sao thuật toán Dijkstra không hoạt động với cạnh có trọng số âm được không? Mình đang bí phần này quá!',
+'Các bạn có thể giải thích cho mình tại sao thuật toán Dijkstra không hoạt động với cạnh có trọng số âm được không? Mình đang học môn Cấu trúc dữ liệu và Giải thuật, phần đồ thị đang bị bí quá. Theo như mình hiểu thì Dijkstra sử dụng greedy approach, chọn đỉnh có khoảng cách ngắn nhất chưa được xét và cập nhật khoảng cách đến các đỉnh kề. Nhưng tại sao khi có cạnh âm thì thuật toán lại cho kết quả sai? Mình đã thử vẽ đồ thị và chạy thuật toán bằng tay nhưng vẫn chưa hiểu rõ. Có bạn nào có thể cho mình một ví dụ cụ thể về trường hợp Dijkstra fail với cạnh âm không? Và trong trường hợp đó thì mình nên dùng thuật toán nào thay thế? Mình có nghe nói về Bellman-Ford nhưng chưa rõ nó khác Dijkstra như thế nào. Cảm ơn các bạn rất nhiều!',
 NULL, NULL,
 '2026-03-08 09:20:00', '2026-03-08 09:20:00'),
 
