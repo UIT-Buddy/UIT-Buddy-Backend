@@ -14,15 +14,16 @@ import org.springframework.web.multipart.MultipartFile;
 
 public interface PostService {
 
-    PostDetailResponse createPost(String mssv, CreatePostRequest request, MultipartFile image, MultipartFile video);
+    // PostDetailResponse createPost(String mssv, CreatePostRequest request,
+    // MultipartFile image, MultipartFile video);
 
     PostDetailResponse updatePost(UUID postId, String mssv, UpdatePostRequest request);
 
     void deletePost(UUID postId, String mssv);
 
-    List<PostFeedResponse> getPostFeed(String cursor, int limit);
+    List<PostFeedResponse> getPostFeed(String mssv, String cursor, int limit);
 
-    PostDetailResponse getPostDetail(UUID postId);
+    PostDetailResponse getPostDetail(UUID postId, String mssv);
 
-    Page<PostFeedResponse> searchPost(String keyword, Pageable pageable);
+    Page<PostFeedResponse> searchPost(String keyword, String mssv, Pageable pageable);
 }

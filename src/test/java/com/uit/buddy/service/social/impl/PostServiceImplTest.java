@@ -1,21 +1,19 @@
 package com.uit.buddy.service.social.impl;
 
-import com.uit.buddy.dto.request.social.CreatePostRequest;
 import com.uit.buddy.dto.request.social.UpdatePostRequest;
-<<<<<<< HEAD
+import com.uit.buddy.dto.response.social.AuthorInfo;
+import com.uit.buddy.dto.response.social.MediaResponse;
 import com.uit.buddy.dto.response.social.PostDetailResponse;
-=======
->>>>>>> 26e636de76530b8da91ada8cd20a4aa0fb8dcd35
 import com.uit.buddy.dto.response.social.PostFeedResponse;
 import com.uit.buddy.entity.social.Post;
 import com.uit.buddy.entity.user.Student;
 import com.uit.buddy.exception.auth.AuthException;
 import com.uit.buddy.exception.social.SocialException;
-import com.uit.buddy.exception.user.UserException;
 import com.uit.buddy.mapper.social.PostMapper;
 import com.uit.buddy.repository.social.PostRepository;
 import com.uit.buddy.repository.user.StudentRepository;
 import com.uit.buddy.service.cloudinary.CloudinaryService;
+import com.uit.buddy.util.CursorUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -28,14 +26,10 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.mock.web.MockMultipartFile;
 
-<<<<<<< HEAD
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.Collections;
-=======
->>>>>>> 26e636de76530b8da91ada8cd20a4aa0fb8dcd35
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -43,6 +37,8 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -68,6 +64,7 @@ class PostServiceImplTest {
         private UUID postId;
         private Student student;
         private Post post;
+        private PostRepository.PostFeedProjection mockProjection;
 
         @BeforeEach
         void setUp() {
@@ -77,105 +74,429 @@ class PostServiceImplTest {
                 student = Student.builder()
                                 .mssv(mssv)
                                 .fullName("Test Student")
+                                .avatarUrl("https://example.com/avatar.jpg")
+                                .homeClassCode("21KTPM1")
                                 .build();
 
                 post = Post.builder()
                                 .title("Test Title")
                                 .content("Test Content")
                                 .author(student)
-                                .likeCount(0L)
-                                .commentCount(0L)
-                                .shareCount(0L)
+                                .likeCount(5L)
+                                .commentCount(3L)
+                                .shareCount(2L)
                                 .build();
-                // Set id manually since it's auto-generated
                 post.setId(postId);
+
+                // Mock projection
+                mockProjection = mock(PostRepository.PostFeedProjection.class);
+                when(mockProjection.getId()).thenReturn(postId);
+                when(mockProjection.getTitle()).thenReturn("Test Title");
+                when(mockProjection.getContent()).thenReturn("Test Content");
+                when(mockProjection.getMedias()).thenReturn("[]");
+                when(mockProjection.getLikeCount()).thenReturn(5L);
+                when(mockProjection.getCommentCount()).thenReturn(3L);
+                when(mockProjection.getShareCount()).thenReturn(2L);
+                when(mockProjection.getCreatedAt()).thenReturn(LocalDateTime.now());
+                when(mockProjection.getUpdatedAt()).thenReturn(LocalDateTime.now());
+                when(mockProjection.getAuthorMssv()).thenReturn(mssv);
+                when(mockProjection.getAuthorFullName()).thenReturn("Test Student");
+                when(mockProjection.getAuthorAvatarUrl()).thenReturn("https://example.com/avatar.jpg");
+                when(mockProjection.getAuthorHomeClassCode()).thenReturn("21KTPM1");
+                when(mockProjection.getIsLiked()).thenReturn(false);
+                when(mockProjection.getIsShared()).thenReturn(false);
         }
 
         @Nested
-        @DisplayName("Create Post Tests")
-        class CreatePostTests {
+        @DisplayName("Get Post Feed Tests")
+        class GetPostFeedTests {
 
-                private CreatePostRequest createRequest;
-                private PostDetailResponse postDetailResponse;
+                @Test
+                @DisplayName("Should get post feed without cursor successfully")
+                void shouldGetPostFeedWithoutCursor() {
+                        // Given
+                        String cursor = null;
+                        int limit = 10;
+                        List<PostRepository.PostFeedProjection> projections = Arrays.asList(mockProjection,
+                                        mockProjection);
 
-                @BeforeEach
-                void setUp() {
-                        createRequest = new CreatePostRequest(
+                        PostFeedResponse feedResponse = new PostFeedResponse(
+                                        postId,
                                         "Test Title",
-                                        "Test Content",
-                                        null,
-                                        null);
+                                        "Test Content Snippet",
+                                        Collections.emptyList(),
+                                        new AuthorInfo(mssv, "Test Student", "https://example.com/avatar.jpg",
+                                                        "21KTPM1"),
+                                        5L,
+                                        3L,
+                                        2L,
+                                        false,
+                                        false,
+                                        LocalDateTime.now());
 
-                        postDetailResponse = new PostDetailResponse(
+                        when(postRepository.findFeed(eq(mssv), eq(null), eq(null), eq(limit)))
+                                        .thenReturn(projections);
+                        when(postMapper.toPostFeedResponse(any(PostRepository.PostFeedProjection.class)))
+                                        .thenReturn(feedResponse);
+
+                        // When
+                        List<PostFeedResponse> result = postService.getPostFeed(mssv, cursor, limit);
+
+                        // Then
+                        assertThat(result).hasSize(2);
+                        assertThat(result.get(0).id()).isEqualTo(postId);
+                        assertThat(result.get(0).title()).isEqualTo("Test Title");
+                        assertThat(result.get(0).likeCount()).isEqualTo(5L);
+
+                        verify(postRepository).findFeed(mssv, null, null, limit);
+                        verify(postMapper, times(2)).toPostFeedResponse(any(PostRepository.PostFeedProjection.class));
+                }
+
+                @Test
+                @DisplayName("Should get post feed with cursor successfully")
+                void shouldGetPostFeedWithCursor() {
+                        // Given
+                        LocalDateTime cursorTime = LocalDateTime.now().minusHours(1);
+                        UUID cursorId = UUID.randomUUID();
+                        String cursor = CursorUtils.encode(cursorTime, cursorId);
+                        int limit = 5;
+
+                        List<PostRepository.PostFeedProjection> projections = Arrays.asList(mockProjection);
+                        PostFeedResponse feedResponse = new PostFeedResponse(
+                                        postId,
+                                        "Test Title",
+                                        "Test Content Snippet",
+                                        Collections.emptyList(),
+                                        new AuthorInfo(mssv, "Test Student", "https://example.com/avatar.jpg",
+                                                        "21KTPM1"),
+                                        5L,
+                                        3L,
+                                        2L,
+                                        false,
+                                        false,
+                                        LocalDateTime.now());
+
+                        when(postRepository.findFeed(eq(mssv), eq(cursorTime), eq(cursorId), eq(limit)))
+                                        .thenReturn(projections);
+                        when(postMapper.toPostFeedResponse(any(PostRepository.PostFeedProjection.class)))
+                                        .thenReturn(feedResponse);
+
+                        // When
+                        List<PostFeedResponse> result = postService.getPostFeed(mssv, cursor, limit);
+
+                        // Then
+                        assertThat(result).hasSize(1);
+                        assertThat(result.get(0).id()).isEqualTo(postId);
+
+                        verify(postRepository).findFeed(mssv, cursorTime, cursorId, limit);
+                        verify(postMapper).toPostFeedResponse(any(PostRepository.PostFeedProjection.class));
+                }
+
+                @Test
+                @DisplayName("Should return empty list when no posts found")
+                void shouldReturnEmptyListWhenNoPostsFound() {
+                        // Given
+                        String cursor = null;
+                        int limit = 10;
+                        List<PostRepository.PostFeedProjection> emptyProjections = Collections.emptyList();
+
+                        when(postRepository.findFeed(eq(mssv), eq(null), eq(null), eq(limit)))
+                                        .thenReturn(emptyProjections);
+
+                        // When
+                        List<PostFeedResponse> result = postService.getPostFeed(mssv, cursor, limit);
+
+                        // Then
+                        assertThat(result).isEmpty();
+
+                        verify(postRepository).findFeed(mssv, null, null, limit);
+                        verify(postMapper, never()).toPostFeedResponse(any());
+                }
+
+                @Test
+                @DisplayName("Should handle invalid cursor gracefully")
+                void shouldHandleInvalidCursorGracefully() {
+                        // Given
+                        String invalidCursor = "invalid-cursor";
+                        int limit = 10;
+                        List<PostRepository.PostFeedProjection> projections = Arrays.asList(mockProjection);
+
+                        PostFeedResponse feedResponse = new PostFeedResponse(
+                                        postId,
+                                        "Test Title",
+                                        "Test Content Snippet",
+                                        Collections.emptyList(),
+                                        new AuthorInfo(mssv, "Test Student", "https://example.com/avatar.jpg",
+                                                        "21KTPM1"),
+                                        5L,
+                                        3L,
+                                        2L,
+                                        false,
+                                        false,
+                                        LocalDateTime.now());
+
+                        when(postRepository.findFeed(eq(mssv), eq(null), eq(null), eq(limit)))
+                                        .thenReturn(projections);
+                        when(postMapper.toPostFeedResponse(any(PostRepository.PostFeedProjection.class)))
+                                        .thenReturn(feedResponse);
+
+                        // When
+                        List<PostFeedResponse> result = postService.getPostFeed(mssv, invalidCursor, limit);
+
+                        // Then
+                        assertThat(result).hasSize(1);
+
+                        // Should fallback to null cursor when invalid
+                        verify(postRepository).findFeed(mssv, null, null, limit);
+                }
+        }
+
+        @Nested
+        @DisplayName("Get Post Detail Tests")
+        class GetPostDetailTests {
+
+                @Test
+                @DisplayName("Should get post detail successfully")
+                void shouldGetPostDetailSuccessfully() {
+                        // Given
+                        PostDetailResponse detailResponse = new PostDetailResponse(
                                         postId,
                                         "Test Title",
                                         "Test Content",
-                                        null,
-                                        null,
-                                        new PostDetailResponse.AuthorInfo(mssv, "Test Student", null),
-                                        0L,
-                                        0L,
-                                        0L,
+                                        Collections.emptyList(),
+                                        new AuthorInfo(mssv, "Test Student", "https://example.com/avatar.jpg",
+                                                        "21KTPM1"),
+                                        5L,
+                                        2L,
+                                        3L,
+                                        false,
+                                        false,
                                         LocalDateTime.now(),
                                         LocalDateTime.now());
-                }
 
-                @Test
-                @DisplayName("Should create post without media successfully")
-                void shouldCreatePostWithoutMedia() {
-                        // Given
-                        when(studentRepository.findById(mssv)).thenReturn(Optional.of(student));
-                        when(postRepository.save(any(Post.class))).thenReturn(post);
-                        when(postMapper.toPostDetailResponse(post)).thenReturn(postDetailResponse);
+                        when(postRepository.findDetailWithStatus(postId, mssv)).thenReturn(Optional.of(mockProjection));
+                        when(postMapper.toPostDetailResponseFromProjection(mockProjection)).thenReturn(detailResponse);
 
                         // When
-                        PostDetailResponse result = postService.createPost(mssv, createRequest, null, null);
+                        PostDetailResponse result = postService.getPostDetail(postId, mssv);
 
                         // Then
                         assertThat(result).isNotNull();
+                        assertThat(result.id()).isEqualTo(postId);
                         assertThat(result.title()).isEqualTo("Test Title");
                         assertThat(result.content()).isEqualTo("Test Content");
+                        assertThat(result.likeCount()).isEqualTo(5L);
+                        assertThat(result.commentCount()).isEqualTo(3L);
+                        assertThat(result.shareCount()).isEqualTo(2L);
 
-                        verify(studentRepository).findById(mssv);
-                        verify(postRepository, times(2)).save(any(Post.class));
-                        verify(postMapper).toPostDetailResponse(post);
-                        verify(cloudinaryService, never()).uploadPostImage(any(), any());
-                        verify(cloudinaryService, never()).uploadPostVideo(any(), any());
+                        verify(postRepository).findDetailWithStatus(postId, mssv);
+                        verify(postMapper).toPostDetailResponseFromProjection(mockProjection);
                 }
 
                 @Test
-                @DisplayName("Should create post with image successfully")
-                void shouldCreatePostWithImage() {
+                @DisplayName("Should throw exception when post not found")
+                void shouldThrowExceptionWhenPostNotFound() {
                         // Given
-                        MockMultipartFile image = new MockMultipartFile("image", "test.jpg", "image/jpeg",
-                                        "test".getBytes());
-                        when(studentRepository.findById(mssv)).thenReturn(Optional.of(student));
-                        when(postRepository.save(any(Post.class))).thenReturn(post);
-                        when(cloudinaryService.uploadPostImage(any(), any()))
-                                        .thenReturn("https://cloudinary.com/image.jpg");
-                        when(postMapper.toPostDetailResponse(post)).thenReturn(postDetailResponse);
+                        when(postRepository.findDetailWithStatus(postId, mssv)).thenReturn(Optional.empty());
+
+                        // When & Then
+                        assertThatThrownBy(() -> postService.getPostDetail(postId, mssv))
+                                        .isInstanceOf(SocialException.class)
+                                        .hasMessageContaining("Post not found");
+
+                        verify(postRepository).findDetailWithStatus(postId, mssv);
+                        verify(postMapper, never()).toPostDetailResponseFromProjection(any());
+                }
+
+                @Test
+                @DisplayName("Should get post detail with media successfully")
+                void shouldGetPostDetailWithMediaSuccessfully() {
+                        // Given
+                        String mediasJson = "[{\"type\":\"image\",\"url\":\"https://example.com/image.jpg\"}]";
+                        when(mockProjection.getMedias()).thenReturn(mediasJson);
+
+                        List<MediaResponse> medias = Arrays.asList(
+                                        new MediaResponse("image", "https://example.com/image.jpg"));
+
+                        PostDetailResponse detailResponse = new PostDetailResponse(
+                                        postId,
+                                        "Test Title",
+                                        "Test Content",
+                                        medias,
+                                        new AuthorInfo(mssv, "Test Student", "https://example.com/avatar.jpg",
+                                                        "21KTPM1"),
+                                        5L,
+                                        2L,
+                                        3L,
+                                        false,
+                                        false,
+                                        LocalDateTime.now(),
+                                        LocalDateTime.now());
+
+                        when(postRepository.findDetailWithStatus(postId, mssv)).thenReturn(Optional.of(mockProjection));
+                        when(postMapper.toPostDetailResponseFromProjection(mockProjection)).thenReturn(detailResponse);
 
                         // When
-                        PostDetailResponse result = postService.createPost(mssv, createRequest, image, null);
+                        PostDetailResponse result = postService.getPostDetail(postId, mssv);
 
                         // Then
                         assertThat(result).isNotNull();
-                        verify(cloudinaryService).uploadPostImage(image, postId.toString());
-                        verify(cloudinaryService, never()).uploadPostVideo(any(), any());
+                        assertThat(result.medias()).hasSize(1);
+                        assertThat(result.medias().get(0).type()).isEqualTo("image");
+                        assertThat(result.medias().get(0).url()).isEqualTo("https://example.com/image.jpg");
+
+                        verify(postRepository).findDetailWithStatus(postId, mssv);
+                        verify(postMapper).toPostDetailResponseFromProjection(mockProjection);
+                }
+        }
+
+        @Nested
+        @DisplayName("Search Post Tests")
+        class SearchPostTests {
+
+                private Pageable pageable;
+
+                @BeforeEach
+                void setUp() {
+                        pageable = PageRequest.of(0, 15);
                 }
 
                 @Test
-                @DisplayName("Should throw exception when student not found")
-                void shouldThrowExceptionWhenStudentNotFound() {
+                @DisplayName("Should search posts with keyword successfully")
+                void shouldSearchPostsWithKeyword() {
                         // Given
-                        when(studentRepository.findById(mssv)).thenReturn(Optional.empty());
+                        String keyword = "test";
+                        List<PostRepository.PostFeedProjection> projections = Arrays.asList(mockProjection,
+                                        mockProjection);
+                        Page<PostRepository.PostFeedProjection> projectionsPage = new PageImpl<>(projections, pageable,
+                                        2);
 
-                        // When & Then
-                        assertThatThrownBy(() -> postService.createPost(mssv, createRequest, null, null))
-                                        .isInstanceOf(UserException.class)
-                                        .hasMessageContaining("Student not found");
+                        PostFeedResponse feedResponse = new PostFeedResponse(
+                                        postId,
+                                        "Test Title",
+                                        "Test Content Snippet",
+                                        Collections.emptyList(),
+                                        new AuthorInfo(mssv, "Test Student", "https://example.com/avatar.jpg",
+                                                        "21KTPM1"),
+                                        5L,
+                                        3L,
+                                        2L,
+                                        false,
+                                        false,
+                                        LocalDateTime.now());
 
-                        verify(postRepository, never()).save(any());
+                        when(postRepository.searchPostFull(keyword, mssv, pageable)).thenReturn(projectionsPage);
+                        when(postMapper.toPostFeedResponse(any(PostRepository.PostFeedProjection.class)))
+                                        .thenReturn(feedResponse);
+
+                        // When
+                        Page<PostFeedResponse> result = postService.searchPost(keyword, mssv, pageable);
+
+                        // Then
+                        assertThat(result).isNotNull();
+                        assertThat(result.getContent()).hasSize(2);
+                        assertThat(result.getTotalElements()).isEqualTo(2);
+                        assertThat(result.getContent().get(0).id()).isEqualTo(postId);
+                        assertThat(result.getContent().get(0).title()).isEqualTo("Test Title");
+
+                        verify(postRepository).searchPostFull(keyword, mssv, pageable);
+                        verify(postMapper, times(2)).toPostFeedResponse(any(PostRepository.PostFeedProjection.class));
+                }
+
+                @Test
+                @DisplayName("Should return empty page when keyword is null")
+                void shouldReturnEmptyPageWhenKeywordIsNull() {
+                        // Given
+                        String keyword = null;
+
+                        // When
+                        Page<PostFeedResponse> result = postService.searchPost(keyword, mssv, pageable);
+
+                        // Then
+                        assertThat(result).isNotNull();
+                        assertThat(result.getContent()).isEmpty();
+                        assertThat(result.getTotalElements()).isEqualTo(0);
+
+                        verify(postRepository, never()).searchPostFull(anyString(), anyString(), any(Pageable.class));
+                        verify(postMapper, never()).toPostFeedResponse(any());
+                }
+
+                @Test
+                @DisplayName("Should return empty page when keyword is blank")
+                void shouldReturnEmptyPageWhenKeywordIsBlank() {
+                        // Given
+                        String keyword = "   ";
+
+                        // When
+                        Page<PostFeedResponse> result = postService.searchPost(keyword, mssv, pageable);
+
+                        // Then
+                        assertThat(result).isNotNull();
+                        assertThat(result.getContent()).isEmpty();
+                        assertThat(result.getTotalElements()).isEqualTo(0);
+
+                        verify(postRepository, never()).searchPostFull(anyString(), anyString(), any(Pageable.class));
+                        verify(postMapper, never()).toPostFeedResponse(any());
+                }
+
+                @Test
+                @DisplayName("Should return empty page when no posts found")
+                void shouldReturnEmptyPageWhenNoPostsFound() {
+                        // Given
+                        String keyword = "nonexistent";
+                        Page<PostRepository.PostFeedProjection> emptyPage = new PageImpl<>(Collections.emptyList(),
+                                        pageable, 0);
+
+                        when(postRepository.searchPostFull(keyword, mssv, pageable)).thenReturn(emptyPage);
+
+                        // When
+                        Page<PostFeedResponse> result = postService.searchPost(keyword, mssv, pageable);
+
+                        // Then
+                        assertThat(result).isNotNull();
+                        assertThat(result.getContent()).isEmpty();
+                        assertThat(result.getTotalElements()).isEqualTo(0);
+
+                        verify(postRepository).searchPostFull(keyword, mssv, pageable);
+                        verify(postMapper, never()).toPostFeedResponse(any());
+                }
+
+                @Test
+                @DisplayName("Should search posts with special characters in keyword")
+                void shouldSearchPostsWithSpecialCharacters() {
+                        // Given
+                        String keyword = "test@#$%";
+                        List<PostRepository.PostFeedProjection> projections = Arrays.asList(mockProjection);
+                        Page<PostRepository.PostFeedProjection> projectionsPage = new PageImpl<>(projections, pageable,
+                                        1);
+
+                        PostFeedResponse feedResponse = new PostFeedResponse(
+                                        postId,
+                                        "Test Title",
+                                        "Test Content Snippet",
+                                        Collections.emptyList(),
+                                        new AuthorInfo(mssv, "Test Student", "https://example.com/avatar.jpg",
+                                                        "21KTPM1"),
+                                        5L,
+                                        3L,
+                                        2L,
+                                        false,
+                                        false,
+                                        LocalDateTime.now());
+
+                        when(postRepository.searchPostFull(keyword, mssv, pageable)).thenReturn(projectionsPage);
+                        when(postMapper.toPostFeedResponse(any(PostRepository.PostFeedProjection.class)))
+                                        .thenReturn(feedResponse);
+
+                        // When
+                        Page<PostFeedResponse> result = postService.searchPost(keyword, mssv, pageable);
+
+                        // Then
+                        assertThat(result).isNotNull();
+                        assertThat(result.getContent()).hasSize(1);
+
+                        verify(postRepository).searchPostFull(keyword, mssv, pageable);
+                        verify(postMapper).toPostFeedResponse(any(PostRepository.PostFeedProjection.class));
                 }
         }
 
@@ -184,31 +505,35 @@ class PostServiceImplTest {
         class UpdatePostTests {
 
                 private UpdatePostRequest updateRequest;
-                private PostDetailResponse postDetailResponse;
 
                 @BeforeEach
                 void setUp() {
                         updateRequest = new UpdatePostRequest("Updated Title", "Updated Content");
-                        postDetailResponse = new PostDetailResponse(
-                                        postId,
-                                        "Updated Title",
-                                        "Updated Content",
-                                        null,
-                                        null,
-                                        new PostDetailResponse.AuthorInfo(mssv, "Test Student", null),
-                                        0L,
-                                        0L,
-                                        0L,
-                                        LocalDateTime.now(),
-                                        LocalDateTime.now());
                 }
 
                 @Test
                 @DisplayName("Should update post successfully")
                 void shouldUpdatePostSuccessfully() {
                         // Given
+                        PostDetailResponse detailResponse = new PostDetailResponse(
+                                        postId,
+                                        "Updated Title",
+                                        "Updated Content",
+                                        Collections.emptyList(),
+                                        new AuthorInfo(mssv, "Test Student", "https://example.com/avatar.jpg",
+                                                        "21KTPM1"),
+                                        5L,
+                                        2L,
+                                        3L,
+                                        false,
+                                        false,
+                                        LocalDateTime.now(),
+                                        LocalDateTime.now());
+
                         when(postRepository.findById(postId)).thenReturn(Optional.of(post));
-                        when(postMapper.toPostDetailResponse(post)).thenReturn(postDetailResponse);
+                        when(postRepository.save(post)).thenReturn(post);
+                        when(postRepository.findDetailWithStatus(postId, mssv)).thenReturn(Optional.of(mockProjection));
+                        when(postMapper.toPostDetailResponseFromProjection(mockProjection)).thenReturn(detailResponse);
 
                         // When
                         PostDetailResponse result = postService.updatePost(postId, mssv, updateRequest);
@@ -219,7 +544,9 @@ class PostServiceImplTest {
                         assertThat(result.content()).isEqualTo("Updated Content");
 
                         verify(postRepository).findById(postId);
-                        verify(postMapper).toPostDetailResponse(post);
+                        verify(postRepository).save(post);
+                        verify(postRepository).findDetailWithStatus(postId, mssv);
+                        verify(postMapper).toPostDetailResponseFromProjection(mockProjection);
                 }
 
                 @Test
@@ -232,6 +559,8 @@ class PostServiceImplTest {
                         assertThatThrownBy(() -> postService.updatePost(postId, mssv, updateRequest))
                                         .isInstanceOf(SocialException.class)
                                         .hasMessageContaining("Post not found");
+
+                        verify(postRepository, never()).save(any());
                 }
 
                 @Test
@@ -246,7 +575,7 @@ class PostServiceImplTest {
                                         .isInstanceOf(AuthException.class)
                                         .hasMessageContaining("permission");
 
-                        verify(postMapper, never()).toPostDetailResponse(any());
+                        verify(postRepository, never()).save(any());
                 }
         }
 
@@ -284,163 +613,21 @@ class PostServiceImplTest {
 
                         verify(postRepository, never()).delete(any());
                 }
-        }
-
-        @Nested
-        @DisplayName("Get Post Feed Tests")
-        class GetPostFeedTests {
 
                 @Test
-                @DisplayName("Should get first page of post feed successfully")
-                void shouldGetFirstPageSuccessfully() {
+                @DisplayName("Should throw exception when user is not the owner")
+                void shouldThrowExceptionWhenNotOwner() {
                         // Given
-                        int limit = 10;
-                        List<Post> posts = Arrays.asList(post, post, post);
-                        PostFeedResponse feedResponse = createFeedResponse(postId);
-
-                        when(postRepository.findFirstPage(limit + 1)).thenReturn(posts);
-                        when(postMapper.toPostFeedResponse(any(Post.class))).thenReturn(feedResponse);
-
-                        // When
-                        List<PostFeedResponse> result = postService.getPostFeed(null, limit);
-
-                        // Then
-                        assertThat(result).hasSize(3);
-                        verify(postRepository).findFirstPage(limit + 1);
-                        verify(postRepository, never()).findNextPage(any(), any(), anyInt());
-                }
-
-                private PostFeedResponse createFeedResponse(UUID id) {
-                        return new PostFeedResponse(
-                                        id,
-                                        "Test Title",
-                                        "Test Content Snippet",
-                                        null,
-                                        null,
-                                        new PostFeedResponse.AuthorInfo(mssv, "Test Student", null),
-                                        0L,
-                                        0L,
-                                        0L,
-                                        LocalDateTime.now());
-                }
-        }
-
-        @Nested
-        @DisplayName("Get Post Detail Tests")
-        class GetPostDetailTests {
-
-                @Test
-                @DisplayName("Should get post detail successfully")
-                void shouldGetPostDetailSuccessfully() {
-                        // Given
-                        PostDetailResponse detailResponse = new PostDetailResponse(
-                                        postId,
-                                        "Test Title",
-                                        "Test Content",
-                                        null,
-                                        null,
-                                        new PostDetailResponse.AuthorInfo(mssv, "Test Student", null),
-                                        0L,
-                                        0L,
-                                        0L,
-                                        LocalDateTime.now(),
-                                        LocalDateTime.now());
-
+                        String otherMssv = "21520002";
                         when(postRepository.findById(postId)).thenReturn(Optional.of(post));
-                        when(postMapper.toPostDetailResponse(post)).thenReturn(detailResponse);
-
-                        // When
-                        PostDetailResponse result = postService.getPostDetail(postId);
-
-                        // Then
-                        assertThat(result).isNotNull();
-                        assertThat(result.id()).isEqualTo(postId);
-                        assertThat(result.title()).isEqualTo("Test Title");
-                        assertThat(result.content()).isEqualTo("Test Content");
-
-                        verify(postRepository).findById(postId);
-                        verify(postMapper).toPostDetailResponse(post);
-                }
-
-                @Test
-                @DisplayName("Should throw exception when post not found")
-                void shouldThrowExceptionWhenPostNotFound() {
-                        // Given
-                        when(postRepository.findById(postId)).thenReturn(Optional.empty());
 
                         // When & Then
-                        assertThatThrownBy(() -> postService.getPostDetail(postId))
-                                        .isInstanceOf(SocialException.class)
-                                        .hasMessageContaining("Post not found");
+                        assertThatThrownBy(() -> postService.deletePost(postId, otherMssv))
+                                        .isInstanceOf(AuthException.class)
+                                        .hasMessageContaining("permission");
 
-                        verify(postMapper, never()).toPostDetailResponse(any());
-                }
-        }
-
-        @Nested
-        @DisplayName("Search Post Tests")
-        class SearchPostTests {
-
-                private Pageable pageable;
-
-                @BeforeEach
-                void setUp() {
-                        pageable = PageRequest.of(0, 15);
-                }
-
-                @Test
-                @DisplayName("Should search posts with keyword successfully")
-                void shouldSearchPostsWithKeyword() {
-                        // Given
-                        String keyword = "test";
-                        List<UUID> foundIds = Arrays.asList(postId, UUID.randomUUID());
-                        Page<Post> postPage = new PageImpl<>(Arrays.asList(post, post));
-                        PostFeedResponse feedResponse = new PostFeedResponse(
-                                        postId,
-                                        "Test Title",
-                                        "Test Content",
-                                        null,
-                                        null,
-                                        new PostFeedResponse.AuthorInfo(mssv, "Test Student", null),
-                                        0L,
-                                        0L,
-                                        0L,
-                                        LocalDateTime.now());
-
-                        when(postRepository.searchPostByKeyword(keyword)).thenReturn(foundIds);
-                        when(postRepository.findAll(foundIds, pageable)).thenReturn(postPage);
-                        when(postMapper.toPostFeedResponse(any(Post.class))).thenReturn(feedResponse);
-
-                        // When
-                        Page<PostFeedResponse> result = postService.searchPost(keyword, pageable);
-
-                        // Then
-                        assertThat(result).isNotNull();
-                        assertThat(result.getContent()).hasSize(2);
-
-                        verify(postRepository).searchPostByKeyword(keyword);
-                        verify(postRepository).findAll(foundIds, pageable);
-                }
-
-                @Test
-                @DisplayName("Should return empty page when no posts found")
-                void shouldReturnEmptyPageWhenNoPostsFound() {
-                        // Given
-                        String keyword = "nonexistent";
-                        List<UUID> emptyIds = Collections.emptyList();
-
-                        when(postRepository.searchPostByKeyword(keyword)).thenReturn(emptyIds);
-
-                        // When
-                        Page<PostFeedResponse> result = postService.searchPost(keyword, pageable);
-
-                        // Then
-                        assertThat(result).isNotNull();
-                        assertThat(result.getContent()).isEmpty();
-                        assertThat(result.getTotalElements()).isEqualTo(0);
-
-                        verify(postRepository).searchPostByKeyword(keyword);
-                        verify(postRepository, never()).findAll(any(List.class), any(Pageable.class));
+                        verify(postRepository, never()).delete(any());
+                        verify(cloudinaryService, never()).deletePostMedia(any());
                 }
         }
 }

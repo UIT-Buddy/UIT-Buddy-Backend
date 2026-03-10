@@ -10,3 +10,7 @@ ALTER TABLE reactions
 ADD COLUMN reaction_type VARCHAR(20) NOT NULL DEFAULT 'LIKE';
 
 CREATE INDEX idx_reaction_type ON reactions(post_id, reaction_type);
+
+ALTER TABLE posts DROP COLUMN image_url;
+ALTER TABLE posts DROP COLUMN video_url;
+ALTER TABLE posts ADD COLUMN medias jsonb NOT NULL DEFAULT '[]';

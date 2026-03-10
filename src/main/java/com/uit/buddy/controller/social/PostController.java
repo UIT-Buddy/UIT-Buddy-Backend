@@ -17,6 +17,7 @@ import com.uit.buddy.service.social.PostService;
 import com.uit.buddy.util.CursorUtils;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -42,17 +43,19 @@ public class PostController extends AbstractBaseController {
     private final PostService postService;
     private final CloudinaryService cloudinaryService;
 
-    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    @Operation(summary = "Create a new post", description = "Create a new post with optional image and video")
-    public ResponseEntity<SingleResponse<PostDetailResponse>> createPost(
-            @Valid @ModelAttribute CreatePostRequest request,
-            @AuthenticationPrincipal String mssv) {
-        log.info("[Post Controller] Creating post for mssv: {}", mssv);
-        validateMediaFiles(request.image(), request.video());
+    // @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    // @Operation(summary = "Create a new post", description = "Create a new post
+    // with optional image and video")
+    // public ResponseEntity<SingleResponse<PostDetailResponse>> createPost(
+    // @Valid @ModelAttribute CreatePostRequest request,
+    // @AuthenticationPrincipal String mssv) {
+    // log.info("[Post Controller] Creating post for mssv: {}", mssv);
+    // validateMediaFiles(request.image(), request.video());
 
-        PostDetailResponse response = postService.createPost(mssv, request, request.image(), request.video());
-        return successSingle(response, "Post created successfully");
-    }
+    // PostDetailResponse response = postService.createPost(mssv, request,
+    // request.image(), request.video());
+    // return successSingle(response, "Post created successfully");
+    // }
 
     @GetMapping
     @Operation(summary = "Get post feed", description = "Get paginated post feed with cursor-based pagination")
@@ -62,7 +65,7 @@ public class PostController extends AbstractBaseController {
 
         log.info("[Post Controller] Getting post feed with cursor: {}, limit: {}", cursor, limit);
 
-        List<PostFeedResponse> postList = postService.getPostFeed(cursor, limit);
+        List<PostFeedResponse> postList = postService.getPostFeed(mssv, cursor, limit);
 
         return cursorPaging(
                 "Post feed retrieved successfully",
@@ -76,7 +79,7 @@ public class PostController extends AbstractBaseController {
     public ResponseEntity<SingleResponse<PostDetailResponse>> getPostDetail(@PathVariable UUID postId,
             @AuthenticationPrincipal String mssv) {
         log.info("[Post Controller] Getting post detail: {}", postId);
-        PostDetailResponse response = postService.getPostDetail(postId);
+        PostDetailResponse response = postService.getPostDetail(postId, mssv);
         return successSingle(response, "Post detail retrieved successfully");
     }
 
@@ -105,31 +108,32 @@ public class PostController extends AbstractBaseController {
 
     @GetMapping("/search")
     @Operation(summary = "Search posts", description = "Search posts with keyword and filter")
-    public ResponseEntity<PageResponse<PostFeedResponse>> searchStudentByKeywordAndFilters(
+    public ResponseEntity<PageResponse<PostFeedResponse>> searchPostByKeywordAndFilters(
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "15") int limit,
             @RequestParam(defaultValue = "desc") String sortType,
             @RequestParam(defaultValue = "createdAt") String sortBy,
-            @RequestParam(required = false) String keyword) {
+            @RequestParam(required = false) String keyword,
+            @AuthenticationPrincipal String mssv) {
         Pageable pageable = createPageable(page, limit, sortType, sortBy);
-        Page<PostFeedResponse> responses = postService.searchPost(keyword, pageable);
+        Page<PostFeedResponse> responses = postService.searchPost(keyword, mssv, pageable);
         return paging(responses, "Search posts with keyword and filter successfully");
     }
 
-    private void validateMediaFiles(MultipartFile image, MultipartFile video) {
-        boolean hasImage = image != null && !image.isEmpty();
-        boolean hasVideo = video != null && !video.isEmpty();
+    // private void validateMediaFiles(MultipartFile image, MultipartFile video) {
+    // boolean hasImage = image != null && !image.isEmpty();
+    // boolean hasVideo = video != null && !video.isEmpty();
 
-        if (hasImage && hasVideo) {
-            throw new SocialException(SocialErrorCode.NOT_INCLUDE_BOTH_TYPES);
-        }
+    // if (hasImage && hasVideo) {
+    // throw new SocialException(SocialErrorCode.NOT_INCLUDE_BOTH_TYPES);
+    // }
 
-        if (hasImage) {
-            cloudinaryService.validateFile(image, FileType.IMAGE);
-        }
+    // if (hasImage) {
+    // cloudinaryService.validateFile(image, FileType.IMAGE);
+    // }
 
-        if (hasVideo) {
-            cloudinaryService.validateFile(video, FileType.VIDEO);
-        }
-    }
+    // if (hasVideo) {
+    // cloudinaryService.validateFile(video, FileType.VIDEO);
+    // }
+    // }
 }
