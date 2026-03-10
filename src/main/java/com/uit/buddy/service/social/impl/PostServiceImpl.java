@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.UUID;
 
 import com.uit.buddy.util.CursorUtils;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -41,33 +42,33 @@ public class PostServiceImpl implements PostService {
     private final StudentRepository studentRepository;
     private final PostMapper postMapper;
     private final CloudinaryService cloudinaryService;
+    @Value("${post.limit-upload-images}")
+    private int limitNumberOfImages;
+    @Value("${post.limit-upload-videos}")
+    private int limitNumberOfVideos;
+    @Override
+    @Transactional
+    public PostDetailResponse createPost(String mssv, String title, String content, CreatePostRequest request) {
+        log.info("[Post Service] Create post for mssv: {}", mssv);
+        validateLimitImagesAndVideos(request.images(), request.videos());
+        Student author = studentRepository.findById(mssv)
+                .orElseThrow(() -> new UserException(
+                        UserErrorCode.STUDENT_NOT_FOUND,
+                        "Student not found"));
 
-    // @Override
-    // @Transactional
-    // public PostDetailResponse createPost(String mssv, CreatePostRequest request,
-    // MultipartFile image,
-    // MultipartFile video) {
-    // log.info("[Post Service] Create post for mssv: {}", mssv);
+        Post post = Post.builder()
+                .title(title)
+                .content(content)
+                .author(author)
+                .build();
 
-    // Student author = studentRepository.findById(mssv)
-    // .orElseThrow(() -> new UserException(
-    // UserErrorCode.STUDENT_NOT_FOUND,
-    // "Student not found"));
+        Post savedPost = postRepository.save(post);
+        handleMediaUpload(request.images(), request.videos(), savedPost);
 
-    // Post post = Post.builder()
-    // .title(request.title())
-    // .content(request.content())
-    // .author(author)
-    // .build();
-
-    // Post savedPost = postRepository.save(post);
-
-    // handleMediaUpload(image, video, savedPost);
-
-    // savedPost = postRepository.save(post);
-    // log.info("[Post Service] Post saved successfully with ID: {}", post.getId());
-    // return postMapper.toPostDetailResponse(savedPost);
-    // }
+        savedPost = postRepository.save(post);
+        log.info("[Post Service] Post saved successfully with ID: {}", post.getId());
+        return postMapper.toPostDetailResponse(savedPost);
+    }
 
     @Override
     @Transactional(readOnly = true)
@@ -146,14 +147,26 @@ public class PostServiceImpl implements PostService {
         return post;
     }
 
-    // private void handleMediaUpload(MultipartFile image, MultipartFile video, Post
-    // post) {
-    // String publicId = post.getId().toString();
-
-    // if (video != null && !video.isEmpty()) {
-    // post.setVideoUrl(cloudinaryService.uploadPostVideo(video, publicId));
-    // } else if (image != null && !image.isEmpty()) {
-    // post.setImageUrl(cloudinaryService.uploadPostImage(image, publicId));
-    // }
-    // }
+    private void handleMediaUpload(List<MultipartFile> images, List<MultipartFile> videos, Post post) {
+        if(images == null && videos == null)
+        {
+            post.setMedias(List.of());
+            return;
+        }
+        String publicId = post.getId().toString();
+        post.setMedias(cloudinaryService.uploadMultiMedia(images, videos, publicId));
+    }
+    private void validateLimitImagesAndVideos(List<MultipartFile> images, List<MultipartFile> videos)
+    {
+        System.out.println(limitNumberOfImages);
+        System.out.println(limitNumberOfVideos);
+        if(images != null && images.size() > limitNumberOfImages)
+        {
+            throw new UserException(UserErrorCode.REACH_LIMIT_IMAGES);
+        }
+        if(videos != null && videos.size() > limitNumberOfVideos)
+        {
+            throw new UserException(UserErrorCode.REACH_LIMIT_VIDEOS);
+        }
+    }
 }

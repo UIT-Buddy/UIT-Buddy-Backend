@@ -6,6 +6,7 @@ import com.uit.buddy.dto.response.social.AuthorInfo;
 import com.uit.buddy.dto.response.social.MediaResponse;
 import com.uit.buddy.dto.response.social.PostDetailResponse;
 import com.uit.buddy.dto.response.social.PostFeedResponse;
+import com.uit.buddy.entity.social.Post;
 import com.uit.buddy.entity.user.Student;
 import com.uit.buddy.repository.social.PostRepository;
 import com.uit.buddy.util.TextUtils;
@@ -39,6 +40,8 @@ public interface PostMapper {
     @Mapping(target = "medias", expression = "java(mapMedias(p.getMedias()))")
     PostDetailResponse toPostDetailResponseFromProjection(PostRepository.PostFeedProjection p);
 
+
+    PostDetailResponse toPostDetailResponse(Post post);
     default List<MediaResponse> mapMedias(String mediasJson) {
         if (mediasJson == null || mediasJson.isBlank()) {
             return Collections.emptyList();

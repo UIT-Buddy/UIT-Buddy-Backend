@@ -103,7 +103,9 @@ cloudinary:
   thumbnail-size: ${CLOUDINARY_THUMBNAIL_SIZE}
   post-image-width: ${CLOUDINARY_POST_IMAGE_WIDTH}
   post-image-height: ${CLOUDINARY_POST_IMAGE_HEIGHT}
-
+post:
+  limit-upload-images: ${POST_LIMIT_UPLOAD_IMAGES}
+  limit-upload-videos: ${POST_LIMIT_UPLOAD_VIDEOS}
 scalar:
   path: ${SCALAR_PATH:/docs}
   url: ${SCALAR_URL:/v3/api-docs}

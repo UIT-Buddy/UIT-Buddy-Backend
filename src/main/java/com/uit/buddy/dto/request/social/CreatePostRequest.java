@@ -5,12 +5,11 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.List;
+
 public record CreatePostRequest(
-                @NotBlank(message = "Title is required") @Size(max = 255, message = "Title must not exceed 255 characters") @Schema(description = "Post title", example = "My first post", type = "string") String title,
 
-                @Schema(description = "Post content", example = "This is my post content", type = "string") String content,
+                @Schema(description = "Post image file", format = "binary") List<MultipartFile> images,
 
-                @Schema(description = "Post image file", type = "string", format = "binary") MultipartFile image,
-
-                @Schema(description = "Post video file", type = "string", format = "binary") MultipartFile video) {
+                @Schema(description = "Post video file", format = "binary") List<MultipartFile> videos) {
 }

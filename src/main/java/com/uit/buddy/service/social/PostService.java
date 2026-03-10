@@ -14,8 +14,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 public interface PostService {
 
-    // PostDetailResponse createPost(String mssv, CreatePostRequest request,
-    // MultipartFile image, MultipartFile video);
+     PostDetailResponse createPost(String mssv, String title, String content, CreatePostRequest request);
 
     PostDetailResponse updatePost(UUID postId, String mssv, UpdatePostRequest request);
 

@@ -4,6 +4,8 @@ import com.cloudinary.Cloudinary;
 import com.cloudinary.Transformation;
 import com.uit.buddy.config.CloudinaryProperties;
 import com.uit.buddy.constant.CloudinaryConstants;
+import com.uit.buddy.dto.response.social.MediaResponse;
+import com.uit.buddy.entity.social.PostMedia;
 import com.uit.buddy.enums.FileType;
 import com.uit.buddy.exception.system.SystemErrorCode;
 import com.uit.buddy.exception.system.SystemException;
@@ -16,9 +18,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.function.Function;
 
 @Service
 @RequiredArgsConstructor
@@ -30,7 +34,7 @@ public class CloudinaryServiceImpl implements CloudinaryService {
 
     @Override
     public String createDefaultAvatar(String mssv) {
-        return executeUpload(properties.getDefaultAvatarUrl(), mssv,
+        return executeAvatarUpload(properties.getDefaultAvatarUrl(), mssv,
                 CloudinaryConstants.FOLDER_AVATARS,
                 CloudinaryConstants.RESOURCE_TYPE_IMAGE,
                 getAvatarTransform());
@@ -39,14 +43,15 @@ public class CloudinaryServiceImpl implements CloudinaryService {
     @Override
     public String uploadAvatar(MultipartFile file, String mssv) {
         validateFile(file, FileType.IMAGE);
-        return executeUpload(extractBytes(file), mssv,
+        return executeAvatarUpload(extractBytes(file), mssv,
                 CloudinaryConstants.FOLDER_AVATARS,
                 CloudinaryConstants.RESOURCE_TYPE_IMAGE,
-                getAvatarTransform());
+                getAvatarTransform()
+        );
     }
 
     @Override
-    public String uploadPostImage(MultipartFile file, String postId) {
+    public PostMedia uploadPostImage(MultipartFile file, String postId) {
         validateFile(file, FileType.IMAGE);
         Transformation<?> postTransform = new Transformation<>()
                 .width(properties.getPostImageWidth())
@@ -56,16 +61,20 @@ public class CloudinaryServiceImpl implements CloudinaryService {
         return executeUpload(extractBytes(file), postId,
                 CloudinaryConstants.FOLDER_POST_IMAGES,
                 CloudinaryConstants.RESOURCE_TYPE_IMAGE,
-                postTransform);
+                postTransform,
+                FileType.IMAGE
+        );
     }
 
     @Override
-    public String uploadPostVideo(MultipartFile file, String postId) {
+    public PostMedia uploadPostVideo(MultipartFile file, String postId) {
         validateFile(file, FileType.VIDEO);
         return executeUpload(extractBytes(file), postId,
                 CloudinaryConstants.FOLDER_POST_VIDEOS,
                 CloudinaryConstants.RESOURCE_TYPE_VIDEO,
-                null);
+                null,
+                FileType.VIDEO
+        );
     }
 
     @Override
@@ -111,8 +120,9 @@ public class CloudinaryServiceImpl implements CloudinaryService {
         }
     }
 
-    private String executeUpload(Object source, String publicId, String folder, String resType,
-            Transformation<?> trans) {
+
+    private PostMedia executeUpload(Object source, String publicId, String folder, String resType,
+                                        Transformation<?> trans, FileType fileType) {
         try {
             Map<String, Object> params = new HashMap<>();
             params.put(CloudinaryConstants.PARAM_PUBLIC_ID, publicId);
@@ -123,7 +133,10 @@ public class CloudinaryServiceImpl implements CloudinaryService {
                 params.put(CloudinaryConstants.PARAM_TRANSFORMATION, trans);
 
             Map<?, ?> result = cloudinary.uploader().upload(source, params);
-            return result.get(CloudinaryConstants.RESPONSE_SECURE_URL).toString();
+            return PostMedia.builder()
+                    .url(result.get(CloudinaryConstants.RESPONSE_SECURE_URL).toString())
+                    .type(fileType)
+                    .build();
         } catch (Exception e) {
             log.error("[Cloudinary] Upload failed for {}: {}", publicId, e.getMessage());
             throw new SystemException(SystemErrorCode.EXTERNAL_SERVICE_ERROR, "Cloud storage error");
@@ -144,5 +157,77 @@ public class CloudinaryServiceImpl implements CloudinaryService {
         } catch (IOException e) {
             throw new SystemException(SystemErrorCode.EXTERNAL_SERVICE_ERROR, "Read error");
         }
+    }
+
+    @Override
+    public List<PostMedia> uploadMultiMedia(List<MultipartFile> images, List<MultipartFile> videos, String postId) {
+        // Validate all files primarily
+        validateFiles(images, videos);
+        // Create threads to increase the response speed
+        int poolSize = calculatePoolSize(images, videos);
+        ExecutorService executor = Executors.newFixedThreadPool(poolSize);
+        try {
+            List<CompletableFuture<PostMedia>> futures = new ArrayList<>();
+
+            submitUploads(futures, images, file -> uploadPostImage(file, postId), executor);
+            submitUploads(futures, videos, file -> uploadPostVideo(file, postId), executor);
+
+            CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
+
+            return futures.stream()
+                    .map(CompletableFuture::join)
+                    .toList();
+        } finally {
+            executor.shutdown();
+        }
+    }
+
+    private void submitUploads(
+            List<CompletableFuture<PostMedia>> futures,
+            List<MultipartFile> files,
+            Function<MultipartFile, PostMedia> uploadFunction,
+            ExecutorService executor
+    ) {
+        if(files != null)
+            for (MultipartFile file : files) {
+                futures.add(
+                        CompletableFuture.supplyAsync(() -> uploadFunction.apply(file), executor)
+                );
+            }
+    }
+    private void validateFiles(List<MultipartFile> images, List<MultipartFile> videos) {
+        if(images != null)
+            for (MultipartFile image : images) {
+                validateFile(image, FileType.IMAGE);
+            }
+        if(videos != null)
+            for (MultipartFile video : videos) {
+            validateFile(video, FileType.VIDEO);
+        }
+    }
+    private String executeAvatarUpload(Object source, String publicId, String folder, String resType,
+                                       Transformation<?> trans) {
+        try {
+            Map<String, Object> params = new HashMap<>();
+            params.put(CloudinaryConstants.PARAM_PUBLIC_ID, publicId);
+            params.put(CloudinaryConstants.PARAM_FOLDER, folder);
+            params.put(CloudinaryConstants.PARAM_OVERWRITE, true);
+            params.put(CloudinaryConstants.PARAM_RESOURCE_TYPE, resType);
+            if (trans != null)
+                params.put(CloudinaryConstants.PARAM_TRANSFORMATION, trans);
+
+            Map<?, ?> result = cloudinary.uploader().upload(source, params);
+            return result.get(CloudinaryConstants.RESPONSE_SECURE_URL).toString();
+        } catch (Exception e) {
+            log.error("[Cloudinary] Upload avatar failed for {}: {}", publicId, e.getMessage());
+            throw new SystemException(SystemErrorCode.EXTERNAL_SERVICE_ERROR, "Cloud storage error");
+        }
+    }
+    private int calculatePoolSize(List<MultipartFile> images, List<MultipartFile> videos)
+    {
+        int imageCount = images != null ? images.size() : 0;
+        int videoCount = videos != null ? videos.size() : 0;
+        int maxPossibleThread = 10;
+        return Math.max(imageCount + videoCount, maxPossibleThread);
     }
 }

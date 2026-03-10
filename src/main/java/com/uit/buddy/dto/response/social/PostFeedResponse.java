@@ -16,5 +16,4 @@ public record PostFeedResponse(
                 boolean isLiked,
                 boolean isShared,
                 LocalDateTime createdAt) {
-
 }
