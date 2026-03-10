@@ -11,12 +11,15 @@ public record PostDetailResponse(
                 String videoUrl,
                 AuthorInfo author,
                 Long likeCount,
-                Long shareCount,
                 Long commentCount,
+                Long shareCount,
+                boolean isLiked,
+                boolean isDisliked,
+                boolean isShared,
                 LocalDateTime createdAt,
                 LocalDateTime updatedAt) {
         public record AuthorInfo(
-                        String mssv,
+                        String homeClassCode,
                         String fullName,
                         String avatarUrl) {
         }

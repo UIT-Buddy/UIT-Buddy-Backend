@@ -10,3 +10,7 @@ UPDATE posts SET version = 0 WHERE version IS NULL;
 
 -- Đặt NOT NULL sau khi đã có data
 ALTER TABLE posts ALTER COLUMN version SET NOT NULL;
+
+ALTER TABLE posts DROP COLUMN image_url;
+ALTER TABLE posts DROP COLUMN video_url;
+ALTER TABLE posts ADD COLUMN medias jsonb NOT NULL DEFAULT '[]';

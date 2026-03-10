@@ -1,5 +1,11 @@
 package com.uit.buddy.entity.social;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
+
 import com.uit.buddy.entity.AbstractBaseEntity;
 import com.uit.buddy.entity.user.Student;
 import jakarta.persistence.*;
@@ -30,11 +36,10 @@ public class Post extends AbstractBaseEntity {
     @Column(name = "content", columnDefinition = "TEXT")
     private String content;
 
-    @Column(name = "image_url", length = 512)
-    private String imageUrl;
-
-    @Column(name = "video_url", length = 512)
-    private String videoUrl;
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "medias", columnDefinition = "jsonb")
+    @Builder.Default
+    private List<PostMedia> medias = new ArrayList<>();
 
     @Builder.Default
     @Column(name = "comment_count", nullable = false)

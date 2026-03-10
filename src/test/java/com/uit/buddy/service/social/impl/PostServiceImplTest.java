@@ -2,7 +2,10 @@ package com.uit.buddy.service.social.impl;
 
 import com.uit.buddy.dto.request.social.CreatePostRequest;
 import com.uit.buddy.dto.request.social.UpdatePostRequest;
+<<<<<<< HEAD
 import com.uit.buddy.dto.response.social.PostDetailResponse;
+=======
+>>>>>>> 26e636de76530b8da91ada8cd20a4aa0fb8dcd35
 import com.uit.buddy.dto.response.social.PostFeedResponse;
 import com.uit.buddy.entity.social.Post;
 import com.uit.buddy.entity.user.Student;
@@ -27,9 +30,12 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.mock.web.MockMultipartFile;
 
+<<<<<<< HEAD
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.Collections;
+=======
+>>>>>>> 26e636de76530b8da91ada8cd20a4aa0fb8dcd35
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;

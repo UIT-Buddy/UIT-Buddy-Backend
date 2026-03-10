@@ -18,6 +18,7 @@ public interface PostMapper {
 
     PostDetailResponse toPostDetailResponse(Post post);
 
+    @Mapping(source = "homeClassCode", target = "homeClassCode")
     PostFeedResponse.AuthorInfo toFeedAuthor(Student student);
 
     PostDetailResponse.AuthorInfo toDetailAuthor(Student student);
