@@ -3,6 +3,7 @@ package com.uit.buddy.service.social.impl;
 import com.uit.buddy.dto.request.social.UpdatePostRequest;
 import com.uit.buddy.dto.response.social.AuthorInfo;
 import com.uit.buddy.dto.response.social.MediaResponse;
+import com.uit.buddy.enums.FileType;
 import com.uit.buddy.dto.response.social.PostDetailResponse;
 import com.uit.buddy.dto.response.social.PostFeedResponse;
 import com.uit.buddy.entity.social.Post;
@@ -37,9 +38,9 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.lenient;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("PostServiceImpl Tests")
@@ -91,21 +92,21 @@ class PostServiceImplTest {
 
                 // Mock projection
                 mockProjection = mock(PostRepository.PostFeedProjection.class);
-                when(mockProjection.getId()).thenReturn(postId);
-                when(mockProjection.getTitle()).thenReturn("Test Title");
-                when(mockProjection.getContent()).thenReturn("Test Content");
-                when(mockProjection.getMedias()).thenReturn("[]");
-                when(mockProjection.getLikeCount()).thenReturn(5L);
-                when(mockProjection.getCommentCount()).thenReturn(3L);
-                when(mockProjection.getShareCount()).thenReturn(2L);
-                when(mockProjection.getCreatedAt()).thenReturn(LocalDateTime.now());
-                when(mockProjection.getUpdatedAt()).thenReturn(LocalDateTime.now());
-                when(mockProjection.getAuthorMssv()).thenReturn(mssv);
-                when(mockProjection.getAuthorFullName()).thenReturn("Test Student");
-                when(mockProjection.getAuthorAvatarUrl()).thenReturn("https://example.com/avatar.jpg");
-                when(mockProjection.getAuthorHomeClassCode()).thenReturn("21KTPM1");
-                when(mockProjection.getIsLiked()).thenReturn(false);
-                when(mockProjection.getIsShared()).thenReturn(false);
+                lenient().when(mockProjection.getId()).thenReturn(postId);
+                lenient().when(mockProjection.getTitle()).thenReturn("Test Title");
+                lenient().when(mockProjection.getContent()).thenReturn("Test Content");
+                lenient().when(mockProjection.getMedias()).thenReturn("[]");
+                lenient().when(mockProjection.getLikeCount()).thenReturn(5L);
+                lenient().when(mockProjection.getCommentCount()).thenReturn(3L);
+                lenient().when(mockProjection.getShareCount()).thenReturn(2L);
+                lenient().when(mockProjection.getCreatedAt()).thenReturn(LocalDateTime.now());
+                lenient().when(mockProjection.getUpdatedAt()).thenReturn(LocalDateTime.now());
+                lenient().when(mockProjection.getAuthorMssv()).thenReturn(mssv);
+                lenient().when(mockProjection.getAuthorFullName()).thenReturn("Test Student");
+                lenient().when(mockProjection.getAuthorAvatarUrl()).thenReturn("https://example.com/avatar.jpg");
+                lenient().when(mockProjection.getAuthorHomeClassCode()).thenReturn("21KTPM1");
+                lenient().when(mockProjection.getIsLiked()).thenReturn(false);
+                lenient().when(mockProjection.getIsShared()).thenReturn(false);
         }
 
         @Nested
@@ -289,11 +290,8 @@ class PostServiceImplTest {
                 @DisplayName("Should get post detail with media successfully")
                 void shouldGetPostDetailWithMediaSuccessfully() {
                         // Given
-                        String mediasJson = "[{\"type\":\"image\",\"url\":\"https://example.com/image.jpg\"}]";
-                        when(mockProjection.getMedias()).thenReturn(mediasJson);
-
                         List<MediaResponse> medias = Arrays.asList(
-                                        new MediaResponse("image", "https://example.com/image.jpg"));
+                                        new MediaResponse(FileType.IMAGE, "https://example.com/image.jpg"));
 
                         PostDetailResponse detailResponse = new PostDetailResponse(
                                         postId,
@@ -319,7 +317,7 @@ class PostServiceImplTest {
                         // Then
                         assertThat(result).isNotNull();
                         assertThat(result.medias()).hasSize(1);
-                        assertThat(result.medias().get(0).type()).isEqualTo("image");
+                        assertThat(result.medias().get(0).type()).isEqualTo(FileType.IMAGE);
                         assertThat(result.medias().get(0).url()).isEqualTo("https://example.com/image.jpg");
 
                         verify(postRepository).findDetailWithStatus(postId, mssv);
@@ -574,8 +572,8 @@ class PostServiceImplTest {
                 @DisplayName("Should delete post successfully")
                 void shouldDeletePostSuccessfully() {
                         // Given
+                        post.setMedias(Collections.emptyList());
                         when(postRepository.findById(postId)).thenReturn(Optional.of(post));
-                        doNothing().when(cloudinaryService).deletePostMedia(postId.toString());
                         doNothing().when(postRepository).delete(post);
 
                         // When
@@ -583,7 +581,6 @@ class PostServiceImplTest {
 
                         // Then
                         verify(postRepository).findById(postId);
-                        verify(cloudinaryService).deletePostMedia(postId.toString());
                         verify(postRepository).delete(post);
                 }
 

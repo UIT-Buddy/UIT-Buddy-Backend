@@ -1,4 +1,6 @@
 package com.uit.buddy.dto.response.social;
 
-public record MediaResponse(String type, String url) {
+import com.uit.buddy.enums.FileType;
+
+public record MediaResponse(FileType type, String url) {
 }

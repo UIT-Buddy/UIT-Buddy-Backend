@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.UUID;
 
 import com.uit.buddy.util.CursorUtils;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -15,6 +16,7 @@ import com.uit.buddy.dto.request.social.UpdatePostRequest;
 import com.uit.buddy.dto.response.social.PostDetailResponse;
 import com.uit.buddy.dto.response.social.PostFeedResponse;
 import com.uit.buddy.entity.social.Post;
+import com.uit.buddy.entity.social.PostMedia;
 import com.uit.buddy.entity.user.Student;
 import com.uit.buddy.exception.social.SocialErrorCode;
 import com.uit.buddy.exception.social.SocialException;
@@ -41,33 +43,37 @@ public class PostServiceImpl implements PostService {
     private final StudentRepository studentRepository;
     private final PostMapper postMapper;
     private final CloudinaryService cloudinaryService;
+    @Value("${post.limit-upload-images}")
+    private int limitNumberOfImages;
+    @Value("${post.limit-upload-videos}")
+    private int limitNumberOfVideos;
 
-    // @Override
-    // @Transactional
-    // public PostDetailResponse createPost(String mssv, CreatePostRequest request,
-    // MultipartFile image,
-    // MultipartFile video) {
-    // log.info("[Post Service] Create post for mssv: {}", mssv);
+    @Override
+    @Transactional
+    public PostDetailResponse createPost(String mssv, String title, String content, CreatePostRequest request) {
+        log.info("[Post Service] Create post for mssv: {}", mssv);
+        validateLimitImagesAndVideos(request.images(), request.videos());
+        Student author = studentRepository.findById(mssv)
+                .orElseThrow(() -> new UserException(
+                        UserErrorCode.STUDENT_NOT_FOUND,
+                        "Student not found"));
 
-    // Student author = studentRepository.findById(mssv)
-    // .orElseThrow(() -> new UserException(
-    // UserErrorCode.STUDENT_NOT_FOUND,
-    // "Student not found"));
+        Post post = Post.builder()
+                .title(title)
+                .content(content)
+                .author(author)
+                .build();
 
-    // Post post = Post.builder()
-    // .title(request.title())
-    // .content(request.content())
-    // .author(author)
-    // .build();
+        Post savedPost = postRepository.save(post);
+        List<PostMedia> medias = cloudinaryService.uploadMultiMedia(request.images(), request.videos(),
+                savedPost.getId().toString());
 
-    // Post savedPost = postRepository.save(post);
+        savedPost.setMedias(medias);
+        postRepository.save(savedPost);
 
-    // handleMediaUpload(image, video, savedPost);
-
-    // savedPost = postRepository.save(post);
-    // log.info("[Post Service] Post saved successfully with ID: {}", post.getId());
-    // return postMapper.toPostDetailResponse(savedPost);
-    // }
+        log.info("[Post Service] Post saved successfully with ID: {}", post.getId());
+        return postMapper.toPostDetailResponse(savedPost);
+    }
 
     @Override
     @Transactional(readOnly = true)
@@ -120,8 +126,12 @@ public class PostServiceImpl implements PostService {
     @Transactional
     public void deletePost(UUID postId, String mssv) {
         Post post = getPostAndValidateOwner(postId, mssv);
-        cloudinaryService.deletePostMedia(postId.toString());
+        List<PostMedia> medias = post.getMedias();
+        if (medias != null && !medias.isEmpty()) {
+            cloudinaryService.deletePostMedia(medias);
+        }
         postRepository.delete(post);
+        log.info("[Post Service] Successfully deleted post {} and its cloud media", postId);
     }
 
     @Override
@@ -146,14 +156,12 @@ public class PostServiceImpl implements PostService {
         return post;
     }
 
-    // private void handleMediaUpload(MultipartFile image, MultipartFile video, Post
-    // post) {
-    // String publicId = post.getId().toString();
-
-    // if (video != null && !video.isEmpty()) {
-    // post.setVideoUrl(cloudinaryService.uploadPostVideo(video, publicId));
-    // } else if (image != null && !image.isEmpty()) {
-    // post.setImageUrl(cloudinaryService.uploadPostImage(image, publicId));
-    // }
-    // }
+    private void validateLimitImagesAndVideos(List<MultipartFile> images, List<MultipartFile> videos) {
+        if (images != null && images.size() > limitNumberOfImages) {
+            throw new UserException(UserErrorCode.REACH_LIMIT_IMAGES);
+        }
+        if (videos != null && videos.size() > limitNumberOfVideos) {
+            throw new UserException(UserErrorCode.REACH_LIMIT_VIDEOS);
+        }
+    }
 }

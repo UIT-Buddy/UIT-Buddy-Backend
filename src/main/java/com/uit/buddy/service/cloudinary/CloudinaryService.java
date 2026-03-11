@@ -1,8 +1,11 @@
 package com.uit.buddy.service.cloudinary;
 
+import com.uit.buddy.entity.social.PostMedia;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.uit.buddy.enums.FileType;
+
+import java.util.List;
 
 public interface CloudinaryService {
 
@@ -12,11 +15,13 @@ public interface CloudinaryService {
 
     String uploadAvatar(MultipartFile file, String mssv);
 
-    String uploadPostImage(MultipartFile file, String postId);
+    PostMedia uploadPostImage(MultipartFile file, String postId);
 
-    String uploadPostVideo(MultipartFile file, String postId);
+    PostMedia uploadPostVideo(MultipartFile file, String postId);
 
-    void deletePostMedia(String postId);
+    void deletePostMedia(List<PostMedia> medias);
 
     void validateFile(MultipartFile file, FileType fileType);
+
+    List<PostMedia> uploadMultiMedia(List<MultipartFile> images, List<MultipartFile> videos, String postId);
 }
