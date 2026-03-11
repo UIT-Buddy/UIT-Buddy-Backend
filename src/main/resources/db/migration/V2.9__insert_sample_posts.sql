@@ -1,4 +1,3 @@
--- Đảm bảo cấu trúc bảng của bạn đã có cột medias (JSONB) và đã xóa/bỏ qua image_url, video_url
 INSERT INTO posts (id, mssv, title, content, medias, created_at, updated_at) VALUES
 -- Post 1: Text only
 ('550e8400-e29b-41d4-a716-446655440001', '22100001', 
