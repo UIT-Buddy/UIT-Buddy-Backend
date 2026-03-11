@@ -15,13 +15,16 @@ public class AsyncConfig {
     private int maxPoolSize;
     @Value("${thread.thread-queue-capacity}")
     private int queueCapacity;
-    @Bean
+    @Value("${thread.thread-name-prefix}")
+    private String threadNamePrefix;
+    @Bean(name = "uploadExecutor")
     public Executor taskExecutor()
     {
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
         executor.setCorePoolSize(corePoolSize);
         executor.setMaxPoolSize(maxPoolSize);
         executor.setQueueCapacity(queueCapacity);
+        executor.setThreadNamePrefix(threadNamePrefix);
         executor.initialize();
         return executor;
     }

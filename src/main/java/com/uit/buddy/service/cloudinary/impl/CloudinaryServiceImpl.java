@@ -14,6 +14,7 @@ import com.uit.buddy.exception.user.UserException;
 import com.uit.buddy.service.cloudinary.CloudinaryService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -23,12 +24,22 @@ import java.util.concurrent.*;
 import java.util.function.Function;
 
 @Service
-@RequiredArgsConstructor
 @Slf4j
 public class CloudinaryServiceImpl implements CloudinaryService {
 
     private final Cloudinary cloudinary;
     private final CloudinaryProperties properties;
+    private final Executor executor;
+
+    public CloudinaryServiceImpl(
+            Cloudinary cloudinary,
+            CloudinaryProperties properties,
+            @Qualifier("uploadExecutor") Executor executor
+    ) {
+        this.cloudinary = cloudinary;
+        this.properties = properties;
+        this.executor = executor;
+    }
 
     @Override
     public String createDefaultAvatar(String mssv) {
@@ -131,6 +142,7 @@ public class CloudinaryServiceImpl implements CloudinaryService {
                 params.put(CloudinaryConstants.PARAM_TRANSFORMATION, trans);
 
             Map<?, ?> result = cloudinary.uploader().upload(source, params);
+            log.info("[CLOUDINARY RESPONSE SUCCESSFULLY]");
             return PostMedia.builder()
                     .url(result.get(CloudinaryConstants.RESPONSE_SECURE_URL).toString())
                     .type(fileType)
@@ -159,47 +171,36 @@ public class CloudinaryServiceImpl implements CloudinaryService {
 
     @Override
     public List<PostMedia> uploadMultiMedia(List<MultipartFile> images, List<MultipartFile> videos, String postId) {
-        // Validate all files primarily
         validateFiles(images, videos);
-        // Create threads to increase the response speed
-        ExecutorService executor = Executors.newFixedThreadPool(5);
+
         try {
-            List<Future<PostMedia>> futures = new ArrayList<>();
+            List<CompletableFuture<PostMedia>> futures = new ArrayList<>();
 
-            submitUploads(futures, images, file -> uploadPostImage(file, postId), executor);
-            submitUploads(futures, videos, file -> uploadPostVideo(file, postId), executor);
+            submitUploads(futures, images, file -> uploadPostImage(file, postId));
+            submitUploads(futures, videos, file -> uploadPostVideo(file, postId));
 
-            List<PostMedia> results = new ArrayList<>();
+            return futures.stream()
+                    .map(CompletableFuture::join)
+                    .toList();
 
-            for (Future<PostMedia> future : futures) {
-                results.add(future.get()); // waits for task to finish
-            }
-
-            return results;
-
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            throw new RuntimeException("Upload interrupted", e);
-        } catch (ExecutionException e) {
+        } catch (Exception e) {
             throw new RuntimeException("Upload failed", e.getCause());
-        } finally {
-            executor.shutdown();
         }
     }
 
     private void submitUploads(
-            List<Future<PostMedia>> futures,
+            List<CompletableFuture<PostMedia>> futures,
             List<MultipartFile> files,
-            Function<MultipartFile, PostMedia> uploadFunction,
-            ExecutorService executor
+            Function<MultipartFile, PostMedia> uploadFunction
     ) {
         if (files == null || files.isEmpty()) {
             return;
         }
 
         for (MultipartFile file : files) {
+            log.info("[UPLOAD FILE]: {}", file.getOriginalFilename());
             futures.add(
-                    executor.submit(() -> uploadFunction.apply(file))
+                    CompletableFuture.supplyAsync(() -> uploadFunction.apply(file), executor)
             );
         }
     }

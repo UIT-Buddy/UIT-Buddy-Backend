@@ -110,6 +110,7 @@ thread:
   core-thread-pool-size: ${CORE_THREAD_POOL_SIZE}
   max-thread-pool-size: ${MAX_THREAD_POOL_SIZE}
   thread-queue-capacity: ${THREAD_QUEUE_CAPACITY}
+  thread-name-prefix: ${THREAD_NAME_PREFIX}
 scalar:
   path: ${SCALAR_PATH:/docs}
   url: ${SCALAR_URL:/v3/api-docs}
