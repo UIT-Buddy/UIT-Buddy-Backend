@@ -16,6 +16,7 @@ import com.uit.buddy.dto.request.social.UpdatePostRequest;
 import com.uit.buddy.dto.response.social.PostDetailResponse;
 import com.uit.buddy.dto.response.social.PostFeedResponse;
 import com.uit.buddy.entity.social.Post;
+import com.uit.buddy.entity.social.PostMedia;
 import com.uit.buddy.entity.user.Student;
 import com.uit.buddy.exception.social.SocialErrorCode;
 import com.uit.buddy.exception.social.SocialException;
@@ -46,6 +47,7 @@ public class PostServiceImpl implements PostService {
     private int limitNumberOfImages;
     @Value("${post.limit-upload-videos}")
     private int limitNumberOfVideos;
+
     @Override
     @Transactional
     public PostDetailResponse createPost(String mssv, String title, String content, CreatePostRequest request) {
@@ -63,9 +65,12 @@ public class PostServiceImpl implements PostService {
                 .build();
 
         Post savedPost = postRepository.save(post);
-        handleMediaUpload(request.images(), request.videos(), savedPost);
+        List<PostMedia> medias = cloudinaryService.uploadMultiMedia(request.images(), request.videos(),
+                savedPost.getId().toString());
 
-        savedPost = postRepository.save(post);
+        savedPost.setMedias(medias);
+        postRepository.save(savedPost);
+
         log.info("[Post Service] Post saved successfully with ID: {}", post.getId());
         return postMapper.toPostDetailResponse(savedPost);
     }
@@ -121,8 +126,12 @@ public class PostServiceImpl implements PostService {
     @Transactional
     public void deletePost(UUID postId, String mssv) {
         Post post = getPostAndValidateOwner(postId, mssv);
-        cloudinaryService.deletePostMedia(postId.toString());
+        List<PostMedia> medias = post.getMedias();
+        if (medias != null && !medias.isEmpty()) {
+            cloudinaryService.deletePostMedia(medias);
+        }
         postRepository.delete(post);
+        log.info("[Post Service] Successfully deleted post {} and its cloud media", postId);
     }
 
     @Override
@@ -147,23 +156,11 @@ public class PostServiceImpl implements PostService {
         return post;
     }
 
-    private void handleMediaUpload(List<MultipartFile> images, List<MultipartFile> videos, Post post) {
-        if(images == null && videos == null)
-        {
-            post.setMedias(List.of());
-            return;
-        }
-        String publicId = post.getId().toString();
-        post.setMedias(cloudinaryService.uploadMultiMedia(images, videos, publicId));
-    }
-    private void validateLimitImagesAndVideos(List<MultipartFile> images, List<MultipartFile> videos)
-    {
-        if(images != null && images.size() > limitNumberOfImages)
-        {
+    private void validateLimitImagesAndVideos(List<MultipartFile> images, List<MultipartFile> videos) {
+        if (images != null && images.size() > limitNumberOfImages) {
             throw new UserException(UserErrorCode.REACH_LIMIT_IMAGES);
         }
-        if(videos != null && videos.size() > limitNumberOfVideos)
-        {
+        if (videos != null && videos.size() > limitNumberOfVideos) {
             throw new UserException(UserErrorCode.REACH_LIMIT_VIDEOS);
         }
     }

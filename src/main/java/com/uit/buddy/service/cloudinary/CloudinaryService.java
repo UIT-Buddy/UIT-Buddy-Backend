@@ -1,6 +1,5 @@
 package com.uit.buddy.service.cloudinary;
 
-import com.uit.buddy.dto.response.social.MediaResponse;
 import com.uit.buddy.entity.social.PostMedia;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -20,7 +19,7 @@ public interface CloudinaryService {
 
     PostMedia uploadPostVideo(MultipartFile file, String postId);
 
-    void deletePostMedia(String postId);
+    void deletePostMedia(List<PostMedia> medias);
 
     void validateFile(MultipartFile file, FileType fileType);
 

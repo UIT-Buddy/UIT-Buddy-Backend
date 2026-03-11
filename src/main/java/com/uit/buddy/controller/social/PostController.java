@@ -9,15 +9,10 @@ import com.uit.buddy.dto.request.social.CreatePostRequest;
 import com.uit.buddy.dto.request.social.UpdatePostRequest;
 import com.uit.buddy.dto.response.social.PostDetailResponse;
 import com.uit.buddy.dto.response.social.PostFeedResponse;
-import com.uit.buddy.enums.FileType;
-import com.uit.buddy.exception.social.SocialErrorCode;
-import com.uit.buddy.exception.social.SocialException;
-import com.uit.buddy.service.cloudinary.CloudinaryService;
 import com.uit.buddy.service.social.PostService;
 import com.uit.buddy.util.CursorUtils;
 
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
@@ -30,7 +25,6 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 import java.util.UUID;
@@ -43,7 +37,6 @@ import java.util.UUID;
 public class PostController extends AbstractBaseController {
 
     private final PostService postService;
-    private final CloudinaryService cloudinaryService;
 
     @GetMapping
     @Operation(summary = "Get post feed", description = "Get paginated post feed with cursor-based pagination")
@@ -65,7 +58,7 @@ public class PostController extends AbstractBaseController {
     @GetMapping("/{postId}")
     @Operation(summary = "Get post detail", description = "Get detailed post information with comments and reactions")
     public ResponseEntity<SingleResponse<PostDetailResponse>> getPostDetail(@PathVariable UUID postId,
-                                                                            @AuthenticationPrincipal String mssv) {
+            @AuthenticationPrincipal String mssv) {
         log.info("[Post Controller] Getting post detail: {}", postId);
         PostDetailResponse response = postService.getPostDetail(postId, mssv);
         return successSingle(response, "Post detail retrieved successfully");
@@ -114,8 +107,7 @@ public class PostController extends AbstractBaseController {
             @RequestParam("title") @NotBlank(message = "Title is required") @Size(max = 255, message = "Title must not exceed 255 characters and at least 1 character") String title,
             @RequestParam(value = "content", required = false) String content,
             @ModelAttribute CreatePostRequest request,
-            @AuthenticationPrincipal String mssv)
-    {
+            @AuthenticationPrincipal String mssv) {
         PostDetailResponse response = postService.createPost(mssv, title, content, request);
         return successSingle(response, "Upload posts successfully with multimedia");
     }

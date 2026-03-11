@@ -10,11 +10,10 @@ import java.util.UUID;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.web.multipart.MultipartFile;
 
 public interface PostService {
 
-     PostDetailResponse createPost(String mssv, String title, String content, CreatePostRequest request);
+    PostDetailResponse createPost(String mssv, String title, String content, CreatePostRequest request);
 
     PostDetailResponse updatePost(UUID postId, String mssv, UpdatePostRequest request);
 

@@ -4,7 +4,6 @@ import com.cloudinary.Cloudinary;
 import com.cloudinary.Transformation;
 import com.uit.buddy.config.CloudinaryProperties;
 import com.uit.buddy.constant.CloudinaryConstants;
-import com.uit.buddy.dto.response.social.MediaResponse;
 import com.uit.buddy.entity.social.PostMedia;
 import com.uit.buddy.enums.FileType;
 import com.uit.buddy.exception.system.SystemErrorCode;
@@ -12,7 +11,6 @@ import com.uit.buddy.exception.system.SystemException;
 import com.uit.buddy.exception.user.UserErrorCode;
 import com.uit.buddy.exception.user.UserException;
 import com.uit.buddy.service.cloudinary.CloudinaryService;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
@@ -21,7 +19,6 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.*;
-import java.util.function.Function;
 
 @Service
 @Slf4j
@@ -34,8 +31,7 @@ public class CloudinaryServiceImpl implements CloudinaryService {
     public CloudinaryServiceImpl(
             Cloudinary cloudinary,
             CloudinaryProperties properties,
-            @Qualifier("uploadExecutor") Executor executor
-    ) {
+            @Qualifier("uploadExecutor") Executor executor) {
         this.cloudinary = cloudinary;
         this.properties = properties;
         this.executor = executor;
@@ -55,8 +51,7 @@ public class CloudinaryServiceImpl implements CloudinaryService {
         return executeAvatarUpload(extractBytes(file), mssv,
                 CloudinaryConstants.FOLDER_AVATARS,
                 CloudinaryConstants.RESOURCE_TYPE_IMAGE,
-                getAvatarTransform()
-        );
+                getAvatarTransform());
     }
 
     @Override
@@ -71,8 +66,7 @@ public class CloudinaryServiceImpl implements CloudinaryService {
                 CloudinaryConstants.FOLDER_POST_IMAGES,
                 CloudinaryConstants.RESOURCE_TYPE_IMAGE,
                 postTransform,
-                FileType.IMAGE
-        );
+                FileType.IMAGE);
     }
 
     @Override
@@ -82,8 +76,7 @@ public class CloudinaryServiceImpl implements CloudinaryService {
                 CloudinaryConstants.FOLDER_POST_VIDEOS,
                 CloudinaryConstants.RESOURCE_TYPE_VIDEO,
                 null,
-                FileType.VIDEO
-        );
+                FileType.VIDEO);
     }
 
     @Override
@@ -92,9 +85,38 @@ public class CloudinaryServiceImpl implements CloudinaryService {
     }
 
     @Override
-    public void deletePostMedia(String postId) {
-        executeDelete(CloudinaryConstants.FOLDER_POST_IMAGES + "/" + postId, CloudinaryConstants.RESOURCE_TYPE_IMAGE);
-        executeDelete(CloudinaryConstants.FOLDER_POST_VIDEOS + "/" + postId, CloudinaryConstants.RESOURCE_TYPE_VIDEO);
+    public void deletePostMedia(List<PostMedia> medias) {
+        if (medias == null || medias.isEmpty())
+            return;
+
+        List<String> imageIds = new ArrayList<>();
+        List<String> videoIds = new ArrayList<>();
+
+        for (PostMedia media : medias) {
+            String publicId = extractPublicId(media.getUrl(), media.getType());
+            if (publicId == null)
+                continue;
+
+            if (media.getType() == FileType.VIDEO) {
+                videoIds.add(publicId);
+            } else {
+                imageIds.add(publicId);
+            }
+        }
+        CompletableFuture.runAsync(() -> {
+            try {
+                if (!imageIds.isEmpty()) {
+                    cloudinary.api().deleteResources(imageIds, Map.of("resource_type", "image"));
+                    log.info("[Cloudinary] Bulk deleted images: {}", imageIds);
+                }
+                if (!videoIds.isEmpty()) {
+                    cloudinary.api().deleteResources(videoIds, Map.of("resource_type", "video"));
+                    log.info("[Cloudinary] Bulk deleted videos: {}", videoIds);
+                }
+            } catch (Exception e) {
+                log.error("[Cloudinary] Bulk delete failed: {}", e.getMessage());
+            }
+        }, executor);
     }
 
     private Transformation<?> getAvatarTransform() {
@@ -129,9 +151,8 @@ public class CloudinaryServiceImpl implements CloudinaryService {
         }
     }
 
-
     private PostMedia executeUpload(Object source, String publicId, String folder, String resType,
-                                        Transformation<?> trans, FileType fileType) {
+            Transformation<?> trans, FileType fileType) {
         try {
             Map<String, Object> params = new HashMap<>();
             params.put(CloudinaryConstants.PARAM_PUBLIC_ID, publicId);
@@ -173,49 +194,54 @@ public class CloudinaryServiceImpl implements CloudinaryService {
     public List<PostMedia> uploadMultiMedia(List<MultipartFile> images, List<MultipartFile> videos, String postId) {
         validateFiles(images, videos);
 
-        try {
-            List<CompletableFuture<PostMedia>> futures = new ArrayList<>();
+        List<MultipartFile> safeImages = (images != null) ? images : Collections.emptyList();
+        List<MultipartFile> safeVideos = (videos != null) ? videos : Collections.emptyList();
 
-            submitUploads(futures, images, file -> uploadPostImage(file, postId));
-            submitUploads(futures, videos, file -> uploadPostVideo(file, postId));
+        List<CompletableFuture<PostMedia>> futures = new ArrayList<>();
 
-            return futures.stream()
-                    .map(CompletableFuture::join)
-                    .toList();
-
-        } catch (Exception e) {
-            throw new RuntimeException("Upload failed", e.getCause());
+        for (MultipartFile file : safeImages) {
+            byte[] data = extractBytes(file);
+            String uniqueId = postId + "_" + UUID.randomUUID().toString().substring(0, 8);
+            futures.add(CompletableFuture.supplyAsync(() -> uploadPostImage(data, uniqueId), executor));
         }
+
+        for (MultipartFile file : safeVideos) {
+            byte[] data = extractBytes(file);
+            String uniqueId = postId + "_" + UUID.randomUUID().toString().substring(0, 8);
+            futures.add(CompletableFuture.supplyAsync(() -> uploadPostVideo(data, uniqueId), executor));
+        }
+
+        return futures.stream().map(CompletableFuture::join).toList();
     }
 
-    private void submitUploads(
-            List<CompletableFuture<PostMedia>> futures,
-            List<MultipartFile> files,
-            Function<MultipartFile, PostMedia> uploadFunction
-    ) {
-        if (files == null || files.isEmpty()) {
-            return;
-        }
+    private PostMedia uploadPostImage(byte[] data, String publicId) {
+        Transformation<?> postTransform = new Transformation<>()
+                .width(properties.getPostImageWidth())
+                .height(properties.getPostImageHeight())
+                .crop(CloudinaryConstants.CROP_LIMIT);
 
-        for (MultipartFile file : files) {
-            log.info("[UPLOAD FILE]: {}", file.getOriginalFilename());
-            futures.add(
-                    CompletableFuture.supplyAsync(() -> uploadFunction.apply(file), executor)
-            );
-        }
+        return executeUpload(data, publicId, CloudinaryConstants.FOLDER_POST_IMAGES,
+                CloudinaryConstants.RESOURCE_TYPE_IMAGE, postTransform, FileType.IMAGE);
     }
+
+    private PostMedia uploadPostVideo(byte[] data, String publicId) {
+        return executeUpload(data, publicId, CloudinaryConstants.FOLDER_POST_VIDEOS,
+                CloudinaryConstants.RESOURCE_TYPE_VIDEO, null, FileType.VIDEO);
+    }
+
     private void validateFiles(List<MultipartFile> images, List<MultipartFile> videos) {
-        if(images != null)
+        if (images != null)
             for (MultipartFile image : images) {
                 validateFile(image, FileType.IMAGE);
             }
-        if(videos != null)
+        if (videos != null)
             for (MultipartFile video : videos) {
-            validateFile(video, FileType.VIDEO);
-        }
+                validateFile(video, FileType.VIDEO);
+            }
     }
+
     private String executeAvatarUpload(Object source, String publicId, String folder, String resType,
-                                       Transformation<?> trans) {
+            Transformation<?> trans) {
         try {
             Map<String, Object> params = new HashMap<>();
             params.put(CloudinaryConstants.PARAM_PUBLIC_ID, publicId);
@@ -232,11 +258,15 @@ public class CloudinaryServiceImpl implements CloudinaryService {
             throw new SystemException(SystemErrorCode.EXTERNAL_SERVICE_ERROR, "Cloud storage error");
         }
     }
-    private int calculatePoolSize(List<MultipartFile> images, List<MultipartFile> videos)
-    {
-        int imageCount = images != null ? images.size() : 0;
-        int videoCount = videos != null ? videos.size() : 0;
-        int maxPossibleThread = 10;
-        return Math.max(imageCount + videoCount, maxPossibleThread);
+
+    private String extractPublicId(String url, FileType type) {
+        String folder = (type == FileType.VIDEO)
+                ? CloudinaryConstants.FOLDER_POST_VIDEOS
+                : CloudinaryConstants.FOLDER_POST_IMAGES;
+
+        int folderIndex = url.indexOf(folder);
+        int lastDotIndex = url.lastIndexOf(".");
+
+        return url.substring(folderIndex, lastDotIndex);
     }
 }

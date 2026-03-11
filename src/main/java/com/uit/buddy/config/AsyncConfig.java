@@ -4,6 +4,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
+import com.uit.buddy.constant.AsyncConstants;
 
 import java.util.concurrent.Executor;
 
@@ -15,16 +16,14 @@ public class AsyncConfig {
     private int maxPoolSize;
     @Value("${thread.thread-queue-capacity}")
     private int queueCapacity;
-    @Value("${thread.thread-name-prefix}")
-    private String threadNamePrefix;
+
     @Bean(name = "uploadExecutor")
-    public Executor taskExecutor()
-    {
+    public Executor uploadExecutor() {
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
         executor.setCorePoolSize(corePoolSize);
         executor.setMaxPoolSize(maxPoolSize);
         executor.setQueueCapacity(queueCapacity);
-        executor.setThreadNamePrefix(threadNamePrefix);
+        executor.setThreadNamePrefix(AsyncConstants.MEDIA_THREAD_PREFIX);
         executor.initialize();
         return executor;
     }
