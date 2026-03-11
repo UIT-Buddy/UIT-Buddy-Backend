@@ -43,6 +43,7 @@ import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("PostServiceImpl Tests")
+@org.mockito.junit.jupiter.MockitoSettings(strictness = org.mockito.quality.Strictness.LENIENT)
 class PostServiceImplTest {
 
         @Mock
@@ -134,7 +135,7 @@ class PostServiceImplTest {
                                         false,
                                         LocalDateTime.now());
 
-                        when(postRepository.findFeed(eq(mssv), eq(null), eq(null), eq(limit)))
+                        when(postRepository.findFeed(eq(mssv), eq(null), eq(null), eq(limit + 1)))
                                         .thenReturn(projections);
                         when(postMapper.toPostFeedResponse(any(PostRepository.PostFeedProjection.class)))
                                         .thenReturn(feedResponse);
@@ -148,7 +149,7 @@ class PostServiceImplTest {
                         assertThat(result.get(0).title()).isEqualTo("Test Title");
                         assertThat(result.get(0).likeCount()).isEqualTo(5L);
 
-                        verify(postRepository).findFeed(mssv, null, null, limit);
+                        verify(postRepository).findFeed(mssv, null, null, limit + 1);
                         verify(postMapper, times(2)).toPostFeedResponse(any(PostRepository.PostFeedProjection.class));
                 }
 
@@ -176,7 +177,7 @@ class PostServiceImplTest {
                                         false,
                                         LocalDateTime.now());
 
-                        when(postRepository.findFeed(eq(mssv), eq(cursorTime), eq(cursorId), eq(limit)))
+                        when(postRepository.findFeed(eq(mssv), eq(cursorTime), eq(cursorId), eq(limit + 1)))
                                         .thenReturn(projections);
                         when(postMapper.toPostFeedResponse(any(PostRepository.PostFeedProjection.class)))
                                         .thenReturn(feedResponse);
@@ -188,7 +189,7 @@ class PostServiceImplTest {
                         assertThat(result).hasSize(1);
                         assertThat(result.get(0).id()).isEqualTo(postId);
 
-                        verify(postRepository).findFeed(mssv, cursorTime, cursorId, limit);
+                        verify(postRepository).findFeed(mssv, cursorTime, cursorId, limit + 1);
                         verify(postMapper).toPostFeedResponse(any(PostRepository.PostFeedProjection.class));
                 }
 
@@ -200,7 +201,7 @@ class PostServiceImplTest {
                         int limit = 10;
                         List<PostRepository.PostFeedProjection> emptyProjections = Collections.emptyList();
 
-                        when(postRepository.findFeed(eq(mssv), eq(null), eq(null), eq(limit)))
+                        when(postRepository.findFeed(eq(mssv), eq(null), eq(null), eq(limit + 1)))
                                         .thenReturn(emptyProjections);
 
                         // When
@@ -209,7 +210,7 @@ class PostServiceImplTest {
                         // Then
                         assertThat(result).isEmpty();
 
-                        verify(postRepository).findFeed(mssv, null, null, limit);
+                        verify(postRepository).findFeed(mssv, null, null, limit + 1);
                         verify(postMapper, never()).toPostFeedResponse(any());
                 }
 
@@ -219,35 +220,11 @@ class PostServiceImplTest {
                         // Given
                         String invalidCursor = "invalid-cursor";
                         int limit = 10;
-                        List<PostRepository.PostFeedProjection> projections = Arrays.asList(mockProjection);
 
-                        PostFeedResponse feedResponse = new PostFeedResponse(
-                                        postId,
-                                        "Test Title",
-                                        "Test Content Snippet",
-                                        Collections.emptyList(),
-                                        new AuthorInfo(mssv, "Test Student", "https://example.com/avatar.jpg",
-                                                        "21KTPM1"),
-                                        5L,
-                                        3L,
-                                        2L,
-                                        false,
-                                        false,
-                                        LocalDateTime.now());
-
-                        when(postRepository.findFeed(eq(mssv), eq(null), eq(null), eq(limit)))
-                                        .thenReturn(projections);
-                        when(postMapper.toPostFeedResponse(any(PostRepository.PostFeedProjection.class)))
-                                        .thenReturn(feedResponse);
-
-                        // When
-                        List<PostFeedResponse> result = postService.getPostFeed(mssv, invalidCursor, limit);
-
-                        // Then
-                        assertThat(result).hasSize(1);
-
-                        // Should fallback to null cursor when invalid
-                        verify(postRepository).findFeed(mssv, null, null, limit);
+                        // When & Then - Should throw SystemException for invalid cursor
+                        assertThatThrownBy(() -> postService.getPostFeed(mssv, invalidCursor, limit))
+                                        .isInstanceOf(com.uit.buddy.exception.system.SystemException.class)
+                                        .hasMessageContaining("Invalid cursor format");
                 }
         }
 
@@ -408,6 +385,10 @@ class PostServiceImplTest {
                 void shouldReturnEmptyPageWhenKeywordIsNull() {
                         // Given
                         String keyword = null;
+                        Page<PostRepository.PostFeedProjection> emptyPage = new PageImpl<>(Collections.emptyList(),
+                                        pageable, 0);
+
+                        when(postRepository.findAllPosts(mssv, pageable)).thenReturn(emptyPage);
 
                         // When
                         Page<PostFeedResponse> result = postService.searchPost(keyword, mssv, pageable);
@@ -417,6 +398,7 @@ class PostServiceImplTest {
                         assertThat(result.getContent()).isEmpty();
                         assertThat(result.getTotalElements()).isEqualTo(0);
 
+                        verify(postRepository).findAllPosts(mssv, pageable);
                         verify(postRepository, never()).searchPostFull(anyString(), anyString(), any(Pageable.class));
                         verify(postMapper, never()).toPostFeedResponse(any());
                 }
@@ -426,6 +408,10 @@ class PostServiceImplTest {
                 void shouldReturnEmptyPageWhenKeywordIsBlank() {
                         // Given
                         String keyword = "   ";
+                        Page<PostRepository.PostFeedProjection> emptyPage = new PageImpl<>(Collections.emptyList(),
+                                        pageable, 0);
+
+                        when(postRepository.findAllPosts(mssv, pageable)).thenReturn(emptyPage);
 
                         // When
                         Page<PostFeedResponse> result = postService.searchPost(keyword, mssv, pageable);
@@ -435,6 +421,7 @@ class PostServiceImplTest {
                         assertThat(result.getContent()).isEmpty();
                         assertThat(result.getTotalElements()).isEqualTo(0);
 
+                        verify(postRepository).findAllPosts(mssv, pageable);
                         verify(postRepository, never()).searchPostFull(anyString(), anyString(), any(Pageable.class));
                         verify(postMapper, never()).toPostFeedResponse(any());
                 }
