@@ -158,8 +158,6 @@ public class PostServiceImpl implements PostService {
     }
     private void validateLimitImagesAndVideos(List<MultipartFile> images, List<MultipartFile> videos)
     {
-        System.out.println(limitNumberOfImages);
-        System.out.println(limitNumberOfVideos);
         if(images != null && images.size() > limitNumberOfImages)
         {
             throw new UserException(UserErrorCode.REACH_LIMIT_IMAGES);

@@ -106,6 +106,10 @@ cloudinary:
 post:
   limit-upload-images: ${POST_LIMIT_UPLOAD_IMAGES}
   limit-upload-videos: ${POST_LIMIT_UPLOAD_VIDEOS}
+thread:
+  core-thread-pool-size: ${CORE_THREAD_POOL_SIZE}
+  max-thread-pool-size: ${MAX_THREAD_POOL_SIZE}
+  thread-queue-capacity: ${THREAD_QUEUE_CAPACITY}
 scalar:
   path: ${SCALAR_PATH:/docs}
   url: ${SCALAR_URL:/v3/api-docs}

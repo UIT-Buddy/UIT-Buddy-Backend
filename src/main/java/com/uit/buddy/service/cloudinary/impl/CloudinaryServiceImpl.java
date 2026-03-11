@@ -19,9 +19,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.concurrent.*;
 import java.util.function.Function;
 
 @Service
@@ -164,36 +162,46 @@ public class CloudinaryServiceImpl implements CloudinaryService {
         // Validate all files primarily
         validateFiles(images, videos);
         // Create threads to increase the response speed
-        int poolSize = calculatePoolSize(images, videos);
-        ExecutorService executor = Executors.newFixedThreadPool(poolSize);
+        ExecutorService executor = Executors.newFixedThreadPool(5);
         try {
-            List<CompletableFuture<PostMedia>> futures = new ArrayList<>();
+            List<Future<PostMedia>> futures = new ArrayList<>();
 
             submitUploads(futures, images, file -> uploadPostImage(file, postId), executor);
             submitUploads(futures, videos, file -> uploadPostVideo(file, postId), executor);
 
-            CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
+            List<PostMedia> results = new ArrayList<>();
 
-            return futures.stream()
-                    .map(CompletableFuture::join)
-                    .toList();
+            for (Future<PostMedia> future : futures) {
+                results.add(future.get()); // waits for task to finish
+            }
+
+            return results;
+
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new RuntimeException("Upload interrupted", e);
+        } catch (ExecutionException e) {
+            throw new RuntimeException("Upload failed", e.getCause());
         } finally {
             executor.shutdown();
         }
     }
 
     private void submitUploads(
-            List<CompletableFuture<PostMedia>> futures,
+            List<Future<PostMedia>> futures,
             List<MultipartFile> files,
             Function<MultipartFile, PostMedia> uploadFunction,
             ExecutorService executor
     ) {
-        if(files != null)
-            for (MultipartFile file : files) {
-                futures.add(
-                        CompletableFuture.supplyAsync(() -> uploadFunction.apply(file), executor)
-                );
-            }
+        if (files == null || files.isEmpty()) {
+            return;
+        }
+
+        for (MultipartFile file : files) {
+            futures.add(
+                    executor.submit(() -> uploadFunction.apply(file))
+            );
+        }
     }
     private void validateFiles(List<MultipartFile> images, List<MultipartFile> videos) {
         if(images != null)
