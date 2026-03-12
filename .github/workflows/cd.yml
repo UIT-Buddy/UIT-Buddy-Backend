@@ -25,6 +25,14 @@ jobs:
           repository: UIT-Buddy/UIT-Buddy-GitOps-Manifests
           path: gitops-manifests
 
+      - name: Create backend.env from secret
+        run: |
+          echo "${{ secrets.BACKEND_ENV_FILE }}" > gitops-manifests/backend.env
+
+      - name: Create Firebase Admin SDK JSON from secret
+        run: |
+          echo "${{ secrets.FIREBASE_ADMINSDK_JSON }}" > gitops-manifests/uit-buddy-firebase-adminsdk-fbsvc-e3e18ce04a.json
+
       - name: Deploy Locally on Self-Hosted
         env:
           IMAGE_TAG: ${{ github.event.workflow_run.head_sha }}
