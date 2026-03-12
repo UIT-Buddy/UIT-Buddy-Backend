@@ -1,0 +1,34 @@
+name: UIT Buddy Backend CD flow
+
+on:
+  workflow_run:
+    workflows: ["UIT Buddy Backend CI flow"]
+    types:
+      - completed
+    branches:
+      - main
+
+concurrency:
+  group: production-deployment
+  cancel-in-progress: false
+
+jobs:
+  deploy-to-production:
+    name: Deploy UIT Buddy Backend to Production Server
+    runs-on: self-hosted
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    
+    steps:
+      - name: Checkout GitOps Manifests
+        uses: actions/checkout@v4
+        with:
+          repository: HelloMinh2122005/UIT-Buddy-GitOps-Manifests
+          path: gitops-manifests
+
+      - name: Deploy Locally on Self-Hosted
+        env:
+          IMAGE_TAG: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          set -e
+          cd gitops-manifests
+          IMAGE_TAG=$IMAGE_TAG make up
