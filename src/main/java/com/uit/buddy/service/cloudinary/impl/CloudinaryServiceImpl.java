@@ -163,7 +163,7 @@ public class CloudinaryServiceImpl implements CloudinaryService {
                 params.put(CloudinaryConstants.PARAM_TRANSFORMATION, trans);
 
             Map<?, ?> result = cloudinary.uploader().upload(source, params);
-            log.info("[CLOUDINARY RESPONSE SUCCESSFULLY]");
+            log.info("[CLOUDINARY RESPONSE SUCCESSFULLY] {}", publicId);
             return PostMedia.builder()
                     .url(result.get(CloudinaryConstants.RESPONSE_SECURE_URL).toString())
                     .type(fileType)
