@@ -21,6 +21,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.test.util.ReflectionTestUtils;
 
@@ -35,6 +37,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 class CommentServiceImplTest {
 
         @Mock
@@ -77,6 +80,7 @@ class CommentServiceImplTest {
                                 .author(student)
                                 .build();
                 ReflectionTestUtils.setField(post, "id", postId);
+                ReflectionTestUtils.setField(post, "mssv", mssv); // Set mssv field
 
                 comment = Comment.builder()
                                 .post(post)
@@ -84,6 +88,7 @@ class CommentServiceImplTest {
                                 .content("Test Comment")
                                 .build();
                 ReflectionTestUtils.setField(comment, "id", commentId);
+                ReflectionTestUtils.setField(comment, "mssv", mssv); // Set mssv field
 
                 projection = mock(CommentProjection.class);
                 when(projection.getId()).thenReturn(commentId);

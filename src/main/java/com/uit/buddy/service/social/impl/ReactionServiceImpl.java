@@ -44,7 +44,7 @@ public class ReactionServiceImpl implements ReactionService {
         Post post = postRepository.findById(postId)
                 .orElseThrow(() -> new SocialException(SocialErrorCode.POST_NOT_FOUND, "Post not found"));
 
-        Optional<Reaction> existingReaction = reactionRepository.findByPostIdAndMssv(postId, mssv);
+        Optional<Reaction> existingReaction = reactionRepository.findByPostIdAndStudentMssv(postId, mssv);
 
         if (existingReaction.isPresent()) {
             reactionRepository.delete(existingReaction.get());

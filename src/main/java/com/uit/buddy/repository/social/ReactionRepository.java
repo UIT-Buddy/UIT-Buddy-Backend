@@ -40,9 +40,9 @@ public interface ReactionRepository extends CrudRepository<Reaction, UUID> {
             @Param("cursorMssv") String cursorMssv,
             @Param("limit") int limit);
 
-    Optional<Reaction> findByPostIdAndMssv(UUID postId, String mssv);
+    Optional<Reaction> findByPostIdAndStudentMssv(UUID postId, String mssv);
 
-    void deleteByPostIdAndMssv(UUID postId, String mssv);
+    void deleteByPostIdAndStudentMssv(UUID postId, String mssv);
 
-    boolean existsByPostIdAndMssv(UUID postId, String mssv);
+    boolean existsByPostIdAndStudentMssv(UUID postId, String mssv);
 }

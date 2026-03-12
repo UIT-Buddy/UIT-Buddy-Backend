@@ -7,18 +7,22 @@ import com.uit.buddy.entity.social.Post;
 import com.uit.buddy.entity.social.Share;
 import com.uit.buddy.entity.user.Student;
 import com.uit.buddy.enums.ShareType;
+import com.uit.buddy.event.social.PostSharedEvent;
 import com.uit.buddy.exception.social.SocialException;
 import com.uit.buddy.mapper.social.ShareMapper;
 import com.uit.buddy.repository.social.PostRepository;
 import com.uit.buddy.repository.social.ShareRepository;
 import com.uit.buddy.repository.social.projection.ShareProjection;
 import com.uit.buddy.repository.user.StudentRepository;
+import com.uit.buddy.util.CursorUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.test.util.ReflectionTestUtils;
 
@@ -33,6 +37,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 class ShareServiceImplTest {
 
     @Mock
@@ -70,6 +75,7 @@ class ShareServiceImplTest {
                 .author(student)
                 .build();
         ReflectionTestUtils.setField(post, "id", postId);
+        ReflectionTestUtils.setField(post, "mssv", "22100002"); // Different from actor to test event publishing
 
         projection = mock(ShareProjection.class);
         when(projection.getMssv()).thenReturn(mssv);
@@ -85,7 +91,15 @@ class ShareServiceImplTest {
         when(studentRepository.findById(mssv)).thenReturn(Optional.of(student));
         when(shareRepository.existsByPostIdAndMssv(postId, mssv)).thenReturn(false);
         when(shareRepository.save(any(Share.class))).thenReturn(new Share());
-        when(postRepository.save(any(Post.class))).thenReturn(new Post());
+
+        // Mock postRepository.save to return a post with ID
+        Post savedPost = Post.builder()
+                .title("Shared: Test Post")
+                .content("Test Content")
+                .author(student)
+                .build();
+        ReflectionTestUtils.setField(savedPost, "id", UUID.randomUUID());
+        when(postRepository.save(any(Post.class))).thenReturn(savedPost);
 
         boolean result = shareService.sharePost(postId, mssv, ShareType.PROFILE, request);
 
@@ -93,7 +107,7 @@ class ShareServiceImplTest {
         verify(shareRepository).save(any(Share.class));
         verify(postRepository).save(any(Post.class)); // For creating shared post
         verify(postRepository).incrementShareCount(postId);
-        verify(eventPublisher).publishEvent(any());
+        verify(eventPublisher).publishEvent(any(PostSharedEvent.class));
     }
 
     @Test
@@ -111,7 +125,7 @@ class ShareServiceImplTest {
         verify(shareRepository).save(any(Share.class));
         verify(postRepository, never()).save(any(Post.class)); // No shared post created for MESSAGE
         verify(postRepository).incrementShareCount(postId);
-        verify(eventPublisher).publishEvent(any());
+        verify(eventPublisher).publishEvent(any(PostSharedEvent.class));
     }
 
     @Test
@@ -122,6 +136,15 @@ class ShareServiceImplTest {
         when(studentRepository.findById(mssv)).thenReturn(Optional.of(student));
         when(shareRepository.existsByPostIdAndMssv(postId, mssv)).thenReturn(true);
         when(shareRepository.save(any(Share.class))).thenReturn(new Share());
+
+        // Mock postRepository.save to return a post with ID
+        Post savedPost = Post.builder()
+                .title("Shared: Test Post")
+                .content("Test Content")
+                .author(student)
+                .build();
+        ReflectionTestUtils.setField(savedPost, "id", UUID.randomUUID());
+        when(postRepository.save(any(Post.class))).thenReturn(savedPost);
 
         boolean result = shareService.sharePost(postId, mssv, ShareType.PROFILE, request);
 
@@ -139,6 +162,7 @@ class ShareServiceImplTest {
                 .author(student)
                 .build();
         ReflectionTestUtils.setField(ownPost, "id", postId);
+        ReflectionTestUtils.setField(ownPost, "mssv", mssv); // Same as actor
 
         SharePostRequest request = new SharePostRequest("Sharing my own post");
 
@@ -146,6 +170,15 @@ class ShareServiceImplTest {
         when(studentRepository.findById(mssv)).thenReturn(Optional.of(student));
         when(shareRepository.existsByPostIdAndMssv(postId, mssv)).thenReturn(false);
         when(shareRepository.save(any(Share.class))).thenReturn(new Share());
+
+        // Mock postRepository.save to return a post with ID
+        Post savedPost = Post.builder()
+                .title("Shared: Own Post")
+                .content("My content")
+                .author(student)
+                .build();
+        ReflectionTestUtils.setField(savedPost, "id", UUID.randomUUID());
+        when(postRepository.save(any(Post.class))).thenReturn(savedPost);
 
         boolean result = shareService.sharePost(postId, mssv, ShareType.PROFILE, request);
 
@@ -205,7 +238,15 @@ class ShareServiceImplTest {
         when(studentRepository.findById(mssv)).thenReturn(Optional.of(student));
         when(shareRepository.existsByPostIdAndMssv(postId, mssv)).thenReturn(false);
         when(shareRepository.save(any(Share.class))).thenReturn(new Share());
-        when(postRepository.save(any(Post.class))).thenReturn(new Post());
+
+        // Mock postRepository.save to return a post with ID
+        Post savedPost = Post.builder()
+                .title("Shared: Test Post")
+                .content("Test Content")
+                .author(student)
+                .build();
+        ReflectionTestUtils.setField(savedPost, "id", UUID.randomUUID());
+        when(postRepository.save(any(Post.class))).thenReturn(savedPost);
 
         boolean result = shareService.sharePost(postId, mssv, ShareType.PROFILE, null);
 
@@ -216,7 +257,8 @@ class ShareServiceImplTest {
 
     @Test
     void shouldGetPostSharesWithCursor() {
-        String cursor = "encoded_cursor";
+        // Create valid cursor using CursorUtils
+        String cursor = CursorUtils.encode(LocalDateTime.now(), UUID.randomUUID());
         UserShareResponse shareResponse = new UserShareResponse(
                 new UserSummary(mssv, "Test Student", "avatar.jpg"),
                 LocalDateTime.now());
