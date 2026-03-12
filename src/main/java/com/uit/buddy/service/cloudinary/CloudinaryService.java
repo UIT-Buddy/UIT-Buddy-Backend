@@ -23,5 +23,5 @@ public interface CloudinaryService {
 
     void validateFile(MultipartFile file, FileType fileType);
 
-    List<PostMedia> uploadMultiMedia(List<MultipartFile> images, List<MultipartFile> videos, String postId);
+    List<PostMedia> uploadMultiMedia(List<MultipartFile> images, List<MultipartFile> videos);
 }

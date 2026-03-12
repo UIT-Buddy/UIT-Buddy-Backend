@@ -1,6 +1,7 @@
 package com.uit.buddy.controller.social;
 
 import com.uit.buddy.controller.AbstractBaseController;
+import com.uit.buddy.dto.base.CreatedResponse;
 import com.uit.buddy.dto.base.CursorPageResponse;
 import com.uit.buddy.dto.base.PageResponse;
 import com.uit.buddy.dto.base.SingleResponse;
@@ -66,13 +67,13 @@ public class PostController extends AbstractBaseController {
 
     @PutMapping("/{postId}")
     @Operation(summary = "Update a post", description = "Update post title and content (files cannot be updated)")
-    public ResponseEntity<SingleResponse<PostDetailResponse>> updatePost(
+    public ResponseEntity<SuccessResponse> updatePost(
             @PathVariable UUID postId,
             @Valid @RequestBody UpdatePostRequest request,
             @AuthenticationPrincipal String mssv) {
         log.info("[Post Controller] Updating post: {} by mssv: {}", postId, mssv);
-        PostDetailResponse response = postService.updatePost(postId, mssv, request);
-        return successSingle(response, "Post updated successfully");
+        postService.updatePost(postId, mssv, request);
+        return success("Post updated successfully");
     }
 
     @DeleteMapping("/{postId}")
@@ -102,14 +103,13 @@ public class PostController extends AbstractBaseController {
     }
 
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    @Operation(summary = "Upload post", description = "Upload post with multiple media types")
-    public ResponseEntity<SingleResponse<PostDetailResponse>> uploadPost(
-            @RequestParam("title") @NotBlank(message = "Title is required") @Size(max = 255, message = "Title must not exceed 255 characters and at least 1 character") String title,
-            @RequestParam(value = "content", required = false) String content,
+    @Operation(summary = "Create post", description = "Create post with multiple media types")
+    public ResponseEntity<CreatedResponse<Void>> uploadPost(
+            @RequestParam("title") @NotBlank(message = "Title is required") @Size(min = 1, max = 255, message = "Title must not exceed 255 characters and at least 1 character") String title,
+            @RequestParam("content") @NotBlank(message = "Content is required") @Size(max = 500, message = "Content must not exceed 500 characters") String content,
             @ModelAttribute CreatePostRequest request,
             @AuthenticationPrincipal String mssv) {
-        PostDetailResponse response = postService.createPost(mssv, title, content, request);
-        return successSingle(response, "Upload posts successfully with multimedia");
+        postService.createPost(mssv, title, content, request);
+        return created("Upload posts successfully with multimedia");
     }
-
 }

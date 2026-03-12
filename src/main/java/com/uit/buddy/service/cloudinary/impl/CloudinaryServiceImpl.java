@@ -163,7 +163,7 @@ public class CloudinaryServiceImpl implements CloudinaryService {
                 params.put(CloudinaryConstants.PARAM_TRANSFORMATION, trans);
 
             Map<?, ?> result = cloudinary.uploader().upload(source, params);
-            log.info("[CLOUDINARY RESPONSE SUCCESSFULLY]");
+            log.info("[CLOUDINARY RESPONSE SUCCESSFULLY] {}", publicId);
             return PostMedia.builder()
                     .url(result.get(CloudinaryConstants.RESPONSE_SECURE_URL).toString())
                     .type(fileType)
@@ -191,7 +191,7 @@ public class CloudinaryServiceImpl implements CloudinaryService {
     }
 
     @Override
-    public List<PostMedia> uploadMultiMedia(List<MultipartFile> images, List<MultipartFile> videos, String postId) {
+    public List<PostMedia> uploadMultiMedia(List<MultipartFile> images, List<MultipartFile> videos) {
         validateFiles(images, videos);
 
         List<MultipartFile> safeImages = (images != null) ? images : Collections.emptyList();
@@ -201,13 +201,13 @@ public class CloudinaryServiceImpl implements CloudinaryService {
 
         for (MultipartFile file : safeImages) {
             byte[] data = extractBytes(file);
-            String uniqueId = postId + "_" + UUID.randomUUID().toString().substring(0, 8);
+            String uniqueId = UUID.randomUUID().toString().substring(0, 8);
             futures.add(CompletableFuture.supplyAsync(() -> uploadPostImage(data, uniqueId), executor));
         }
 
         for (MultipartFile file : safeVideos) {
             byte[] data = extractBytes(file);
-            String uniqueId = postId + "_" + UUID.randomUUID().toString().substring(0, 8);
+            String uniqueId = UUID.randomUUID().toString().substring(0, 8);
             futures.add(CompletableFuture.supplyAsync(() -> uploadPostVideo(data, uniqueId), executor));
         }
 

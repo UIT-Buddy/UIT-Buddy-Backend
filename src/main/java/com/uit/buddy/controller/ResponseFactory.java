@@ -1,5 +1,6 @@
 package com.uit.buddy.controller;
 
+import com.uit.buddy.dto.base.CreatedResponse;
 import com.uit.buddy.dto.base.CursorPageResponse;
 import com.uit.buddy.dto.base.ErrorResponse;
 import com.uit.buddy.dto.base.PageResponse;
@@ -70,6 +71,24 @@ public class ResponseFactory {
                                 status.value(),
                                 message);
                 return ResponseEntity.status(status).body(response);
+        }
+
+        public <T> ResponseEntity<CreatedResponse<T>> created(
+                        T data,
+                        String message) {
+                CreatedResponse<T> response = new CreatedResponse<>(
+                                HttpStatus.CREATED.value(),
+                                message,
+                                data);
+                return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        }
+
+        public ResponseEntity<CreatedResponse<Void>> created(String message) {
+                CreatedResponse<Void> response = new CreatedResponse<>(
+                                HttpStatus.CREATED.value(),
+                                message,
+                                null);
+                return ResponseEntity.status(HttpStatus.CREATED).body(response);
         }
 
         public ResponseEntity<ErrorResponse> error(HttpStatus status, String message) {
