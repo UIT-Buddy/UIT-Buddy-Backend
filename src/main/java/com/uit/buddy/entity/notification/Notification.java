@@ -18,9 +18,6 @@ import lombok.*;
 @Builder
 public class Notification extends AbstractBaseEntity {
 
-    @Column(name = "mssv", length = 12, nullable = false, insertable = false, updatable = false)
-    private String mssv;
-
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "mssv", referencedColumnName = "mssv", foreignKey = @ForeignKey(name = "fk_notification_student"))
     private Student student;

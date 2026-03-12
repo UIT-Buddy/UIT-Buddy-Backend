@@ -1,5 +1,7 @@
 package com.uit.buddy.entity.social;
 
+import java.util.UUID;
+
 import com.uit.buddy.entity.AbstractBaseEntity;
 import com.uit.buddy.entity.user.Student;
 import jakarta.persistence.*;
@@ -26,7 +28,7 @@ public class Reaction extends AbstractBaseEntity {
     private Student student;
 
     @Column(name = "post_id", length = 50, insertable = false, updatable = false)
-    private String postId;
+    private UUID postId;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "post_id", referencedColumnName = "id", foreignKey = @ForeignKey(name = "fk_reaction_post"))

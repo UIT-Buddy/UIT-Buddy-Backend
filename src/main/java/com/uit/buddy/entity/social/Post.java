@@ -8,6 +8,8 @@ import org.hibernate.type.SqlTypes;
 
 import com.uit.buddy.entity.AbstractBaseEntity;
 import com.uit.buddy.entity.user.Student;
+import com.uit.buddy.enums.PostType;
+
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -55,5 +57,12 @@ public class Post extends AbstractBaseEntity {
 
     @Version
     private Long version;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "original_post_id")
+    private Post originalPost;
+
+    @Enumerated(EnumType.STRING)
+    private PostType type;
 
 }

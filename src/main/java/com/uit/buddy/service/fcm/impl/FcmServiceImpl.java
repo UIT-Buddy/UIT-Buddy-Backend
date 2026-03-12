@@ -8,6 +8,9 @@ import com.uit.buddy.repository.user.DeviceTokenRepository;
 import com.uit.buddy.service.fcm.FcmService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
+import java.util.List;
+
 import org.springframework.stereotype.Service;
 
 @Service
@@ -46,6 +49,64 @@ public class FcmServiceImpl implements FcmService {
             log.info("[FCM Service] Successfully sent message. ID: {}", response);
         } catch (FirebaseMessagingException e) {
             handleFirebaseError(e, request.targetToken());
+        }
+    }
+
+    @Override
+    public void sendMulticastNotification(List<String> tokens, String notificationId,
+            String title, String body, String type, String dataId) {
+        if (tokens == null || tokens.isEmpty())
+            return;
+
+        // MulticastMessage vẫn dùng được để build data chung cho tất cả tokens
+        MulticastMessage message = MulticastMessage.builder()
+                .addAllTokens(tokens)
+                .setNotification(Notification.builder()
+                        .setTitle(title)
+                        .setBody(body)
+                        .build())
+                .putData("id", notificationId)
+                .putData("type", type)
+                .putData("dataId", dataId)
+                .build();
+
+        try {
+            // SỬ DỤNG sendEachForMulticast thay cho sendMulticast bị deprecated
+            BatchResponse response = firebaseMessaging.sendEachForMulticast(message);
+
+            log.info("[FCM Service] Sent notification. Success: {}, Failure: {}",
+                    response.getSuccessCount(), response.getFailureCount());
+
+            // BEST PRACTICE: Dọn dẹp token rác ngay lập tức nếu gửi thất bại
+            if (response.getFailureCount() > 0) {
+                handleMulticastFailures(response, tokens);
+            }
+
+        } catch (FirebaseMessagingException e) {
+            log.error("[FCM Service] Fatal error sending multicast notification", e);
+        }
+    }
+
+    /**
+     * Logic xử lý các token bị lỗi (không tồn tại, hết hạn) sau khi gửi multicast
+     */
+    private void handleMulticastFailures(BatchResponse response, List<String> tokens) {
+        List<SendResponse> responses = response.getResponses();
+        List<String> invalidTokens = new java.util.ArrayList<>();
+
+        for (int i = 0; i < responses.size(); i++) {
+            if (!responses.get(i).isSuccessful()) {
+                MessagingErrorCode code = responses.get(i).getException().getMessagingErrorCode();
+                // Nếu token không còn hiệu lực (UNREGISTERED) hoặc sai định dạng
+                if (code == MessagingErrorCode.UNREGISTERED || code == MessagingErrorCode.INVALID_ARGUMENT) {
+                    invalidTokens.add(tokens.get(i));
+                }
+            }
+        }
+
+        if (!invalidTokens.isEmpty()) {
+            log.info("[FCM Service] Removing {} invalid tokens from DB", invalidTokens.size());
+            deviceTokenRepository.deleteAllByFcmTokenIn(invalidTokens); // Cần thêm method này vào Repository
         }
     }
 

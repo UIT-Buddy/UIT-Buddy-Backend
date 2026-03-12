@@ -13,9 +13,9 @@ import org.springframework.data.domain.Pageable;
 
 public interface PostService {
 
-    PostDetailResponse createPost(String mssv, String title, String content, CreatePostRequest request);
+    void createPost(String mssv, String title, String content, CreatePostRequest request);
 
-    PostDetailResponse updatePost(UUID postId, String mssv, UpdatePostRequest request);
+    void updatePost(UUID postId, String mssv, UpdatePostRequest request);
 
     void deletePost(UUID postId, String mssv);
 

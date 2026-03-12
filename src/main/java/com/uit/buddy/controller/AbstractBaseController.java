@@ -1,5 +1,6 @@
 package com.uit.buddy.controller;
 
+import com.uit.buddy.dto.base.CreatedResponse;
 import com.uit.buddy.dto.base.CursorPageResponse;
 import com.uit.buddy.dto.base.PageResponse;
 import com.uit.buddy.dto.base.SingleResponse;
@@ -27,6 +28,14 @@ public abstract class AbstractBaseController {
 
     protected ResponseEntity<SuccessResponse> success(String message) {
         return responseFactory.success(message);
+    }
+
+    protected <T> ResponseEntity<CreatedResponse<T>> created(T data, String message) {
+        return responseFactory.created(data, message);
+    }
+
+    protected ResponseEntity<CreatedResponse<Void>> created(String message) {
+        return responseFactory.created(message);
     }
 
     protected <T> ResponseEntity<PageResponse<T>> paging(Page<T> page, String message) {

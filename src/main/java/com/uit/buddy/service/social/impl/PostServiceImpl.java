@@ -22,13 +22,12 @@ import com.uit.buddy.exception.social.SocialErrorCode;
 import com.uit.buddy.exception.social.SocialException;
 import com.uit.buddy.exception.user.UserErrorCode;
 import com.uit.buddy.exception.user.UserException;
-import com.uit.buddy.exception.auth.AuthErrorCode;
-import com.uit.buddy.exception.auth.AuthException;
 import com.uit.buddy.repository.social.PostRepository;
 import com.uit.buddy.repository.user.StudentRepository;
 import com.uit.buddy.service.cloudinary.CloudinaryService;
 import com.uit.buddy.service.social.PostService;
 import com.uit.buddy.mapper.social.PostMapper;
+
 import org.springframework.web.multipart.MultipartFile;
 
 import lombok.RequiredArgsConstructor;
@@ -43,36 +42,36 @@ public class PostServiceImpl implements PostService {
     private final StudentRepository studentRepository;
     private final PostMapper postMapper;
     private final CloudinaryService cloudinaryService;
+
     @Value("${post.limit-upload-images}")
     private int limitNumberOfImages;
     @Value("${post.limit-upload-videos}")
     private int limitNumberOfVideos;
 
     @Override
-    @Transactional
-    public PostDetailResponse createPost(String mssv, String title, String content, CreatePostRequest request) {
+    // KHÔNG có @Transactional ở đây
+    public void createPost(String mssv, String title, String content, CreatePostRequest request) {
         log.info("[Post Service] Create post for mssv: {}", mssv);
         validateLimitImagesAndVideos(request.images(), request.videos());
-        Student author = studentRepository.findById(mssv)
-                .orElseThrow(() -> new UserException(
-                        UserErrorCode.STUDENT_NOT_FOUND,
-                        "Student not found"));
+        if (!studentRepository.existsById(mssv)) {
+            throw new UserException(UserErrorCode.STUDENT_NOT_FOUND);
+        }
+        List<PostMedia> medias = cloudinaryService.uploadMultiMedia(request.images(), request.videos());
+        saveToDb(mssv, title, content, medias);
+    }
+
+    @Transactional
+    protected void saveToDb(String mssv, String title, String content, List<PostMedia> medias) {
+        Student author = studentRepository.getReferenceById(mssv);
 
         Post post = Post.builder()
                 .title(title)
                 .content(content)
                 .author(author)
+                .medias(medias)
                 .build();
 
-        Post savedPost = postRepository.save(post);
-        List<PostMedia> medias = cloudinaryService.uploadMultiMedia(request.images(), request.videos(),
-                savedPost.getId().toString());
-
-        savedPost.setMedias(medias);
-        postRepository.save(savedPost);
-
-        log.info("[Post Service] Post saved successfully with ID: {}", post.getId());
-        return postMapper.toPostDetailResponse(savedPost);
+        postRepository.save(post);
     }
 
     @Override
@@ -86,7 +85,6 @@ public class PostServiceImpl implements PostService {
             cursorId = contents.id();
         }
 
-        // Lấy thêm 1 record để kiểm tra hasMore
         return postRepository.findFeed(mssv, cursorTime, cursorId, limit + 1)
                 .stream()
                 .map(postMapper::toPostFeedResponse)
@@ -103,7 +101,7 @@ public class PostServiceImpl implements PostService {
 
     @Override
     @Transactional
-    public PostDetailResponse updatePost(UUID postId, String mssv, UpdatePostRequest request) {
+    public void updatePost(UUID postId, String mssv, UpdatePostRequest request) {
         log.info("[Post Service] Updating post: {}", postId);
 
         Post post = getPostAndValidateOwner(postId, mssv);
@@ -118,8 +116,6 @@ public class PostServiceImpl implements PostService {
 
         postRepository.save(post);
         log.info("[Post Service] Successfully updated post: {}", postId);
-
-        return getPostDetail(postId, mssv);
     }
 
     @Override
@@ -145,17 +141,6 @@ public class PostServiceImpl implements PostService {
                 .map(postMapper::toPostFeedResponse);
     }
 
-    private Post getPostAndValidateOwner(UUID postId, String mssv) {
-        Post post = postRepository.findById(postId)
-                .orElseThrow(() -> new SocialException(SocialErrorCode.POST_NOT_FOUND, "Post not found"));
-
-        if (!post.getAuthor().getMssv().equals(mssv)) {
-            log.warn("[Post Service] Unauthorized access attempt by student {}", mssv);
-            throw new AuthException(AuthErrorCode.PERMISSION_DENIED, "You do not have permission");
-        }
-        return post;
-    }
-
     private void validateLimitImagesAndVideos(List<MultipartFile> images, List<MultipartFile> videos) {
         if (images != null && images.size() > limitNumberOfImages) {
             throw new UserException(UserErrorCode.REACH_LIMIT_IMAGES);
@@ -163,5 +148,19 @@ public class PostServiceImpl implements PostService {
         if (videos != null && videos.size() > limitNumberOfVideos) {
             throw new UserException(UserErrorCode.REACH_LIMIT_VIDEOS);
         }
+    }
+
+    private Post getPostAndValidateOwner(UUID postId, String mssv) {
+        Post post = postRepository.findById(postId)
+                .orElseThrow(() -> new SocialException(SocialErrorCode.POST_NOT_FOUND, "Post not found"));
+
+        if (!post.getAuthor().getMssv().equals(mssv)) {
+            log.warn("[Post Service] Unauthorized access attempt: Student {} tried to modify post {} owned by {}",
+                    mssv, postId, post.getAuthor().getMssv());
+
+            throw new SocialException(SocialErrorCode.UNAUTHORIZED);
+        }
+
+        return post;
     }
 }
