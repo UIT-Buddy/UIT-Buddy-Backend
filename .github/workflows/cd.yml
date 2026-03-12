@@ -22,7 +22,7 @@ jobs:
       - name: Checkout GitOps Manifests
         uses: actions/checkout@v4
         with:
-          repository: HelloMinh2122005/UIT-Buddy-GitOps-Manifests
+          repository: UIT-Buddy/UIT-Buddy-GitOps-Manifests
           path: gitops-manifests
 
       - name: Deploy Locally on Self-Hosted
