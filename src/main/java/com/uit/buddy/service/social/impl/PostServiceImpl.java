@@ -1,35 +1,25 @@
 package com.uit.buddy.service.social.impl;
 
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
-import com.uit.buddy.util.CursorUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import com.uit.buddy.dto.request.social.CreatePostRequest;
 import com.uit.buddy.dto.request.social.UpdatePostRequest;
 import com.uit.buddy.dto.response.social.PostDetailResponse;
 import com.uit.buddy.dto.response.social.PostFeedResponse;
 import com.uit.buddy.entity.social.Post;
-import com.uit.buddy.entity.social.PostMedia;
-import com.uit.buddy.entity.user.Student;
-import com.uit.buddy.exception.social.SocialErrorCode;
-import com.uit.buddy.exception.social.SocialException;
-import com.uit.buddy.exception.user.UserErrorCode;
-import com.uit.buddy.exception.user.UserException;
-import com.uit.buddy.exception.auth.AuthErrorCode;
-import com.uit.buddy.exception.auth.AuthException;
+import com.uit.buddy.mapper.social.PostMapper;
 import com.uit.buddy.repository.social.PostRepository;
 import com.uit.buddy.repository.user.StudentRepository;
 import com.uit.buddy.service.cloudinary.CloudinaryService;
 import com.uit.buddy.service.social.PostService;
-import com.uit.buddy.mapper.social.PostMapper;
-import org.springframework.web.multipart.MultipartFile;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -85,7 +75,7 @@ public class PostServiceImpl implements PostService {
             cursorTime = contents.timestamp();
             cursorId = contents.id();
         }
-
+        
         // Lấy thêm 1 record để kiểm tra hasMore
         return postRepository.findFeed(mssv, cursorTime, cursorId, limit + 1)
                 .stream()

@@ -1,7 +1,7 @@
 # Docker Compose Configuration
 services:
   postgres:
-    image: postgres:17-alpine
+    image: docker.io/library/postgres:17-alpine
     container_name: buddy-postgres
     environment:
       POSTGRES_DB: ${POSTGRES_DB}
@@ -13,7 +13,7 @@ services:
       - postgres_data:/var/lib/postgresql/data
 
   redis:
-    image: redis:8-alpine
+    image: docker.io/library/redis:8-alpine
     container_name: buddy-redis
     ports:
       - ${HOST_REDIS_PORT}:6379
