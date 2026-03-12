@@ -15,13 +15,17 @@ import java.util.List;
 @Repository
 public interface DeviceTokenRepository extends JpaRepository<DeviceToken, Long> {
 
-    List<DeviceToken> findAllByMssv(String mssv);
+    @Query("SELECT dt.fcmToken FROM DeviceToken dt WHERE dt.mssv = :mssv")
+    List<String> findAllTokensByMssv(@Param("mssv") String mssv);
 
     @Transactional
     void deleteByFcmToken(String fcmToken);
 
     @Transactional
     void deleteByMssv(String mssv);
+
+    @Transactional
+    void deleteAllByFcmTokenIn(List<String> tokens);
 
     @Modifying
     @Query(value = """

@@ -267,7 +267,6 @@ class CloudinaryServiceImplTest {
         @DisplayName("Should upload multiple images successfully")
         void shouldUploadMultipleImagesSuccessfully() throws Exception {
             // Given
-            String postId = "post-123";
             MultipartFile image1 = new MockMultipartFile("file1", "image1.jpg", "image/jpeg", "content1".getBytes());
             MultipartFile image2 = new MockMultipartFile("file2", "image2.jpg", "image/jpeg", "content2".getBytes());
             List<MultipartFile> images = Arrays.asList(image1, image2);
@@ -289,7 +288,7 @@ class CloudinaryServiceImplTest {
             }).when(executor).execute(any(Runnable.class));
 
             // When
-            List<PostMedia> result = cloudinaryService.uploadMultiMedia(images, null, postId);
+            List<PostMedia> result = cloudinaryService.uploadMultiMedia(images, null);
 
             // Then
             assertThat(result).hasSize(2);
@@ -301,7 +300,6 @@ class CloudinaryServiceImplTest {
         @DisplayName("Should upload mixed media successfully")
         void shouldUploadMixedMediaSuccessfully() throws Exception {
             // Given
-            String postId = "post-123";
             MultipartFile image = new MockMultipartFile("image", "image.jpg", "image/jpeg", "image-content".getBytes());
             MultipartFile video = new MockMultipartFile("video", "video.mp4", "video/mp4", "video-content".getBytes());
 
@@ -325,8 +323,7 @@ class CloudinaryServiceImplTest {
             // When
             List<PostMedia> result = cloudinaryService.uploadMultiMedia(
                     Arrays.asList(image),
-                    Arrays.asList(video),
-                    postId);
+                    Arrays.asList(video));
 
             // Then
             assertThat(result).hasSize(2);
@@ -336,7 +333,6 @@ class CloudinaryServiceImplTest {
         @DisplayName("Should handle upload failure gracefully")
         void shouldHandleUploadFailureGracefully() throws Exception {
             // Given
-            String postId = "post-123";
             MultipartFile image = new MockMultipartFile("image", "image.jpg", "image/jpeg", "content".getBytes());
 
             when(properties.getAllowedImageTypes()).thenReturn(new String[] { "image/jpeg" });
@@ -352,7 +348,7 @@ class CloudinaryServiceImplTest {
             }).when(executor).execute(any(Runnable.class));
 
             // When & Then
-            assertThatThrownBy(() -> cloudinaryService.uploadMultiMedia(Arrays.asList(image), null, postId))
+            assertThatThrownBy(() -> cloudinaryService.uploadMultiMedia(Arrays.asList(image), null))
                     .isInstanceOf(RuntimeException.class);
         }
     }

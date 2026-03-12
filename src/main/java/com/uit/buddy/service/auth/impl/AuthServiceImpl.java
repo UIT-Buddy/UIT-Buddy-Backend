@@ -17,6 +17,7 @@ import com.uit.buddy.entity.academic.HomeClass;
 import com.uit.buddy.entity.redis.PasswordResetOtp;
 import com.uit.buddy.entity.redis.PendingAccount;
 import com.uit.buddy.entity.user.Student;
+import com.uit.buddy.entity.user.UserSetting;
 import com.uit.buddy.exception.auth.AuthErrorCode;
 import com.uit.buddy.exception.auth.AuthException;
 import com.uit.buddy.exception.client.ExternalClientException;
@@ -29,6 +30,7 @@ import com.uit.buddy.repository.auth.PasswordResetTokenRepository;
 import com.uit.buddy.repository.auth.PendingAccountRepository;
 import com.uit.buddy.repository.auth.RefreshTokenRepository;
 import com.uit.buddy.repository.user.StudentRepository;
+import com.uit.buddy.repository.user.UserSettingRepository;
 import com.uit.buddy.security.JwtUtils;
 import com.uit.buddy.service.auth.AuthService;
 import com.uit.buddy.service.email.EmailService;
@@ -58,6 +60,7 @@ public class AuthServiceImpl implements AuthService {
     private final RefreshTokenRepository refreshTokenRepository;
     private final PasswordResetTokenRepository passwordResetTokenRepository;
     private final PendingAccountRepository pendingAccountRepository;
+    private final UserSettingRepository userSettingRepository;
     private final UitClient uitClient;
     private final CometChatClient cometChatClient;
     private final HomeClassRepository homeClassRepository;
@@ -188,8 +191,18 @@ public class AuthServiceImpl implements AuthService {
                 .homeClassCode(homeClassCode)
                 .build();
 
+        UserSetting userSetting = UserSetting.builder()
+                .mssv(request.mssv())
+                .enableNotification(true)
+                .enableScheduleReminder(true)
+                .student(student)
+                .build();
+
+        student.setUserSetting(userSetting);
+
         try {
             studentRepository.save(student);
+            log.info("Successfully created student with UserSetting for MSSV: {}", request.mssv());
             if (request.fcmToken() != null && !request.fcmToken().isBlank()) {
                 fcmService.syncDeviceToken(request.mssv(), request.fcmToken());
             }
