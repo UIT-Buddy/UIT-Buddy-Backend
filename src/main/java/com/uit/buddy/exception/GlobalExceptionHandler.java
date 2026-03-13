@@ -157,6 +157,17 @@ public class GlobalExceptionHandler {
                 return ResponseEntity.status(SystemErrorCode.INVALID_PARAMETER.getHttpStatus()).body(response);
         }
 
+        @ExceptionHandler(MaxUploadSizeExceededException.class)
+        public ResponseEntity<ErrorResponse> handleMaxSizeException(MaxUploadSizeExceededException ex) {
+                log.warn("File size exceeds maximum: {}", ex.getMessage());
+
+                ErrorResponse response = new ErrorResponse(
+                                UserErrorCode.FILE_TOO_LARGE.getHttpStatus().value(),
+                                UserErrorCode.FILE_TOO_LARGE.getMessage(),
+                                UserErrorCode.FILE_TOO_LARGE.getCode());
+
+                return ResponseEntity.status(UserErrorCode.FILE_TOO_LARGE.getHttpStatus()).body(response);
+        }
 
         @ExceptionHandler(Exception.class)
         public ResponseEntity<ErrorResponse> handleGenericException(Exception ex) {

@@ -95,6 +95,8 @@ cloudinary:
   api-key: ${CLOUDINARY_API_KEY}
   api-secret: ${CLOUDINARY_API_SECRET}
   default-avatar-url: ${CLOUDINARY_DEFAULT_AVATAR_URL}
+  max-image-size: ${CLOUDINARY_MAX_IMAGE_SIZE}
+  max-video-size: ${CLOUDINARY_MAX_VIDEO_SIZE}
   allowed-image-types: ${CLOUDINARY_ALLOWED_IMAGE_TYPES}
   allowed-video-types: ${CLOUDINARY_ALLOWED_VIDEO_TYPES}
   avatar-size: ${CLOUDINARY_AVATAR_SIZE}

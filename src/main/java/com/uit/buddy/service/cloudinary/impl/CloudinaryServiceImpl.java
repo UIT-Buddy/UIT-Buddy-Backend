@@ -133,6 +133,10 @@ public class CloudinaryServiceImpl implements CloudinaryService {
                 ? properties.getAllowedImageTypes()
                 : properties.getAllowedVideoTypes();
 
+        long maxSize = (fileType == FileType.IMAGE)
+                ? properties.getMaxImageSize()
+                : properties.getMaxVideoSize();
+
         if (file == null || file.isEmpty())
             throw new UserException(UserErrorCode.FILE_EMPTY);
 
@@ -141,6 +145,10 @@ public class CloudinaryServiceImpl implements CloudinaryService {
             throw new UserException(UserErrorCode.INVALID_FILE_TYPE, "Allowed: " + String.join(", ", allowed));
         }
 
+        if (file.getSize() > maxSize) {
+            throw new UserException(UserErrorCode.FILE_TOO_LARGE,
+                    fileType.name() + " limit: " + fileType.getFormattedMaxSize(maxSize));
+        }
     }
 
     private PostMedia executeUpload(Object source, String publicId, String folder, String resType,
