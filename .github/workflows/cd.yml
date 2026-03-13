@@ -17,7 +17,6 @@ jobs:
     name: Deploy UIT Buddy Backend to Production Server
     runs-on: self-hosted
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
-    
     steps:
       - name: Checkout GitOps Manifests
         uses: actions/checkout@v4
@@ -26,12 +25,16 @@ jobs:
           path: gitops-manifests
 
       - name: Create backend.env from secret
+        env:
+          BACKEND_ENV_CONTENT: ${{ secrets.BACKEND_ENV_FILE }}
         run: |
-          echo "${{ secrets.BACKEND_ENV_FILE }}" > gitops-manifests/backend.env
+          printf "%s" "$BACKEND_ENV_CONTENT" > gitops-manifests/backend.env
 
       - name: Create Firebase Admin SDK JSON from secret
+        env:
+          FIREBASE_JSON_CONTENT: ${{ secrets.FIREBASE_ADMINSDK_JSON }}
         run: |
-          echo "${{ secrets.FIREBASE_ADMINSDK_JSON }}" > gitops-manifests/uit-buddy-firebase-adminsdk-fbsvc-e3e18ce04a.json
+          printf "%s" "$FIREBASE_JSON_CONTENT" > gitops-manifests/uit-buddy-firebase-adminsdk-fbsvc-e3e18ce04a.json
 
       - name: Deploy Locally on Self-Hosted
         env:
