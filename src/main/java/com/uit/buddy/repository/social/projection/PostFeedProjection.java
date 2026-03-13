@@ -30,5 +30,5 @@ public interface PostFeedProjection {
 
     String getAuthorHomeClassCode();
 
-    boolean isLiked();
+    boolean getIsLiked();
 }

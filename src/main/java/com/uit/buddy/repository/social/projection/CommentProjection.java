@@ -24,5 +24,5 @@ public interface CommentProjection {
 
     String getAvatarUrl();
 
-    boolean isLiked();
+    boolean getIsLiked();
 }
