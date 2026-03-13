@@ -40,10 +40,12 @@ public abstract class PostMapper {
     @Mapping(target = "contentSnippet", expression = "java(TextUtils.truncate(p.getContent()))")
     @Mapping(target = "author", source = "p")
     @Mapping(target = "medias", expression = "java(mapMedias(p.getMedias()))")
+    @Mapping(target = "isLiked", source = "isLiked")
     public abstract PostFeedResponse toPostFeedResponse(PostFeedProjection p);
 
     @Mapping(target = "author", source = "p")
     @Mapping(target = "medias", expression = "java(mapMedias(p.getMedias()))")
+    @Mapping(target = "isLiked", source = "isLiked")
     public abstract PostDetailResponse toPostDetailResponseFromProjection(PostFeedProjection p);
 
     public abstract PostDetailResponse toPostDetailResponse(Post post);
