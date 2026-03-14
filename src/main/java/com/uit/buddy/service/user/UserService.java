@@ -8,11 +8,11 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.web.multipart.MultipartFile;
 
 public interface UserService {
-  UserResponse getMyProfile(String mssv);
+    UserResponse getMyProfile(String mssv);
 
-  UserResponse updateProfile(String mssv, UpdateUserRequest request);
+    UserResponse updateProfile(String mssv, UpdateUserRequest request);
 
-  String uploadAvatar(String mssv, MultipartFile file);
+    String uploadAvatar(String mssv, MultipartFile file);
 
-  Page<FoundUserResponse> searchStudentByKeyword(String keyword, Pageable pageable);
+    Page<FoundUserResponse> searchStudentByKeyword(String keyword, Pageable pageable);
 }

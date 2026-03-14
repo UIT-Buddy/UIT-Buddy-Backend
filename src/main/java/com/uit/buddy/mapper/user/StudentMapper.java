@@ -8,5 +8,5 @@ import org.mapstruct.ReportingPolicy;
 @Mapper(componentModel = "spring", unmappedTargetPolicy = ReportingPolicy.IGNORE)
 public interface StudentMapper {
 
-  StudentResponse toStudentResponse(Student student);
+    StudentResponse toStudentResponse(Student student);
 }

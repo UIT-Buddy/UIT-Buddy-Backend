@@ -9,9 +9,9 @@ import org.mapstruct.ReportingPolicy;
 @Mapper(componentModel = "spring", unmappedTargetPolicy = ReportingPolicy.IGNORE)
 public interface ReactionMapper {
 
-  @Mapping(target = "user.mssv", source = "mssv")
-  @Mapping(target = "user.fullName", source = "fullName")
-  @Mapping(target = "user.avatarUrl", source = "avatarUrl")
-  @Mapping(target = "reactedAt", source = "reactedAt")
-  UserReactionResponse toReactionResponse(ReactionProjection p);
+    @Mapping(target = "user.mssv", source = "mssv")
+    @Mapping(target = "user.fullName", source = "fullName")
+    @Mapping(target = "user.avatarUrl", source = "avatarUrl")
+    @Mapping(target = "reactedAt", source = "reactedAt")
+    UserReactionResponse toReactionResponse(ReactionProjection p);
 }

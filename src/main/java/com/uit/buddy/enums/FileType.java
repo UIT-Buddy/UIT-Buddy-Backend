@@ -4,10 +4,9 @@ import lombok.Getter;
 
 @Getter
 public enum FileType {
-  IMAGE,
-  VIDEO;
+    IMAGE, VIDEO;
 
-  public String getFormattedMaxSize(long sizeInBytes) {
-    return (sizeInBytes / (1024 * 1024)) + "MB";
-  }
+    public String getFormattedMaxSize(long sizeInBytes) {
+        return (sizeInBytes / (1024 * 1024)) + "MB";
+    }
 }

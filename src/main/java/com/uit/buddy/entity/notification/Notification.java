@@ -7,12 +7,8 @@ import jakarta.persistence.*;
 import lombok.*;
 
 @Entity
-@Table(
-    name = "notifications",
-    indexes = {
-      @Index(name = "idx_notification_student", columnList = "mssv"),
-      @Index(name = "idx_notification_is_read", columnList = "is_read")
-    })
+@Table(name = "notifications", indexes = { @Index(name = "idx_notification_student", columnList = "mssv"),
+        @Index(name = "idx_notification_is_read", columnList = "is_read") })
 @Getter
 @Setter
 @NoArgsConstructor
@@ -20,27 +16,24 @@ import lombok.*;
 @Builder
 public class Notification extends AbstractBaseEntity {
 
-  @ManyToOne(fetch = FetchType.LAZY, optional = false)
-  @JoinColumn(
-      name = "mssv",
-      referencedColumnName = "mssv",
-      foreignKey = @ForeignKey(name = "fk_notification_student"))
-  private Student student;
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "mssv", referencedColumnName = "mssv", foreignKey = @ForeignKey(name = "fk_notification_student"))
+    private Student student;
 
-  @Column(name = "title", nullable = false, length = 255)
-  private String title;
+    @Column(name = "title", nullable = false, length = 255)
+    private String title;
 
-  @Column(name = "content", nullable = false, columnDefinition = "TEXT")
-  private String content;
+    @Column(name = "content", nullable = false, columnDefinition = "TEXT")
+    private String content;
 
-  @Enumerated(EnumType.STRING)
-  @Column(name = "type", nullable = false, length = 50)
-  private NotificationType type;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "type", nullable = false, length = 50)
+    private NotificationType type;
 
-  @Column(name = "is_read", nullable = false)
-  @Builder.Default
-  private Boolean isRead = false;
+    @Column(name = "is_read", nullable = false)
+    @Builder.Default
+    private Boolean isRead = false;
 
-  @Column(name = "redirect_url", length = 512)
-  private String redirectUrl;
+    @Column(name = "redirect_url", length = 512)
+    private String redirectUrl;
 }

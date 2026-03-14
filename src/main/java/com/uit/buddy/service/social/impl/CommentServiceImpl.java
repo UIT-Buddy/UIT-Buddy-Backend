@@ -30,180 +30,143 @@ import org.springframework.transaction.annotation.Transactional;
 @Slf4j
 public class CommentServiceImpl implements CommentService {
 
-  private final PostRepository postRepository;
-  private final CommentRepository commentRepository;
-  private final StudentRepository studentRepository;
-  private final CommentReactionRepository commentReactionRepository;
-  private final CommentMapper commentMapper;
-  private final ApplicationEventPublisher eventPublisher;
+    private final PostRepository postRepository;
+    private final CommentRepository commentRepository;
+    private final StudentRepository studentRepository;
+    private final CommentReactionRepository commentReactionRepository;
+    private final CommentMapper commentMapper;
+    private final ApplicationEventPublisher eventPublisher;
 
-  @Override
-  @Transactional
-  public void createComment(UUID postId, String mssv, CreateCommentRequest request) {
-    Post post =
-        postRepository
-            .findById(postId)
-            .orElseThrow(() -> new SocialException(SocialErrorCode.POST_NOT_FOUND));
+    @Override
+    @Transactional
+    public void createComment(UUID postId, String mssv, CreateCommentRequest request) {
+        Post post = postRepository.findById(postId)
+                .orElseThrow(() -> new SocialException(SocialErrorCode.POST_NOT_FOUND));
 
-    var author =
-        studentRepository
-            .findById(mssv)
-            .orElseThrow(() -> new SocialException(SocialErrorCode.UNAUTHORIZED));
+        var author = studentRepository.findById(mssv)
+                .orElseThrow(() -> new SocialException(SocialErrorCode.UNAUTHORIZED));
 
-    Comment comment =
-        Comment.builder().post(post).author(author).content(request.content()).build();
+        Comment comment = Comment.builder().post(post).author(author).content(request.content()).build();
 
-    comment = commentRepository.save(comment);
-    postRepository.incrementCommentCount(postId);
+        comment = commentRepository.save(comment);
+        postRepository.incrementCommentCount(postId);
 
-    if (!post.getMssv().equals(mssv)) {
-      String actorName =
-          studentRepository.findById(mssv).map(student -> student.getFullName()).orElse(mssv);
+        if (!post.getMssv().equals(mssv)) {
+            String actorName = studentRepository.findById(mssv).map(student -> student.getFullName()).orElse(mssv);
 
-      eventPublisher.publishEvent(
-          new PostCommentedEvent(
-              mssv, actorName, post.getMssv(), postId, comment.getId(), request.content()));
-    }
-  }
-
-  @Override
-  @Transactional
-  public void replyToComment(UUID commentId, String mssv, CreateCommentRequest request) {
-    var parentComment =
-        commentRepository
-            .findById(commentId)
-            .orElseThrow(() -> new SocialException(SocialErrorCode.COMMENT_NOT_FOUND));
-
-    var post = parentComment.getPost();
-
-    Comment reply =
-        Comment.builder()
-            .post(post)
-            .parentComment(parentComment)
-            .author(studentRepository.getReferenceById(mssv))
-            .content(request.content())
-            .build();
-
-    reply = commentRepository.save(reply);
-    postRepository.incrementCommentCount(post.getId());
-    commentRepository.incrementReplyCount(commentId);
-
-    if (!parentComment.getMssv().equals(mssv)) {
-      String actorName =
-          studentRepository.findById(mssv).map(student -> student.getFullName()).orElse(mssv);
-
-      eventPublisher.publishEvent(
-          new PostCommentedEvent(
-              mssv,
-              actorName,
-              parentComment.getMssv(),
-              post.getId(),
-              reply.getId(),
-              request.content()));
-    }
-  }
-
-  @Override
-  @Transactional
-  public void updateComment(UUID commentId, String mssv, UpdateCommentRequest request) {
-    Comment comment =
-        commentRepository
-            .findById(commentId)
-            .orElseThrow(() -> new SocialException(SocialErrorCode.COMMENT_NOT_FOUND));
-
-    if (!comment.getMssv().equals(mssv)) {
-      throw new SocialException(SocialErrorCode.UNAUTHORIZED);
+            eventPublisher.publishEvent(new PostCommentedEvent(mssv, actorName, post.getMssv(), postId, comment.getId(),
+                    request.content()));
+        }
     }
 
-    comment.setContent(request.content());
-  }
+    @Override
+    @Transactional
+    public void replyToComment(UUID commentId, String mssv, CreateCommentRequest request) {
+        var parentComment = commentRepository.findById(commentId)
+                .orElseThrow(() -> new SocialException(SocialErrorCode.COMMENT_NOT_FOUND));
 
-  @Override
-  @Transactional
-  public void deleteComment(UUID commentId, String mssv) {
-    Comment comment =
-        commentRepository
-            .findById(commentId)
-            .orElseThrow(() -> new SocialException(SocialErrorCode.COMMENT_NOT_FOUND));
+        var post = parentComment.getPost();
 
-    if (!comment.getMssv().equals(mssv)) {
-      throw new SocialException(SocialErrorCode.UNAUTHORIZED);
+        Comment reply = Comment.builder().post(post).parentComment(parentComment)
+                .author(studentRepository.getReferenceById(mssv)).content(request.content()).build();
+
+        reply = commentRepository.save(reply);
+        postRepository.incrementCommentCount(post.getId());
+        commentRepository.incrementReplyCount(commentId);
+
+        if (!parentComment.getMssv().equals(mssv)) {
+            String actorName = studentRepository.findById(mssv).map(student -> student.getFullName()).orElse(mssv);
+
+            eventPublisher.publishEvent(new PostCommentedEvent(mssv, actorName, parentComment.getMssv(), post.getId(),
+                    reply.getId(), request.content()));
+        }
     }
 
-    commentRepository.delete(comment);
-    postRepository.decrementCommentCount(comment.getPost().getId());
-  }
+    @Override
+    @Transactional
+    public void updateComment(UUID commentId, String mssv, UpdateCommentRequest request) {
+        Comment comment = commentRepository.findById(commentId)
+                .orElseThrow(() -> new SocialException(SocialErrorCode.COMMENT_NOT_FOUND));
 
-  @Override
-  @Transactional
-  public boolean toggleCommentLike(UUID commentId, String mssv) {
-    if (!commentRepository.existsById(commentId)) {
-      throw new SocialException(SocialErrorCode.COMMENT_NOT_FOUND);
+        if (!comment.getMssv().equals(mssv)) {
+            throw new SocialException(SocialErrorCode.UNAUTHORIZED);
+        }
+
+        comment.setContent(request.content());
     }
 
-    var existingReaction = commentReactionRepository.findByCommentIdAndMssv(commentId, mssv);
+    @Override
+    @Transactional
+    public void deleteComment(UUID commentId, String mssv) {
+        Comment comment = commentRepository.findById(commentId)
+                .orElseThrow(() -> new SocialException(SocialErrorCode.COMMENT_NOT_FOUND));
 
-    if (existingReaction.isPresent()) {
-      commentReactionRepository.delete(existingReaction.get());
-      commentRepository.decrementLikeCount(commentId);
-      return false;
-    } else {
-      CommentReaction reaction = CommentReaction.builder().commentId(commentId).mssv(mssv).build();
-      commentReactionRepository.save(reaction);
-      commentRepository.incrementLikeCount(commentId);
-      return true;
-    }
-  }
+        if (!comment.getMssv().equals(mssv)) {
+            throw new SocialException(SocialErrorCode.UNAUTHORIZED);
+        }
 
-  @Override
-  @Transactional(readOnly = true)
-  public List<CommentResponse> getPostComments(UUID postId, String mssv, String cursor, int limit) {
-    log.info("[Post Service] Getting root comments for post: {}", postId);
-
-    postRepository
-        .findById(postId)
-        .orElseThrow(() -> new SocialException(SocialErrorCode.POST_NOT_FOUND, "Post not found"));
-
-    LocalDateTime cursorTime = null;
-    UUID cursorId = null;
-    if (cursor != null && !cursor.isBlank()) {
-      CursorUtils.CursorContents contents = CursorUtils.decode(cursor);
-      cursorTime = contents.timestamp();
-      cursorId = contents.id();
+        commentRepository.delete(comment);
+        postRepository.decrementCommentCount(comment.getPost().getId());
     }
 
-    return commentRepository
-        .findCommentsWithCursor(postId, null, mssv, cursorTime, cursorId, limit + 1)
-        .stream()
-        .map(commentMapper::toCommentResponse)
-        .toList();
-  }
+    @Override
+    @Transactional
+    public boolean toggleCommentLike(UUID commentId, String mssv) {
+        if (!commentRepository.existsById(commentId)) {
+            throw new SocialException(SocialErrorCode.COMMENT_NOT_FOUND);
+        }
 
-  @Override
-  @Transactional(readOnly = true)
-  public List<CommentResponse> getCommentReplies(
-      UUID commentId, String mssv, String cursor, int limit) {
-    log.info("[Post Service] Getting replies for comment: {}", commentId);
+        var existingReaction = commentReactionRepository.findByCommentIdAndMssv(commentId, mssv);
 
-    Comment parentComment =
-        commentRepository
-            .findById(commentId)
-            .orElseThrow(
-                () -> new SocialException(SocialErrorCode.COMMENT_NOT_FOUND, "Comment not found"));
-
-    LocalDateTime cursorTime = null;
-    UUID cursorId = null;
-    if (cursor != null && !cursor.isBlank()) {
-      CursorUtils.CursorContents contents = CursorUtils.decode(cursor);
-      cursorTime = contents.timestamp();
-      cursorId = contents.id();
+        if (existingReaction.isPresent()) {
+            commentReactionRepository.delete(existingReaction.get());
+            commentRepository.decrementLikeCount(commentId);
+            return false;
+        } else {
+            CommentReaction reaction = CommentReaction.builder().commentId(commentId).mssv(mssv).build();
+            commentReactionRepository.save(reaction);
+            commentRepository.incrementLikeCount(commentId);
+            return true;
+        }
     }
 
-    return commentRepository
-        .findCommentsWithCursor(
-            parentComment.getPost().getId(), commentId, mssv, cursorTime, cursorId, limit + 1)
-        .stream()
-        .map(commentMapper::toCommentResponse)
-        .toList();
-  }
+    @Override
+    @Transactional(readOnly = true)
+    public List<CommentResponse> getPostComments(UUID postId, String mssv, String cursor, int limit) {
+        log.info("[Post Service] Getting root comments for post: {}", postId);
+
+        postRepository.findById(postId)
+                .orElseThrow(() -> new SocialException(SocialErrorCode.POST_NOT_FOUND, "Post not found"));
+
+        LocalDateTime cursorTime = null;
+        UUID cursorId = null;
+        if (cursor != null && !cursor.isBlank()) {
+            CursorUtils.CursorContents contents = CursorUtils.decode(cursor);
+            cursorTime = contents.timestamp();
+            cursorId = contents.id();
+        }
+
+        return commentRepository.findCommentsWithCursor(postId, null, mssv, cursorTime, cursorId, limit + 1).stream()
+                .map(commentMapper::toCommentResponse).toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<CommentResponse> getCommentReplies(UUID commentId, String mssv, String cursor, int limit) {
+        log.info("[Post Service] Getting replies for comment: {}", commentId);
+
+        Comment parentComment = commentRepository.findById(commentId)
+                .orElseThrow(() -> new SocialException(SocialErrorCode.COMMENT_NOT_FOUND, "Comment not found"));
+
+        LocalDateTime cursorTime = null;
+        UUID cursorId = null;
+        if (cursor != null && !cursor.isBlank()) {
+            CursorUtils.CursorContents contents = CursorUtils.decode(cursor);
+            cursorTime = contents.timestamp();
+            cursorId = contents.id();
+        }
+
+        return commentRepository.findCommentsWithCursor(parentComment.getPost().getId(), commentId, mssv, cursorTime,
+                cursorId, limit + 1).stream().map(commentMapper::toCommentResponse).toList();
+    }
 }

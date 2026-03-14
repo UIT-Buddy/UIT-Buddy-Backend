@@ -12,27 +12,24 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface DeviceTokenRepository extends JpaRepository<DeviceToken, Long> {
 
-  @Query("SELECT dt.fcmToken FROM DeviceToken dt WHERE dt.mssv = :mssv")
-  List<String> findAllTokensByMssv(@Param("mssv") String mssv);
+    @Query("SELECT dt.fcmToken FROM DeviceToken dt WHERE dt.mssv = :mssv")
+    List<String> findAllTokensByMssv(@Param("mssv") String mssv);
 
-  @Transactional
-  void deleteByFcmToken(String fcmToken);
+    @Transactional
+    void deleteByFcmToken(String fcmToken);
 
-  @Transactional
-  void deleteByMssv(String mssv);
+    @Transactional
+    void deleteByMssv(String mssv);
 
-  @Transactional
-  void deleteAllByFcmTokenIn(List<String> tokens);
+    @Transactional
+    void deleteAllByFcmTokenIn(List<String> tokens);
 
-  @Modifying
-  @Query(
-      value =
-          """
+    @Modifying
+    @Query(value = """
             INSERT INTO device_tokens (id, mssv, fcm_token, created_at, updated_at)
             VALUES (gen_random_uuid(), :mssv, :token, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
             ON CONFLICT (mssv, fcm_token)
             DO UPDATE SET updated_at = CURRENT_TIMESTAMP
-            """,
-      nativeQuery = true)
-  void upsertToken(@Param("mssv") String mssv, @Param("token") String token);
+            """, nativeQuery = true)
+    void upsertToken(@Param("mssv") String mssv, @Param("token") String token);
 }

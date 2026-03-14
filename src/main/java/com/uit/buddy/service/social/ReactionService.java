@@ -5,7 +5,7 @@ import java.util.List;
 import java.util.UUID;
 
 public interface ReactionService {
-  boolean togglePostLike(UUID postId, String mssv);
+    boolean togglePostLike(UUID postId, String mssv);
 
-  List<UserReactionResponse> getPostReactions(UUID postId, String mssv, String cursor, int limit);
+    List<UserReactionResponse> getPostReactions(UUID postId, String mssv, String cursor, int limit);
 }

@@ -11,6 +11,6 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @Builder
 public class PostMedia {
-  private FileType type;
-  private String url;
+    private FileType type;
+    private String url;
 }

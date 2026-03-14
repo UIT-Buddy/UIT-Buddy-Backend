@@ -27,117 +27,90 @@ import org.springframework.web.bind.annotation.*;
 @Tag(name = "Comment", description = "Comment management APIs")
 public class CommentController extends AbstractBaseController {
 
-  private final CommentService commentService;
+    private final CommentService commentService;
 
-  @PostMapping("/{postId}")
-  @Operation(summary = "Create comment", description = "Create a new comment on a post")
-  public ResponseEntity<CreatedResponse<Void>> createComment(
-      @PathVariable UUID postId,
-      @Valid @RequestBody CreateCommentRequest request,
-      @AuthenticationPrincipal String mssv) {
+    @PostMapping("/{postId}")
+    @Operation(summary = "Create comment", description = "Create a new comment on a post")
+    public ResponseEntity<CreatedResponse<Void>> createComment(@PathVariable UUID postId,
+            @Valid @RequestBody CreateCommentRequest request, @AuthenticationPrincipal String mssv) {
 
-    log.info("[Comment Controller] Creating comment on post: {} by mssv: {}", postId, mssv);
+        log.info("[Comment Controller] Creating comment on post: {} by mssv: {}", postId, mssv);
 
-    commentService.createComment(postId, mssv, request);
-    return created("Comment created successfully");
-  }
+        commentService.createComment(postId, mssv, request);
+        return created("Comment created successfully");
+    }
 
-  @GetMapping("/{postId}/comments")
-  @Operation(
-      summary = "Get post comments",
-      description = "Get cursor-paginated list of comments for the post")
-  public ResponseEntity<CursorPageResponse<CommentResponse>> getPostComments(
-      @PathVariable UUID postId,
-      @RequestParam(required = false) String cursor,
-      @RequestParam(defaultValue = "10") int limit,
-      @AuthenticationPrincipal String mssv) {
+    @GetMapping("/{postId}/comments")
+    @Operation(summary = "Get post comments", description = "Get cursor-paginated list of comments for the post")
+    public ResponseEntity<CursorPageResponse<CommentResponse>> getPostComments(@PathVariable UUID postId,
+            @RequestParam(required = false) String cursor, @RequestParam(defaultValue = "10") int limit,
+            @AuthenticationPrincipal String mssv) {
 
-    log.info(
-        "[Post Controller] Getting comments for post: {} with cursor: {}, limit: {}",
-        postId,
-        cursor,
-        limit);
+        log.info("[Post Controller] Getting comments for post: {} with cursor: {}, limit: {}", postId, cursor, limit);
 
-    List<CommentResponse> comments = commentService.getPostComments(postId, mssv, cursor, limit);
+        List<CommentResponse> comments = commentService.getPostComments(postId, mssv, cursor, limit);
 
-    return cursorPaging(
-        "Post comments retrieved successfully",
-        comments,
-        limit,
-        comment -> CursorUtils.encode(comment.createdAt(), comment.id()));
-  }
+        return cursorPaging("Post comments retrieved successfully", comments, limit,
+                comment -> CursorUtils.encode(comment.createdAt(), comment.id()));
+    }
 
-  @PostMapping("/{commentId}/replies")
-  @Operation(summary = "Reply to comment", description = "Create a reply to an existing comment")
-  public ResponseEntity<CreatedResponse<Void>> replyToComment(
-      @PathVariable UUID commentId,
-      @Valid @RequestBody CreateCommentRequest request,
-      @AuthenticationPrincipal String mssv) {
+    @PostMapping("/{commentId}/replies")
+    @Operation(summary = "Reply to comment", description = "Create a reply to an existing comment")
+    public ResponseEntity<CreatedResponse<Void>> replyToComment(@PathVariable UUID commentId,
+            @Valid @RequestBody CreateCommentRequest request, @AuthenticationPrincipal String mssv) {
 
-    log.info("[Comment Controller] Creating reply to comment: {} by mssv: {}", commentId, mssv);
+        log.info("[Comment Controller] Creating reply to comment: {} by mssv: {}", commentId, mssv);
 
-    commentService.replyToComment(commentId, mssv, request);
-    return created("Reply created successfully");
-  }
+        commentService.replyToComment(commentId, mssv, request);
+        return created("Reply created successfully");
+    }
 
-  @PutMapping("/{commentId}")
-  @Operation(summary = "Update comment", description = "Update comment content (only by author)")
-  public ResponseEntity<SuccessResponse> updateComment(
-      @PathVariable UUID commentId,
-      @Valid @RequestBody UpdateCommentRequest request,
-      @AuthenticationPrincipal String mssv) {
+    @PutMapping("/{commentId}")
+    @Operation(summary = "Update comment", description = "Update comment content (only by author)")
+    public ResponseEntity<SuccessResponse> updateComment(@PathVariable UUID commentId,
+            @Valid @RequestBody UpdateCommentRequest request, @AuthenticationPrincipal String mssv) {
 
-    log.info("[Comment Controller] Updating comment: {} by mssv: {}", commentId, mssv);
+        log.info("[Comment Controller] Updating comment: {} by mssv: {}", commentId, mssv);
 
-    commentService.updateComment(commentId, mssv, request);
-    return success("Comment updated successfully");
-  }
+        commentService.updateComment(commentId, mssv, request);
+        return success("Comment updated successfully");
+    }
 
-  @GetMapping("/comments/{commentId}/replies")
-  @Operation(
-      summary = "Get comment replies",
-      description = "Get cursor-paginated list of replies for a specific comment")
-  public ResponseEntity<CursorPageResponse<CommentResponse>> getCommentReplies(
-      @PathVariable UUID commentId,
-      @RequestParam(required = false) String cursor,
-      @RequestParam(defaultValue = "5") int limit,
-      @AuthenticationPrincipal String mssv) {
+    @GetMapping("/comments/{commentId}/replies")
+    @Operation(summary = "Get comment replies", description = "Get cursor-paginated list of replies for a specific comment")
+    public ResponseEntity<CursorPageResponse<CommentResponse>> getCommentReplies(@PathVariable UUID commentId,
+            @RequestParam(required = false) String cursor, @RequestParam(defaultValue = "5") int limit,
+            @AuthenticationPrincipal String mssv) {
 
-    log.info("[Comment] Getting replies for comment: {}", commentId);
+        log.info("[Comment] Getting replies for comment: {}", commentId);
 
-    List<CommentResponse> replies =
-        commentService.getCommentReplies(commentId, mssv, cursor, limit);
+        List<CommentResponse> replies = commentService.getCommentReplies(commentId, mssv, cursor, limit);
 
-    return cursorPaging(
-        "Comment replies retrieved successfully",
-        replies,
-        limit,
-        reply -> CursorUtils.encode(reply.createdAt(), reply.id()));
-  }
+        return cursorPaging("Comment replies retrieved successfully", replies, limit,
+                reply -> CursorUtils.encode(reply.createdAt(), reply.id()));
+    }
 
-  @DeleteMapping("/{commentId}")
-  @Operation(
-      summary = "Delete comment",
-      description = "Delete comment and its replies (only by author)")
-  public ResponseEntity<SuccessResponse> deleteComment(
-      @PathVariable UUID commentId, @AuthenticationPrincipal String mssv) {
+    @DeleteMapping("/{commentId}")
+    @Operation(summary = "Delete comment", description = "Delete comment and its replies (only by author)")
+    public ResponseEntity<SuccessResponse> deleteComment(@PathVariable UUID commentId,
+            @AuthenticationPrincipal String mssv) {
 
-    log.info("[Comment Controller] Deleting comment: {} by mssv: {}", commentId, mssv);
+        log.info("[Comment Controller] Deleting comment: {} by mssv: {}", commentId, mssv);
 
-    commentService.deleteComment(commentId, mssv);
-    return success("Comment deleted successfully");
-  }
+        commentService.deleteComment(commentId, mssv);
+        return success("Comment deleted successfully");
+    }
 
-  @PostMapping("/{commentId}/like")
-  @Operation(summary = "Like/Unlike comment", description = "Toggle like on a comment")
-  public ResponseEntity<SuccessResponse> toggleCommentLike(
-      @PathVariable UUID commentId, @AuthenticationPrincipal String mssv) {
+    @PostMapping("/{commentId}/like")
+    @Operation(summary = "Like/Unlike comment", description = "Toggle like on a comment")
+    public ResponseEntity<SuccessResponse> toggleCommentLike(@PathVariable UUID commentId,
+            @AuthenticationPrincipal String mssv) {
 
-    log.info("[Comment Controller] Toggling like on comment: {} by mssv: {}", commentId, mssv);
+        log.info("[Comment Controller] Toggling like on comment: {} by mssv: {}", commentId, mssv);
 
-    boolean isLiked = commentService.toggleCommentLike(commentId, mssv);
-    String message = isLiked ? "Comment liked successfully" : "Comment unliked successfully";
+        boolean isLiked = commentService.toggleCommentLike(commentId, mssv);
+        String message = isLiked ? "Comment liked successfully" : "Comment unliked successfully";
 
-    return success(message);
-  }
+        return success(message);
+    }
 }

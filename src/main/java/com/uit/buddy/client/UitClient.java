@@ -5,7 +5,7 @@ import com.uit.buddy.dto.response.client.SiteInfoResponse;
 import java.util.List;
 
 public interface UitClient {
-  SiteInfoResponse fetchSiteInfo(String wstoken);
+    SiteInfoResponse fetchSiteInfo(String wstoken);
 
-  List<EnrolledCourseResponse> getUserCourses(String wstoken, Long userId);
+    List<EnrolledCourseResponse> getUserCourses(String wstoken, Long userId);
 }

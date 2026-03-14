@@ -25,45 +25,32 @@ import org.springframework.web.bind.annotation.*;
 @Tag(name = "Share", description = "Post sharing management APIs")
 public class ShareController extends AbstractBaseController {
 
-  private final ShareService shareService;
+    private final ShareService shareService;
 
-  @PostMapping("/posts/{postId}")
-  @Operation(summary = "Share post", description = "Share a post to profile or via message")
-  public ResponseEntity<SuccessResponse> sharePost(
-      @PathVariable UUID postId,
-      @RequestParam(defaultValue = "PROFILE") ShareType type,
-      @RequestBody(required = false) SharePostRequest request,
-      @AuthenticationPrincipal String mssv) {
+    @PostMapping("/posts/{postId}")
+    @Operation(summary = "Share post", description = "Share a post to profile or via message")
+    public ResponseEntity<SuccessResponse> sharePost(@PathVariable UUID postId,
+            @RequestParam(defaultValue = "PROFILE") ShareType type,
+            @RequestBody(required = false) SharePostRequest request, @AuthenticationPrincipal String mssv) {
 
-    log.info("[Share Controller] Sharing post: {} by mssv: {} with type: {}", postId, mssv, type);
+        log.info("[Share Controller] Sharing post: {} by mssv: {} with type: {}", postId, mssv, type);
 
-    shareService.sharePost(postId, mssv, type, request);
+        shareService.sharePost(postId, mssv, type, request);
 
-    return success("Post shared successfully");
-  }
+        return success("Post shared successfully");
+    }
 
-  @GetMapping("/{postId}/shares")
-  @Operation(
-      summary = "Get post shares",
-      description = "Get cursor-paginated list of users who shared the post")
-  public ResponseEntity<CursorPageResponse<UserShareResponse>> getPostShares(
-      @PathVariable UUID postId,
-      @RequestParam(required = false) String cursor,
-      @RequestParam(defaultValue = "10") int limit,
-      @AuthenticationPrincipal String mssv) {
+    @GetMapping("/{postId}/shares")
+    @Operation(summary = "Get post shares", description = "Get cursor-paginated list of users who shared the post")
+    public ResponseEntity<CursorPageResponse<UserShareResponse>> getPostShares(@PathVariable UUID postId,
+            @RequestParam(required = false) String cursor, @RequestParam(defaultValue = "10") int limit,
+            @AuthenticationPrincipal String mssv) {
 
-    log.info(
-        "[Post Controller] Getting shares for post: {} with cursor: {}, limit: {}",
-        postId,
-        cursor,
-        limit);
+        log.info("[Post Controller] Getting shares for post: {} with cursor: {}, limit: {}", postId, cursor, limit);
 
-    List<UserShareResponse> shares = shareService.getPostShares(postId, mssv, cursor, limit);
+        List<UserShareResponse> shares = shareService.getPostShares(postId, mssv, cursor, limit);
 
-    return cursorPaging(
-        "Post shares retrieved successfully",
-        shares,
-        limit,
-        share -> CursorUtils.encode(share.sharedAt(), UUID.fromString(share.user().mssv())));
-  }
+        return cursorPaging("Post shares retrieved successfully", shares, limit,
+                share -> CursorUtils.encode(share.sharedAt(), UUID.fromString(share.user().mssv())));
+    }
 }

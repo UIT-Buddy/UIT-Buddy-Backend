@@ -37,180 +37,178 @@ import org.springframework.test.util.ReflectionTestUtils;
 @MockitoSettings(strictness = Strictness.LENIENT)
 class ReactionServiceImplTest {
 
-  @Mock private PostRepository postRepository;
-  @Mock private ReactionRepository reactionRepository;
-  @Mock private StudentRepository studentRepository;
-  @Mock private ReactionMapper reactionMapper;
-  @Mock private ApplicationEventPublisher eventPublisher;
+    @Mock
+    private PostRepository postRepository;
+    @Mock
+    private ReactionRepository reactionRepository;
+    @Mock
+    private StudentRepository studentRepository;
+    @Mock
+    private ReactionMapper reactionMapper;
+    @Mock
+    private ApplicationEventPublisher eventPublisher;
 
-  @InjectMocks private ReactionServiceImpl reactionService;
+    @InjectMocks
+    private ReactionServiceImpl reactionService;
 
-  private String mssv;
-  private UUID postId;
-  private Post post;
-  private Student student;
-  private ReactionProjection projection;
+    private String mssv;
+    private UUID postId;
+    private Post post;
+    private Student student;
+    private ReactionProjection projection;
 
-  @BeforeEach
-  void setUp() {
-    mssv = "22100001";
-    postId = UUID.randomUUID();
+    @BeforeEach
+    void setUp() {
+        mssv = "22100001";
+        postId = UUID.randomUUID();
 
-    student = new Student();
-    student.setMssv(mssv);
-    student.setFullName("Test Student");
+        student = new Student();
+        student.setMssv(mssv);
+        student.setFullName("Test Student");
 
-    post = Post.builder().title("Test Post").content("Test Content").author(student).build();
-    ReflectionTestUtils.setField(post, "id", postId);
-    ReflectionTestUtils.setField(
-        post, "mssv", "22100002"); // Different from actor to test event publishing
+        post = Post.builder().title("Test Post").content("Test Content").author(student).build();
+        ReflectionTestUtils.setField(post, "id", postId);
+        ReflectionTestUtils.setField(post, "mssv", "22100002"); // Different from actor to test event publishing
 
-    projection = mock(ReactionProjection.class);
-    when(projection.getMssv()).thenReturn(mssv);
-    when(projection.getFullName()).thenReturn("Test Student");
-    when(projection.getReactedAt()).thenReturn(LocalDateTime.now());
+        projection = mock(ReactionProjection.class);
+        when(projection.getMssv()).thenReturn(mssv);
+        when(projection.getFullName()).thenReturn("Test Student");
+        when(projection.getReactedAt()).thenReturn(LocalDateTime.now());
 
-    // Mock studentRepository.findById for actorName lookup
-    when(studentRepository.findById(mssv)).thenReturn(Optional.of(student));
-  }
+        // Mock studentRepository.findById for actorName lookup
+        when(studentRepository.findById(mssv)).thenReturn(Optional.of(student));
+    }
 
-  @Test
-  void shouldLikePostSuccessfully() {
-    when(postRepository.findById(postId)).thenReturn(Optional.of(post));
-    when(reactionRepository.findByPostIdAndStudentMssv(postId, mssv)).thenReturn(Optional.empty());
-    when(reactionRepository.save(any(Reaction.class))).thenReturn(new Reaction());
-    when(studentRepository.findById(mssv)).thenReturn(Optional.of(student));
-    when(studentRepository.getReferenceById(mssv)).thenReturn(student); // Mock getReferenceById
+    @Test
+    void shouldLikePostSuccessfully() {
+        when(postRepository.findById(postId)).thenReturn(Optional.of(post));
+        when(reactionRepository.findByPostIdAndStudentMssv(postId, mssv)).thenReturn(Optional.empty());
+        when(reactionRepository.save(any(Reaction.class))).thenReturn(new Reaction());
+        when(studentRepository.findById(mssv)).thenReturn(Optional.of(student));
+        when(studentRepository.getReferenceById(mssv)).thenReturn(student); // Mock getReferenceById
 
-    boolean result = reactionService.togglePostLike(postId, mssv);
+        boolean result = reactionService.togglePostLike(postId, mssv);
 
-    assertThat(result).isTrue();
-    verify(reactionRepository).save(any(Reaction.class));
-    verify(postRepository).incrementLikeCount(postId);
-    verify(eventPublisher).publishEvent(any(PostLikedEvent.class));
-  }
+        assertThat(result).isTrue();
+        verify(reactionRepository).save(any(Reaction.class));
+        verify(postRepository).incrementLikeCount(postId);
+        verify(eventPublisher).publishEvent(any(PostLikedEvent.class));
+    }
 
-  @Test
-  void shouldUnlikePostSuccessfully() {
-    Reaction existingReaction = new Reaction();
-    when(postRepository.findById(postId)).thenReturn(Optional.of(post));
-    when(reactionRepository.findByPostIdAndStudentMssv(postId, mssv))
-        .thenReturn(Optional.of(existingReaction));
+    @Test
+    void shouldUnlikePostSuccessfully() {
+        Reaction existingReaction = new Reaction();
+        when(postRepository.findById(postId)).thenReturn(Optional.of(post));
+        when(reactionRepository.findByPostIdAndStudentMssv(postId, mssv)).thenReturn(Optional.of(existingReaction));
 
-    boolean result = reactionService.togglePostLike(postId, mssv);
+        boolean result = reactionService.togglePostLike(postId, mssv);
 
-    assertThat(result).isFalse();
-    verify(reactionRepository).delete(existingReaction);
-    verify(postRepository).decrementLikeCount(postId);
-    verify(eventPublisher, never()).publishEvent(any());
-  }
+        assertThat(result).isFalse();
+        verify(reactionRepository).delete(existingReaction);
+        verify(postRepository).decrementLikeCount(postId);
+        verify(eventPublisher, never()).publishEvent(any());
+    }
 
-  @Test
-  void shouldNotPublishEventWhenLikingOwnPost() {
-    Post ownPost = Post.builder().title("Own Post").content("My content").author(student).build();
-    ReflectionTestUtils.setField(ownPost, "id", postId);
-    ReflectionTestUtils.setField(ownPost, "mssv", mssv); // Same as actor
+    @Test
+    void shouldNotPublishEventWhenLikingOwnPost() {
+        Post ownPost = Post.builder().title("Own Post").content("My content").author(student).build();
+        ReflectionTestUtils.setField(ownPost, "id", postId);
+        ReflectionTestUtils.setField(ownPost, "mssv", mssv); // Same as actor
 
-    when(postRepository.findById(postId)).thenReturn(Optional.of(ownPost));
-    when(reactionRepository.findByPostIdAndStudentMssv(postId, mssv)).thenReturn(Optional.empty());
-    when(reactionRepository.save(any(Reaction.class))).thenReturn(new Reaction());
-    when(studentRepository.getReferenceById(mssv)).thenReturn(student); // Mock getReferenceById
+        when(postRepository.findById(postId)).thenReturn(Optional.of(ownPost));
+        when(reactionRepository.findByPostIdAndStudentMssv(postId, mssv)).thenReturn(Optional.empty());
+        when(reactionRepository.save(any(Reaction.class))).thenReturn(new Reaction());
+        when(studentRepository.getReferenceById(mssv)).thenReturn(student); // Mock getReferenceById
 
-    boolean result = reactionService.togglePostLike(postId, mssv);
+        boolean result = reactionService.togglePostLike(postId, mssv);
 
-    assertThat(result).isTrue();
-    verify(postRepository).incrementLikeCount(postId);
-    verify(eventPublisher, never()).publishEvent(any());
-  }
+        assertThat(result).isTrue();
+        verify(postRepository).incrementLikeCount(postId);
+        verify(eventPublisher, never()).publishEvent(any());
+    }
 
-  @Test
-  void shouldThrowExceptionWhenPostNotFound() {
-    when(postRepository.findById(postId)).thenReturn(Optional.empty());
+    @Test
+    void shouldThrowExceptionWhenPostNotFound() {
+        when(postRepository.findById(postId)).thenReturn(Optional.empty());
 
-    assertThatThrownBy(() -> reactionService.togglePostLike(postId, mssv))
-        .isInstanceOf(SocialException.class);
-  }
+        assertThatThrownBy(() -> reactionService.togglePostLike(postId, mssv)).isInstanceOf(SocialException.class);
+    }
 
-  @Test
-  void shouldGetPostReactionsSuccessfully() {
-    UserReactionResponse reactionResponse =
-        new UserReactionResponse(
-            new UserSummary(mssv, "Test Student", "avatar.jpg"), LocalDateTime.now());
+    @Test
+    void shouldGetPostReactionsSuccessfully() {
+        UserReactionResponse reactionResponse = new UserReactionResponse(
+                new UserSummary(mssv, "Test Student", "avatar.jpg"), LocalDateTime.now());
 
-    when(postRepository.findById(postId)).thenReturn(Optional.of(post));
-    when(reactionRepository.findReactionsWithCursor(eq(postId), any(), any(), eq(11)))
-        .thenReturn(List.of(projection));
-    when(reactionMapper.toReactionResponse(projection)).thenReturn(reactionResponse);
+        when(postRepository.findById(postId)).thenReturn(Optional.of(post));
+        when(reactionRepository.findReactionsWithCursor(eq(postId), any(), any(), eq(11)))
+                .thenReturn(List.of(projection));
+        when(reactionMapper.toReactionResponse(projection)).thenReturn(reactionResponse);
 
-    List<UserReactionResponse> result = reactionService.getPostReactions(postId, mssv, null, 10);
+        List<UserReactionResponse> result = reactionService.getPostReactions(postId, mssv, null, 10);
 
-    assertThat(result).hasSize(1);
-    verify(postRepository).findById(postId);
-    verify(reactionRepository).findReactionsWithCursor(eq(postId), any(), any(), eq(11));
-  }
+        assertThat(result).hasSize(1);
+        verify(postRepository).findById(postId);
+        verify(reactionRepository).findReactionsWithCursor(eq(postId), any(), any(), eq(11));
+    }
 
-  @Test
-  void shouldThrowExceptionWhenGettingReactionsForNonExistentPost() {
-    when(postRepository.findById(postId)).thenReturn(Optional.empty());
+    @Test
+    void shouldThrowExceptionWhenGettingReactionsForNonExistentPost() {
+        when(postRepository.findById(postId)).thenReturn(Optional.empty());
 
-    assertThatThrownBy(() -> reactionService.getPostReactions(postId, mssv, null, 10))
-        .isInstanceOf(SocialException.class);
-  }
+        assertThatThrownBy(() -> reactionService.getPostReactions(postId, mssv, null, 10))
+                .isInstanceOf(SocialException.class);
+    }
 
-  @Test
-  void shouldGetPostReactionsWithCursor() {
-    // Create valid cursor using CursorUtils
-    String cursor = CursorUtils.encode(LocalDateTime.now(), UUID.randomUUID());
-    UserReactionResponse reactionResponse =
-        new UserReactionResponse(
-            new UserSummary(mssv, "Test Student", "avatar.jpg"), LocalDateTime.now());
+    @Test
+    void shouldGetPostReactionsWithCursor() {
+        // Create valid cursor using CursorUtils
+        String cursor = CursorUtils.encode(LocalDateTime.now(), UUID.randomUUID());
+        UserReactionResponse reactionResponse = new UserReactionResponse(
+                new UserSummary(mssv, "Test Student", "avatar.jpg"), LocalDateTime.now());
 
-    when(postRepository.findById(postId)).thenReturn(Optional.of(post));
-    when(reactionRepository.findReactionsWithCursor(eq(postId), any(), any(), eq(11)))
-        .thenReturn(List.of(projection));
-    when(reactionMapper.toReactionResponse(projection)).thenReturn(reactionResponse);
+        when(postRepository.findById(postId)).thenReturn(Optional.of(post));
+        when(reactionRepository.findReactionsWithCursor(eq(postId), any(), any(), eq(11)))
+                .thenReturn(List.of(projection));
+        when(reactionMapper.toReactionResponse(projection)).thenReturn(reactionResponse);
 
-    List<UserReactionResponse> result = reactionService.getPostReactions(postId, mssv, cursor, 10);
+        List<UserReactionResponse> result = reactionService.getPostReactions(postId, mssv, cursor, 10);
 
-    assertThat(result).hasSize(1);
-    verify(reactionRepository).findReactionsWithCursor(eq(postId), any(), any(), eq(11));
-  }
+        assertThat(result).hasSize(1);
+        verify(reactionRepository).findReactionsWithCursor(eq(postId), any(), any(), eq(11));
+    }
 
-  @Test
-  void shouldHandleEmptyReactionsList() {
-    when(postRepository.findById(postId)).thenReturn(Optional.of(post));
-    when(reactionRepository.findReactionsWithCursor(eq(postId), any(), any(), eq(11)))
-        .thenReturn(List.of());
+    @Test
+    void shouldHandleEmptyReactionsList() {
+        when(postRepository.findById(postId)).thenReturn(Optional.of(post));
+        when(reactionRepository.findReactionsWithCursor(eq(postId), any(), any(), eq(11))).thenReturn(List.of());
 
-    List<UserReactionResponse> result = reactionService.getPostReactions(postId, mssv, null, 10);
+        List<UserReactionResponse> result = reactionService.getPostReactions(postId, mssv, null, 10);
 
-    assertThat(result).isEmpty();
-    verify(postRepository).findById(postId);
-    verify(reactionRepository).findReactionsWithCursor(eq(postId), any(), any(), eq(11));
-  }
+        assertThat(result).isEmpty();
+        verify(postRepository).findById(postId);
+        verify(reactionRepository).findReactionsWithCursor(eq(postId), any(), any(), eq(11));
+    }
 
-  @Test
-  void shouldCreateReactionWithCorrectProperties() {
-    when(postRepository.findById(postId)).thenReturn(Optional.of(post));
-    when(reactionRepository.findByPostIdAndStudentMssv(postId, mssv)).thenReturn(Optional.empty());
-    when(studentRepository.findById(mssv)).thenReturn(Optional.of(student));
-    when(studentRepository.getReferenceById(mssv)).thenReturn(student); // Mock getReferenceById
-    when(reactionRepository.save(any(Reaction.class)))
-        .thenAnswer(
-            invocation -> {
-              Reaction reaction = invocation.getArgument(0);
-              // Check relationships instead of direct fields (since they have
-              // insertable=false)
-              assertThat(reaction.getStudent()).isNotNull();
-              assertThat(reaction.getPost()).isNotNull();
-              assertThat(reaction.getStudent().getMssv()).isEqualTo(mssv);
-              assertThat(reaction.getPost().getId()).isEqualTo(postId);
-              return reaction;
-            });
+    @Test
+    void shouldCreateReactionWithCorrectProperties() {
+        when(postRepository.findById(postId)).thenReturn(Optional.of(post));
+        when(reactionRepository.findByPostIdAndStudentMssv(postId, mssv)).thenReturn(Optional.empty());
+        when(studentRepository.findById(mssv)).thenReturn(Optional.of(student));
+        when(studentRepository.getReferenceById(mssv)).thenReturn(student); // Mock getReferenceById
+        when(reactionRepository.save(any(Reaction.class))).thenAnswer(invocation -> {
+            Reaction reaction = invocation.getArgument(0);
+            // Check relationships instead of direct fields (since they have
+            // insertable=false)
+            assertThat(reaction.getStudent()).isNotNull();
+            assertThat(reaction.getPost()).isNotNull();
+            assertThat(reaction.getStudent().getMssv()).isEqualTo(mssv);
+            assertThat(reaction.getPost().getId()).isEqualTo(postId);
+            return reaction;
+        });
 
-    boolean result = reactionService.togglePostLike(postId, mssv);
+        boolean result = reactionService.togglePostLike(postId, mssv);
 
-    assertThat(result).isTrue();
-    verify(reactionRepository).save(any(Reaction.class));
-  }
+        assertThat(result).isTrue();
+        verify(reactionRepository).save(any(Reaction.class));
+    }
 }

@@ -14,9 +14,7 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface ShareRepository extends CrudRepository<Share, UUID> {
 
-  @Query(
-      value =
-          """
+    @Query(value = """
             SELECT
                 s.mssv as mssv,
                 s.full_name as fullName,
@@ -30,15 +28,12 @@ public interface ShareRepository extends CrudRepository<Share, UUID> {
                    OR (sh.created_at = CAST(:cursorTime AS timestamp) AND s.mssv < :cursorMssv))
             ORDER BY sh.created_at DESC, s.mssv DESC
             LIMIT :limit
-            """,
-      nativeQuery = true)
-  List<ShareProjection> findSharesWithCursor(
-      @Param("postId") UUID postId,
-      @Param("cursorTime") LocalDateTime cursorTime,
-      @Param("cursorMssv") String cursorMssv,
-      @Param("limit") int limit);
+            """, nativeQuery = true)
+    List<ShareProjection> findSharesWithCursor(@Param("postId") UUID postId,
+            @Param("cursorTime") LocalDateTime cursorTime, @Param("cursorMssv") String cursorMssv,
+            @Param("limit") int limit);
 
-  Optional<Share> findByPostIdAndMssv(UUID postId, String mssv);
+    Optional<Share> findByPostIdAndMssv(UUID postId, String mssv);
 
-  boolean existsByPostIdAndMssv(UUID postId, String mssv);
+    boolean existsByPostIdAndMssv(UUID postId, String mssv);
 }

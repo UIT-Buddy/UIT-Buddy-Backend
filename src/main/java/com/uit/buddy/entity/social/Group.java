@@ -14,19 +14,16 @@ import lombok.*;
 @Builder
 public class Group extends AbstractBaseEntity {
 
-  @Column(name = "creator_id", length = 12, insertable = false, updatable = false)
-  private String creatorId;
+    @Column(name = "creator_id", length = 12, insertable = false, updatable = false)
+    private String creatorId;
 
-  @ManyToOne(fetch = FetchType.LAZY, optional = false)
-  @JoinColumn(
-      name = "creator_id",
-      referencedColumnName = "mssv",
-      foreignKey = @ForeignKey(name = "fk_group_creator"))
-  private Student creator;
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "creator_id", referencedColumnName = "mssv", foreignKey = @ForeignKey(name = "fk_group_creator"))
+    private Student creator;
 
-  @Column(name = "name", nullable = false, length = 150)
-  private String name;
+    @Column(name = "name", nullable = false, length = 150)
+    private String name;
 
-  @Column(name = "avatar_url", length = 512)
-  private String avatarUrl;
+    @Column(name = "avatar_url", length = 512)
+    private String avatarUrl;
 }

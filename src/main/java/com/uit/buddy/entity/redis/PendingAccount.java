@@ -14,17 +14,20 @@ import org.springframework.data.redis.core.index.Indexed;
 @AllArgsConstructor
 public class PendingAccount {
 
-  @Id private String mssv;
+    @Id
+    private String mssv;
 
-  @Indexed private String signupToken;
+    @Indexed
+    private String signupToken;
 
-  private String encryptedWstoken;
+    private String encryptedWstoken;
 
-  private String fullName;
+    private String fullName;
 
-  private String avatarUrl;
+    private String avatarUrl;
 
-  private String homeClassCode;
+    private String homeClassCode;
 
-  @TimeToLive private Long ttl;
+    @TimeToLive
+    private Long ttl;
 }

@@ -8,7 +8,7 @@ import java.util.UUID;
 
 public interface ShareService {
 
-  boolean sharePost(UUID postId, String mssv, ShareType type, SharePostRequest request);
+    boolean sharePost(UUID postId, String mssv, ShareType type, SharePostRequest request);
 
-  List<UserShareResponse> getPostShares(UUID postId, String mssv, String cursor, int limit);
+    List<UserShareResponse> getPostShares(UUID postId, String mssv, String cursor, int limit);
 }

@@ -9,8 +9,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Repository
 public interface CommentReactionRepository extends JpaRepository<CommentReaction, UUID> {
-  Optional<CommentReaction> findByCommentIdAndMssv(UUID commentId, String mssv);
+    Optional<CommentReaction> findByCommentIdAndMssv(UUID commentId, String mssv);
 
-  @Transactional
-  void deleteByCommentIdAndMssv(UUID commentId, String mssv);
+    @Transactional
+    void deleteByCommentIdAndMssv(UUID commentId, String mssv);
 }

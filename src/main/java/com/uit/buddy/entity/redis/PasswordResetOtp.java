@@ -14,11 +14,14 @@ import org.springframework.data.redis.core.index.Indexed;
 @AllArgsConstructor
 public class PasswordResetOtp {
 
-  @Id private String mssv;
+    @Id
+    private String mssv;
 
-  @Indexed private String otpCode;
+    @Indexed
+    private String otpCode;
 
-  private Integer attempts;
+    private Integer attempts;
 
-  @TimeToLive private Long ttl;
+    @TimeToLive
+    private Long ttl;
 }

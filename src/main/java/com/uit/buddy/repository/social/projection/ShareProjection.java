@@ -3,11 +3,11 @@ package com.uit.buddy.repository.social.projection;
 import java.time.LocalDateTime;
 
 public interface ShareProjection {
-  String getMssv();
+    String getMssv();
 
-  String getFullName();
+    String getFullName();
 
-  String getAvatarUrl();
+    String getAvatarUrl();
 
-  LocalDateTime getSharedAt();
+    LocalDateTime getSharedAt();
 }

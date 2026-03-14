@@ -24,72 +24,65 @@ import org.springframework.web.multipart.MultipartFile;
 @Slf4j
 public class UserServiceImpl implements UserService {
 
-  private final StudentRepository studentRepository;
-  private final UserMapper userMapper;
-  private final CloudinaryService cloudinaryService;
+    private final StudentRepository studentRepository;
+    private final UserMapper userMapper;
+    private final CloudinaryService cloudinaryService;
 
-  @Override
-  @Transactional(readOnly = true)
-  public UserResponse getMyProfile(@AuthenticationPrincipal String mssv) {
-    log.info("[User Service] Fetching profile for MSSV: {}", mssv);
+    @Override
+    @Transactional(readOnly = true)
+    public UserResponse getMyProfile(@AuthenticationPrincipal String mssv) {
+        log.info("[User Service] Fetching profile for MSSV: {}", mssv);
 
-    Student student =
-        studentRepository
-            .findById(mssv)
-            .orElseThrow(() -> new UserException(UserErrorCode.STUDENT_NOT_FOUND));
+        Student student = studentRepository.findById(mssv)
+                .orElseThrow(() -> new UserException(UserErrorCode.STUDENT_NOT_FOUND));
 
-    return userMapper.toUserResponse(student);
-  }
-
-  @Override
-  @Transactional
-  public UserResponse updateProfile(
-      @AuthenticationPrincipal String mssv, UpdateUserRequest request) {
-    log.info("[User Service] Updating profile for MSSV: {}", mssv);
-
-    Student student =
-        studentRepository
-            .findById(mssv)
-            .orElseThrow(() -> new UserException(UserErrorCode.STUDENT_NOT_FOUND));
-
-    if (request.bio() != null) {
-      log.debug("[User Service] Updating bio for MSSV: {}", mssv);
-      student.setBio(request.bio());
+        return userMapper.toUserResponse(student);
     }
 
-    Student updatedStudent = studentRepository.save(student);
-    log.info("[User Service] Successfully updated profile for MSSV: {}", mssv);
+    @Override
+    @Transactional
+    public UserResponse updateProfile(@AuthenticationPrincipal String mssv, UpdateUserRequest request) {
+        log.info("[User Service] Updating profile for MSSV: {}", mssv);
 
-    return userMapper.toUserResponse(updatedStudent);
-  }
+        Student student = studentRepository.findById(mssv)
+                .orElseThrow(() -> new UserException(UserErrorCode.STUDENT_NOT_FOUND));
 
-  @Override
-  @Transactional
-  public String uploadAvatar(String mssv, MultipartFile file) {
-    log.info("[User Service] Uploading avatar for MSSV: {}", mssv);
+        if (request.bio() != null) {
+            log.debug("[User Service] Updating bio for MSSV: {}", mssv);
+            student.setBio(request.bio());
+        }
 
-    if (file == null || file.isEmpty()) {
-      throw new UserException(UserErrorCode.FILE_EMPTY);
+        Student updatedStudent = studentRepository.save(student);
+        log.info("[User Service] Successfully updated profile for MSSV: {}", mssv);
+
+        return userMapper.toUserResponse(updatedStudent);
     }
 
-    Student student =
-        studentRepository
-            .findById(mssv)
-            .orElseThrow(() -> new UserException(UserErrorCode.STUDENT_NOT_FOUND));
+    @Override
+    @Transactional
+    public String uploadAvatar(String mssv, MultipartFile file) {
+        log.info("[User Service] Uploading avatar for MSSV: {}", mssv);
 
-    String avatarUrl = cloudinaryService.uploadAvatar(file, mssv);
+        if (file == null || file.isEmpty()) {
+            throw new UserException(UserErrorCode.FILE_EMPTY);
+        }
 
-    student.setAvatarUrl(avatarUrl);
-    studentRepository.save(student);
+        Student student = studentRepository.findById(mssv)
+                .orElseThrow(() -> new UserException(UserErrorCode.STUDENT_NOT_FOUND));
 
-    log.info("[User Service] Successfully uploaded avatar for MSSV: {}", mssv);
-    return avatarUrl;
-  }
+        String avatarUrl = cloudinaryService.uploadAvatar(file, mssv);
 
-  @Override
-  public Page<FoundUserResponse> searchStudentByKeyword(String keyword, Pageable pageable) {
-    Page<Student> page = studentRepository.searchStudentByKeyword(keyword, pageable);
-    log.info("[UserService]: fetching user with keyword and filter");
-    return page.map(userMapper::toFoundUserResponse);
-  }
+        student.setAvatarUrl(avatarUrl);
+        studentRepository.save(student);
+
+        log.info("[User Service] Successfully uploaded avatar for MSSV: {}", mssv);
+        return avatarUrl;
+    }
+
+    @Override
+    public Page<FoundUserResponse> searchStudentByKeyword(String keyword, Pageable pageable) {
+        Page<Student> page = studentRepository.searchStudentByKeyword(keyword, pageable);
+        log.info("[UserService]: fetching user with keyword and filter");
+        return page.map(userMapper::toFoundUserResponse);
+    }
 }

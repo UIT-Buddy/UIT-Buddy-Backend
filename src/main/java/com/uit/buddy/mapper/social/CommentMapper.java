@@ -9,8 +9,8 @@ import org.mapstruct.ReportingPolicy;
 @Mapper(componentModel = "spring", unmappedTargetPolicy = ReportingPolicy.IGNORE)
 public interface CommentMapper {
 
-  @Mapping(target = "user.mssv", source = "mssv")
-  @Mapping(target = "user.fullName", source = "fullName")
-  @Mapping(target = "user.avatarUrl", source = "avatarUrl")
-  CommentResponse toCommentResponse(CommentProjection p);
+    @Mapping(target = "user.mssv", source = "mssv")
+    @Mapping(target = "user.fullName", source = "fullName")
+    @Mapping(target = "user.avatarUrl", source = "avatarUrl")
+    CommentResponse toCommentResponse(CommentProjection p);
 }

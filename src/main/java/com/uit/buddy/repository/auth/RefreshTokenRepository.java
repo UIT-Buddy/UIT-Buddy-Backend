@@ -8,9 +8,9 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface RefreshTokenRepository extends CrudRepository<RefreshToken, String> {
 
-  Optional<RefreshToken> findByMssv(String mssv);
+    Optional<RefreshToken> findByMssv(String mssv);
 
-  void deleteByMssv(String mssv);
+    void deleteByMssv(String mssv);
 
-  boolean existsByMssv(String mssv);
+    boolean existsByMssv(String mssv);
 }

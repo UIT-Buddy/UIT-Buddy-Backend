@@ -8,17 +8,17 @@ import java.util.UUID;
 
 public interface CommentService {
 
-  void createComment(UUID postId, String mssv, CreateCommentRequest request);
+    void createComment(UUID postId, String mssv, CreateCommentRequest request);
 
-  void replyToComment(UUID commentId, String mssv, CreateCommentRequest request);
+    void replyToComment(UUID commentId, String mssv, CreateCommentRequest request);
 
-  void updateComment(UUID commentId, String mssv, UpdateCommentRequest request);
+    void updateComment(UUID commentId, String mssv, UpdateCommentRequest request);
 
-  void deleteComment(UUID commentId, String mssv);
+    void deleteComment(UUID commentId, String mssv);
 
-  boolean toggleCommentLike(UUID commentId, String mssv);
+    boolean toggleCommentLike(UUID commentId, String mssv);
 
-  List<CommentResponse> getPostComments(UUID postId, String mssv, String cursor, int limit);
+    List<CommentResponse> getPostComments(UUID postId, String mssv, String cursor, int limit);
 
-  List<CommentResponse> getCommentReplies(UUID commentId, String mssv, String cursor, int limit);
+    List<CommentResponse> getCommentReplies(UUID commentId, String mssv, String cursor, int limit);
 }

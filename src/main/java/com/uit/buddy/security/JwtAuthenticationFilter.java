@@ -20,39 +20,38 @@ import org.springframework.web.filter.OncePerRequestFilter;
 @Slf4j
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
-  private final JwtUtils jwtUtils;
+    private final JwtUtils jwtUtils;
 
-  @Override
-  protected void doFilterInternal(
-      HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
-      throws ServletException, IOException {
+    @Override
+    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
+            throws ServletException, IOException {
 
-    try {
-      String jwt = extractJwtFromRequest(request);
+        try {
+            String jwt = extractJwtFromRequest(request);
 
-      if (StringUtils.hasText(jwt) && jwtUtils.validateToken(jwt)) {
-        String mssv = jwtUtils.getMssvFromToken(jwt);
+            if (StringUtils.hasText(jwt) && jwtUtils.validateToken(jwt)) {
+                String mssv = jwtUtils.getMssvFromToken(jwt);
 
-        UsernamePasswordAuthenticationToken authentication =
-            new UsernamePasswordAuthenticationToken(mssv, null, Collections.emptyList());
-        authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(mssv, null,
+                        Collections.emptyList());
+                authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
 
-        SecurityContextHolder.getContext().setAuthentication(authentication);
-        log.debug("Set authentication for MSSV: {}", mssv);
-      }
-    } catch (Exception e) {
-      log.error("Authentication binding failed: {}", e.getMessage());
-      request.setAttribute("auth_error", e.getMessage());
+                SecurityContextHolder.getContext().setAuthentication(authentication);
+                log.debug("Set authentication for MSSV: {}", mssv);
+            }
+        } catch (Exception e) {
+            log.error("Authentication binding failed: {}", e.getMessage());
+            request.setAttribute("auth_error", e.getMessage());
+        }
+
+        filterChain.doFilter(request, response);
     }
 
-    filterChain.doFilter(request, response);
-  }
-
-  private String extractJwtFromRequest(HttpServletRequest request) {
-    String bearerToken = request.getHeader("Authorization");
-    if (StringUtils.hasText(bearerToken) && bearerToken.startsWith("Bearer ")) {
-      return bearerToken.substring(7);
+    private String extractJwtFromRequest(HttpServletRequest request) {
+        String bearerToken = request.getHeader("Authorization");
+        if (StringUtils.hasText(bearerToken) && bearerToken.startsWith("Bearer ")) {
+            return bearerToken.substring(7);
+        }
+        return null;
     }
-    return null;
-  }
 }

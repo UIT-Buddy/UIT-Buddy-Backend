@@ -41,317 +41,263 @@ import org.springframework.web.multipart.MultipartFile;
 @MockitoSettings(strictness = Strictness.LENIENT)
 class PostServiceImplTest {
 
-  @Mock private PostRepository postRepository;
-  @Mock private StudentRepository studentRepository;
-  @Mock private PostMapper postMapper;
-  @Mock private CloudinaryService cloudinaryService;
+    @Mock
+    private PostRepository postRepository;
+    @Mock
+    private StudentRepository studentRepository;
+    @Mock
+    private PostMapper postMapper;
+    @Mock
+    private CloudinaryService cloudinaryService;
 
-  @InjectMocks private PostServiceImpl postService;
+    @InjectMocks
+    private PostServiceImpl postService;
 
-  private String mssv;
-  private UUID postId;
-  private Student student;
-  private Post post;
-  private PostFeedProjection projection;
+    private String mssv;
+    private UUID postId;
+    private Student student;
+    private Post post;
+    private PostFeedProjection projection;
 
-  @BeforeEach
-  void setUp() {
-    mssv = "22100001";
-    postId = UUID.randomUUID();
+    @BeforeEach
+    void setUp() {
+        mssv = "22100001";
+        postId = UUID.randomUUID();
 
-    student = new Student();
-    student.setMssv(mssv);
-    student.setFullName("Test Student");
+        student = new Student();
+        student.setMssv(mssv);
+        student.setFullName("Test Student");
 
-    post =
-        Post.builder()
-            .title("Test Title")
-            .content("Test Content")
-            .author(student)
-            .medias(new ArrayList<>())
-            .build();
-    ReflectionTestUtils.setField(post, "id", postId);
-    ReflectionTestUtils.setField(postService, "limitNumberOfImages", 10);
-    ReflectionTestUtils.setField(postService, "limitNumberOfVideos", 3);
+        post = Post.builder().title("Test Title").content("Test Content").author(student).medias(new ArrayList<>())
+                .build();
+        ReflectionTestUtils.setField(post, "id", postId);
+        ReflectionTestUtils.setField(postService, "limitNumberOfImages", 10);
+        ReflectionTestUtils.setField(postService, "limitNumberOfVideos", 3);
 
-    projection = mock(PostFeedProjection.class);
-    when(projection.getId()).thenReturn(postId);
-    when(projection.getTitle()).thenReturn("Test Title");
-    when(projection.getContent()).thenReturn("Test Content");
-    when(projection.getAuthorMssv()).thenReturn(mssv);
-    when(projection.getAuthorFullName()).thenReturn("Test Student");
-    when(projection.getCreatedAt()).thenReturn(LocalDateTime.now());
-  }
-
-  @Test
-  void shouldCreatePostSuccessfully() {
-    CreatePostRequest request = new CreatePostRequest(null, null);
-
-    when(studentRepository.existsById(mssv)).thenReturn(true);
-    when(studentRepository.getReferenceById(mssv)).thenReturn(student);
-    when(cloudinaryService.uploadMultiMedia(null, null)).thenReturn(Collections.emptyList());
-    when(postRepository.save(any(Post.class))).thenReturn(post);
-
-    postService.createPost(mssv, "Test Title", "Test Content", request);
-
-    verify(studentRepository).existsById(mssv);
-    verify(cloudinaryService).uploadMultiMedia(null, null);
-    verify(postRepository).save(any(Post.class));
-  }
-
-  @Test
-  void shouldThrowExceptionWhenStudentNotFound() {
-    CreatePostRequest request = new CreatePostRequest(null, null);
-    when(studentRepository.existsById(mssv)).thenReturn(false);
-
-    assertThatThrownBy(() -> postService.createPost(mssv, "Title", "Content", request))
-        .isInstanceOf(UserException.class);
-  }
-
-  @Test
-  void shouldThrowExceptionWhenExceedingImageLimit() {
-    List<MultipartFile> images = new ArrayList<>();
-    for (int i = 0; i < 11; i++) {
-      images.add(mock(MultipartFile.class));
+        projection = mock(PostFeedProjection.class);
+        when(projection.getId()).thenReturn(postId);
+        when(projection.getTitle()).thenReturn("Test Title");
+        when(projection.getContent()).thenReturn("Test Content");
+        when(projection.getAuthorMssv()).thenReturn(mssv);
+        when(projection.getAuthorFullName()).thenReturn("Test Student");
+        when(projection.getCreatedAt()).thenReturn(LocalDateTime.now());
     }
-    CreatePostRequest request = new CreatePostRequest(images, null);
 
-    assertThatThrownBy(() -> postService.createPost(mssv, "Title", "Content", request))
-        .isInstanceOf(UserException.class);
-  }
+    @Test
+    void shouldCreatePostSuccessfully() {
+        CreatePostRequest request = new CreatePostRequest(null, null);
 
-  @Test
-  void shouldThrowExceptionWhenExceedingVideoLimit() {
-    List<MultipartFile> videos = new ArrayList<>();
-    for (int i = 0; i < 4; i++) {
-      videos.add(mock(MultipartFile.class));
+        when(studentRepository.existsById(mssv)).thenReturn(true);
+        when(studentRepository.getReferenceById(mssv)).thenReturn(student);
+        when(cloudinaryService.uploadMultiMedia(null, null)).thenReturn(Collections.emptyList());
+        when(postRepository.save(any(Post.class))).thenReturn(post);
+
+        postService.createPost(mssv, "Test Title", "Test Content", request);
+
+        verify(studentRepository).existsById(mssv);
+        verify(cloudinaryService).uploadMultiMedia(null, null);
+        verify(postRepository).save(any(Post.class));
     }
-    CreatePostRequest request = new CreatePostRequest(null, videos);
 
-    assertThatThrownBy(() -> postService.createPost(mssv, "Title", "Content", request))
-        .isInstanceOf(UserException.class);
-  }
+    @Test
+    void shouldThrowExceptionWhenStudentNotFound() {
+        CreatePostRequest request = new CreatePostRequest(null, null);
+        when(studentRepository.existsById(mssv)).thenReturn(false);
 
-  @Test
-  void shouldGetPostFeedSuccessfully() {
-    PostFeedResponse feedResponse =
-        new PostFeedResponse(
-            postId,
-            "Title",
-            "Content",
-            Collections.emptyList(),
-            new AuthorInfo(mssv, "Test", "avatar.jpg", "21KTPM1"),
-            5L,
-            3L,
-            2L,
-            false,
-            LocalDateTime.now());
+        assertThatThrownBy(() -> postService.createPost(mssv, "Title", "Content", request))
+                .isInstanceOf(UserException.class);
+    }
 
-    when(postRepository.findFeed(eq(mssv), any(), any(), eq(11))).thenReturn(List.of(projection));
-    when(postMapper.toPostFeedResponse(projection)).thenReturn(feedResponse);
+    @Test
+    void shouldThrowExceptionWhenExceedingImageLimit() {
+        List<MultipartFile> images = new ArrayList<>();
+        for (int i = 0; i < 11; i++) {
+            images.add(mock(MultipartFile.class));
+        }
+        CreatePostRequest request = new CreatePostRequest(images, null);
 
-    List<PostFeedResponse> result = postService.getPostFeed(mssv, null, 10);
+        assertThatThrownBy(() -> postService.createPost(mssv, "Title", "Content", request))
+                .isInstanceOf(UserException.class);
+    }
 
-    assertThat(result).hasSize(1);
-    verify(postRepository).findFeed(eq(mssv), any(), any(), eq(11));
-  }
+    @Test
+    void shouldThrowExceptionWhenExceedingVideoLimit() {
+        List<MultipartFile> videos = new ArrayList<>();
+        for (int i = 0; i < 4; i++) {
+            videos.add(mock(MultipartFile.class));
+        }
+        CreatePostRequest request = new CreatePostRequest(null, videos);
 
-  @Test
-  void shouldGetPostDetailSuccessfully() {
-    PostDetailResponse detailResponse =
-        new PostDetailResponse(
-            postId,
-            "Title",
-            "Content",
-            Collections.emptyList(),
-            new AuthorInfo(mssv, "Test", "avatar.jpg", "21KTPM1"),
-            5L,
-            3L,
-            2L,
-            false,
-            LocalDateTime.now(),
-            LocalDateTime.now());
+        assertThatThrownBy(() -> postService.createPost(mssv, "Title", "Content", request))
+                .isInstanceOf(UserException.class);
+    }
 
-    when(postRepository.findDetailWithStatus(postId, mssv)).thenReturn(Optional.of(projection));
-    when(postMapper.toPostDetailResponseFromProjection(projection)).thenReturn(detailResponse);
+    @Test
+    void shouldGetPostFeedSuccessfully() {
+        PostFeedResponse feedResponse = new PostFeedResponse(postId, "Title", "Content", Collections.emptyList(),
+                new AuthorInfo(mssv, "Test", "avatar.jpg", "21KTPM1"), 5L, 3L, 2L, false, LocalDateTime.now());
 
-    PostDetailResponse result = postService.getPostDetail(postId, mssv);
+        when(postRepository.findFeed(eq(mssv), any(), any(), eq(11))).thenReturn(List.of(projection));
+        when(postMapper.toPostFeedResponse(projection)).thenReturn(feedResponse);
 
-    assertThat(result).isNotNull();
-    assertThat(result.id()).isEqualTo(postId);
-    verify(postRepository).findDetailWithStatus(postId, mssv);
-  }
+        List<PostFeedResponse> result = postService.getPostFeed(mssv, null, 10);
 
-  @Test
-  void shouldThrowExceptionWhenPostNotFoundForDetail() {
-    when(postRepository.findDetailWithStatus(postId, mssv)).thenReturn(Optional.empty());
+        assertThat(result).hasSize(1);
+        verify(postRepository).findFeed(eq(mssv), any(), any(), eq(11));
+    }
 
-    assertThatThrownBy(() -> postService.getPostDetail(postId, mssv))
-        .isInstanceOf(SocialException.class);
-  }
+    @Test
+    void shouldGetPostDetailSuccessfully() {
+        PostDetailResponse detailResponse = new PostDetailResponse(postId, "Title", "Content", Collections.emptyList(),
+                new AuthorInfo(mssv, "Test", "avatar.jpg", "21KTPM1"), 5L, 3L, 2L, false, LocalDateTime.now(),
+                LocalDateTime.now());
 
-  @Test
-  void shouldUpdatePostSuccessfully() {
-    UpdatePostRequest request = new UpdatePostRequest("New Title", "New Content");
+        when(postRepository.findDetailWithStatus(postId, mssv)).thenReturn(Optional.of(projection));
+        when(postMapper.toPostDetailResponseFromProjection(projection)).thenReturn(detailResponse);
 
-    when(postRepository.findById(postId)).thenReturn(Optional.of(post));
-    when(postRepository.save(any(Post.class))).thenReturn(post);
+        PostDetailResponse result = postService.getPostDetail(postId, mssv);
 
-    postService.updatePost(postId, mssv, request);
+        assertThat(result).isNotNull();
+        assertThat(result.id()).isEqualTo(postId);
+        verify(postRepository).findDetailWithStatus(postId, mssv);
+    }
 
-    assertThat(post.getTitle()).isEqualTo("New Title");
-    assertThat(post.getContent()).isEqualTo("New Content");
-    verify(postRepository).save(post);
-  }
+    @Test
+    void shouldThrowExceptionWhenPostNotFoundForDetail() {
+        when(postRepository.findDetailWithStatus(postId, mssv)).thenReturn(Optional.empty());
 
-  @Test
-  void shouldUpdatePostWithPartialData() {
-    UpdatePostRequest request = new UpdatePostRequest("New Title", null);
+        assertThatThrownBy(() -> postService.getPostDetail(postId, mssv)).isInstanceOf(SocialException.class);
+    }
 
-    when(postRepository.findById(postId)).thenReturn(Optional.of(post));
-    when(postRepository.save(any(Post.class))).thenReturn(post);
+    @Test
+    void shouldUpdatePostSuccessfully() {
+        UpdatePostRequest request = new UpdatePostRequest("New Title", "New Content");
 
-    postService.updatePost(postId, mssv, request);
+        when(postRepository.findById(postId)).thenReturn(Optional.of(post));
+        when(postRepository.save(any(Post.class))).thenReturn(post);
 
-    assertThat(post.getTitle()).isEqualTo("New Title");
-    assertThat(post.getContent()).isEqualTo("Test Content"); // unchanged
-    verify(postRepository).save(post);
-  }
+        postService.updatePost(postId, mssv, request);
 
-  @Test
-  void shouldThrowExceptionWhenUpdatingNotOwnedPost() {
-    UpdatePostRequest request = new UpdatePostRequest("New Title", "New Content");
-    when(postRepository.findById(postId)).thenReturn(Optional.of(post));
+        assertThat(post.getTitle()).isEqualTo("New Title");
+        assertThat(post.getContent()).isEqualTo("New Content");
+        verify(postRepository).save(post);
+    }
 
-    assertThatThrownBy(() -> postService.updatePost(postId, "22100002", request))
-        .isInstanceOf(SocialException.class);
-  }
+    @Test
+    void shouldUpdatePostWithPartialData() {
+        UpdatePostRequest request = new UpdatePostRequest("New Title", null);
 
-  @Test
-  void shouldThrowExceptionWhenUpdatingNonExistentPost() {
-    UpdatePostRequest request = new UpdatePostRequest("New Title", "New Content");
-    when(postRepository.findById(postId)).thenReturn(Optional.empty());
+        when(postRepository.findById(postId)).thenReturn(Optional.of(post));
+        when(postRepository.save(any(Post.class))).thenReturn(post);
 
-    assertThatThrownBy(() -> postService.updatePost(postId, mssv, request))
-        .isInstanceOf(SocialException.class);
-  }
+        postService.updatePost(postId, mssv, request);
 
-  @Test
-  void shouldDeletePostSuccessfully() {
-    PostMedia media = new PostMedia(FileType.IMAGE, "url");
-    post.setMedias(List.of(media));
+        assertThat(post.getTitle()).isEqualTo("New Title");
+        assertThat(post.getContent()).isEqualTo("Test Content"); // unchanged
+        verify(postRepository).save(post);
+    }
 
-    when(postRepository.findById(postId)).thenReturn(Optional.of(post));
-    doNothing().when(cloudinaryService).deletePostMedia(anyList());
-    doNothing().when(postRepository).delete(post);
+    @Test
+    void shouldThrowExceptionWhenUpdatingNotOwnedPost() {
+        UpdatePostRequest request = new UpdatePostRequest("New Title", "New Content");
+        when(postRepository.findById(postId)).thenReturn(Optional.of(post));
 
-    postService.deletePost(postId, mssv);
+        assertThatThrownBy(() -> postService.updatePost(postId, "22100002", request))
+                .isInstanceOf(SocialException.class);
+    }
 
-    verify(cloudinaryService).deletePostMedia(anyList());
-    verify(postRepository).delete(post);
-  }
+    @Test
+    void shouldThrowExceptionWhenUpdatingNonExistentPost() {
+        UpdatePostRequest request = new UpdatePostRequest("New Title", "New Content");
+        when(postRepository.findById(postId)).thenReturn(Optional.empty());
 
-  @Test
-  void shouldDeletePostWithoutMedia() {
-    post.setMedias(Collections.emptyList());
+        assertThatThrownBy(() -> postService.updatePost(postId, mssv, request)).isInstanceOf(SocialException.class);
+    }
 
-    when(postRepository.findById(postId)).thenReturn(Optional.of(post));
-    doNothing().when(postRepository).delete(post);
+    @Test
+    void shouldDeletePostSuccessfully() {
+        PostMedia media = new PostMedia(FileType.IMAGE, "url");
+        post.setMedias(List.of(media));
 
-    postService.deletePost(postId, mssv);
+        when(postRepository.findById(postId)).thenReturn(Optional.of(post));
+        doNothing().when(cloudinaryService).deletePostMedia(anyList());
+        doNothing().when(postRepository).delete(post);
 
-    verify(cloudinaryService, never()).deletePostMedia(anyList());
-    verify(postRepository).delete(post);
-  }
+        postService.deletePost(postId, mssv);
 
-  @Test
-  void shouldThrowExceptionWhenDeletingNotOwnedPost() {
-    when(postRepository.findById(postId)).thenReturn(Optional.of(post));
+        verify(cloudinaryService).deletePostMedia(anyList());
+        verify(postRepository).delete(post);
+    }
 
-    assertThatThrownBy(() -> postService.deletePost(postId, "22100002"))
-        .isInstanceOf(SocialException.class);
-  }
+    @Test
+    void shouldDeletePostWithoutMedia() {
+        post.setMedias(Collections.emptyList());
 
-  @Test
-  void shouldThrowExceptionWhenDeletingNonExistentPost() {
-    when(postRepository.findById(postId)).thenReturn(Optional.empty());
+        when(postRepository.findById(postId)).thenReturn(Optional.of(post));
+        doNothing().when(postRepository).delete(post);
 
-    assertThatThrownBy(() -> postService.deletePost(postId, mssv))
-        .isInstanceOf(SocialException.class);
-  }
+        postService.deletePost(postId, mssv);
 
-  @Test
-  void shouldSearchPostsWithKeyword() {
-    Page<PostFeedProjection> projectionPage = new PageImpl<>(List.of(projection));
-    PostFeedResponse feedResponse =
-        new PostFeedResponse(
-            postId,
-            "Title",
-            "Content",
-            Collections.emptyList(),
-            new AuthorInfo(mssv, "Test", "avatar.jpg", "21KTPM1"),
-            5L,
-            3L,
-            2L,
-            false,
-            LocalDateTime.now());
+        verify(cloudinaryService, never()).deletePostMedia(anyList());
+        verify(postRepository).delete(post);
+    }
 
-    when(postRepository.searchPostFull(eq("test"), eq(mssv), any())).thenReturn(projectionPage);
-    when(postMapper.toPostFeedResponse(projection)).thenReturn(feedResponse);
+    @Test
+    void shouldThrowExceptionWhenDeletingNotOwnedPost() {
+        when(postRepository.findById(postId)).thenReturn(Optional.of(post));
 
-    Page<PostFeedResponse> result = postService.searchPost("test", mssv, PageRequest.of(0, 10));
+        assertThatThrownBy(() -> postService.deletePost(postId, "22100002")).isInstanceOf(SocialException.class);
+    }
 
-    assertThat(result.getContent()).hasSize(1);
-    verify(postRepository).searchPostFull(eq("test"), eq(mssv), any());
-  }
+    @Test
+    void shouldThrowExceptionWhenDeletingNonExistentPost() {
+        when(postRepository.findById(postId)).thenReturn(Optional.empty());
 
-  @Test
-  void shouldGetAllPostsWhenKeywordIsNull() {
-    Page<PostFeedProjection> projectionPage = new PageImpl<>(List.of(projection));
-    PostFeedResponse feedResponse =
-        new PostFeedResponse(
-            postId,
-            "Title",
-            "Content",
-            Collections.emptyList(),
-            new AuthorInfo(mssv, "Test", "avatar.jpg", "21KTPM1"),
-            5L,
-            3L,
-            2L,
-            false,
-            LocalDateTime.now());
+        assertThatThrownBy(() -> postService.deletePost(postId, mssv)).isInstanceOf(SocialException.class);
+    }
 
-    when(postRepository.findAllPosts(eq(mssv), any())).thenReturn(projectionPage);
-    when(postMapper.toPostFeedResponse(projection)).thenReturn(feedResponse);
+    @Test
+    void shouldSearchPostsWithKeyword() {
+        Page<PostFeedProjection> projectionPage = new PageImpl<>(List.of(projection));
+        PostFeedResponse feedResponse = new PostFeedResponse(postId, "Title", "Content", Collections.emptyList(),
+                new AuthorInfo(mssv, "Test", "avatar.jpg", "21KTPM1"), 5L, 3L, 2L, false, LocalDateTime.now());
 
-    Page<PostFeedResponse> result = postService.searchPost(null, mssv, PageRequest.of(0, 10));
+        when(postRepository.searchPostFull(eq("test"), eq(mssv), any())).thenReturn(projectionPage);
+        when(postMapper.toPostFeedResponse(projection)).thenReturn(feedResponse);
 
-    assertThat(result.getContent()).hasSize(1);
-    verify(postRepository).findAllPosts(eq(mssv), any());
-  }
+        Page<PostFeedResponse> result = postService.searchPost("test", mssv, PageRequest.of(0, 10));
 
-  @Test
-  void shouldGetAllPostsWhenKeywordIsBlank() {
-    Page<PostFeedProjection> projectionPage = new PageImpl<>(List.of(projection));
-    PostFeedResponse feedResponse =
-        new PostFeedResponse(
-            postId,
-            "Title",
-            "Content",
-            Collections.emptyList(),
-            new AuthorInfo(mssv, "Test", "avatar.jpg", "21KTPM1"),
-            5L,
-            3L,
-            2L,
-            false,
-            LocalDateTime.now());
+        assertThat(result.getContent()).hasSize(1);
+        verify(postRepository).searchPostFull(eq("test"), eq(mssv), any());
+    }
 
-    when(postRepository.findAllPosts(eq(mssv), any())).thenReturn(projectionPage);
-    when(postMapper.toPostFeedResponse(projection)).thenReturn(feedResponse);
+    @Test
+    void shouldGetAllPostsWhenKeywordIsNull() {
+        Page<PostFeedProjection> projectionPage = new PageImpl<>(List.of(projection));
+        PostFeedResponse feedResponse = new PostFeedResponse(postId, "Title", "Content", Collections.emptyList(),
+                new AuthorInfo(mssv, "Test", "avatar.jpg", "21KTPM1"), 5L, 3L, 2L, false, LocalDateTime.now());
 
-    Page<PostFeedResponse> result = postService.searchPost("", mssv, PageRequest.of(0, 10));
+        when(postRepository.findAllPosts(eq(mssv), any())).thenReturn(projectionPage);
+        when(postMapper.toPostFeedResponse(projection)).thenReturn(feedResponse);
 
-    assertThat(result.getContent()).hasSize(1);
-    verify(postRepository).findAllPosts(eq(mssv), any());
-  }
+        Page<PostFeedResponse> result = postService.searchPost(null, mssv, PageRequest.of(0, 10));
+
+        assertThat(result.getContent()).hasSize(1);
+        verify(postRepository).findAllPosts(eq(mssv), any());
+    }
+
+    @Test
+    void shouldGetAllPostsWhenKeywordIsBlank() {
+        Page<PostFeedProjection> projectionPage = new PageImpl<>(List.of(projection));
+        PostFeedResponse feedResponse = new PostFeedResponse(postId, "Title", "Content", Collections.emptyList(),
+                new AuthorInfo(mssv, "Test", "avatar.jpg", "21KTPM1"), 5L, 3L, 2L, false, LocalDateTime.now());
+
+        when(postRepository.findAllPosts(eq(mssv), any())).thenReturn(projectionPage);
+        when(postMapper.toPostFeedResponse(projection)).thenReturn(feedResponse);
+
+        Page<PostFeedResponse> result = postService.searchPost("", mssv, PageRequest.of(0, 10));
+
+        assertThat(result.getContent()).hasSize(1);
+        verify(postRepository).findAllPosts(eq(mssv), any());
+    }
 }

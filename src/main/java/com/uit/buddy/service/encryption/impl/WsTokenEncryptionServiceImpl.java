@@ -13,25 +13,25 @@ import org.springframework.stereotype.Service;
 @Slf4j
 public class WsTokenEncryptionServiceImpl implements WsTokenEncryptionService {
 
-  private final EncryptionUtils encryptionUtils;
+    private final EncryptionUtils encryptionUtils;
 
-  @Override
-  public String encryptWstoken(String plainWstoken) {
-    if (plainWstoken == null || plainWstoken.isBlank()) {
-      throw new SystemException(SystemErrorCode.INVALID_PARAMETER, "WsToken cannot be empty");
+    @Override
+    public String encryptWstoken(String plainWstoken) {
+        if (plainWstoken == null || plainWstoken.isBlank()) {
+            throw new SystemException(SystemErrorCode.INVALID_PARAMETER, "WsToken cannot be empty");
+        }
+
+        log.debug("Encrypting wstoken");
+        return encryptionUtils.encrypt(plainWstoken);
     }
 
-    log.debug("Encrypting wstoken");
-    return encryptionUtils.encrypt(plainWstoken);
-  }
+    @Override
+    public String decryptWstoken(String encryptedWstoken) {
+        if (encryptedWstoken == null || encryptedWstoken.isBlank()) {
+            throw new SystemException(SystemErrorCode.INVALID_PARAMETER, "WsToken cannot be empty");
+        }
 
-  @Override
-  public String decryptWstoken(String encryptedWstoken) {
-    if (encryptedWstoken == null || encryptedWstoken.isBlank()) {
-      throw new SystemException(SystemErrorCode.INVALID_PARAMETER, "WsToken cannot be empty");
+        log.debug("Decrypting wstoken");
+        return encryptionUtils.decrypt(encryptedWstoken);
     }
-
-    log.debug("Decrypting wstoken");
-    return encryptionUtils.decrypt(encryptedWstoken);
-  }
 }

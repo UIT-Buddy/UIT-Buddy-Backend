@@ -14,9 +14,7 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface ReactionRepository extends CrudRepository<Reaction, UUID> {
 
-  @Query(
-      value =
-          """
+    @Query(value = """
             SELECT
                 s.mssv as mssv,
                 s.full_name as fullName,
@@ -32,17 +30,14 @@ public interface ReactionRepository extends CrudRepository<Reaction, UUID> {
               )
             ORDER BY r.created_at DESC, s.mssv DESC
             LIMIT :limit
-            """,
-      nativeQuery = true)
-  List<ReactionProjection> findReactionsWithCursor(
-      @Param("postId") UUID postId,
-      @Param("cursorTime") LocalDateTime cursorTime,
-      @Param("cursorMssv") String cursorMssv,
-      @Param("limit") int limit);
+            """, nativeQuery = true)
+    List<ReactionProjection> findReactionsWithCursor(@Param("postId") UUID postId,
+            @Param("cursorTime") LocalDateTime cursorTime, @Param("cursorMssv") String cursorMssv,
+            @Param("limit") int limit);
 
-  Optional<Reaction> findByPostIdAndStudentMssv(UUID postId, String mssv);
+    Optional<Reaction> findByPostIdAndStudentMssv(UUID postId, String mssv);
 
-  void deleteByPostIdAndStudentMssv(UUID postId, String mssv);
+    void deleteByPostIdAndStudentMssv(UUID postId, String mssv);
 
-  boolean existsByPostIdAndStudentMssv(UUID postId, String mssv);
+    boolean existsByPostIdAndStudentMssv(UUID postId, String mssv);
 }

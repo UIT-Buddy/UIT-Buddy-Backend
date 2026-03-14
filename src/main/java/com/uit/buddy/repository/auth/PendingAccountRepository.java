@@ -8,7 +8,7 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface PendingAccountRepository extends CrudRepository<PendingAccount, String> {
 
-  boolean existsBySignupToken(String signupToken);
+    boolean existsBySignupToken(String signupToken);
 
-  Optional<PendingAccount> findBySignupToken(String signupToken);
+    Optional<PendingAccount> findBySignupToken(String signupToken);
 }
