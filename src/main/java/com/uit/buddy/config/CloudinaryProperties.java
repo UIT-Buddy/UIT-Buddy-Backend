@@ -11,11 +11,11 @@ import org.springframework.context.annotation.Configuration;
 @Setter
 public class CloudinaryProperties {
 
-    private String defaultAvatarUrl;
-    private String[] allowedImageTypes;
-    private String[] allowedVideoTypes;
-    private int avatarSize;
-    private int thumbnailSize;
-    private int postImageWidth;
-    private int postImageHeight;
+  private String defaultAvatarUrl;
+  private String[] allowedImageTypes;
+  private String[] allowedVideoTypes;
+  private int avatarSize;
+  private int thumbnailSize;
+  private int postImageWidth;
+  private int postImageHeight;
 }

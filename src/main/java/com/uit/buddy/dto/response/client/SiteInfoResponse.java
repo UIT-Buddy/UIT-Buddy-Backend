@@ -5,7 +5,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record SiteInfoResponse(
-        @JsonProperty("userid") Long userid,
-        @JsonProperty("username") String username,
-        @JsonProperty("fullname") String fullname) {
-}
+    @JsonProperty("userid") Long userid,
+    @JsonProperty("username") String username,
+    @JsonProperty("fullname") String fullname) {}

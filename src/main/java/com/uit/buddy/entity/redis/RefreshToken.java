@@ -14,12 +14,9 @@ import org.springframework.data.redis.core.index.Indexed;
 @AllArgsConstructor
 public class RefreshToken {
 
-    @Id
-    private String refreshToken;
+  @Id private String refreshToken;
 
-    @Indexed
-    private String mssv;
+  @Indexed private String mssv;
 
-    @TimeToLive
-    private Long ttl;
+  @TimeToLive private Long ttl;
 }

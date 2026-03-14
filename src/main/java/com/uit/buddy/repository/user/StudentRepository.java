@@ -10,7 +10,9 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface StudentRepository extends JpaRepository<Student, String> {
 
-    @Query(value = """
+  @Query(
+      value =
+          """
                 SELECT *,
                        ts_rank(
                            setweight(to_tsvector('simple', coalesce(full_name,'')), 'A') ||
@@ -25,6 +27,7 @@ public interface StudentRepository extends JpaRepository<Student, String> {
                       )
                       @@ websearch_to_tsquery('simple', :keyword)
                 ORDER BY rank DESC
-            """, nativeQuery = true)
-    Page<Student> searchStudentByKeyword(String keyword, Pageable pageable);
+            """,
+      nativeQuery = true)
+  Page<Student> searchStudentByKeyword(String keyword, Pageable pageable);
 }

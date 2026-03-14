@@ -1,23 +1,22 @@
 package com.uit.buddy.repository.social;
 
-import com.uit.buddy.repository.social.projection.CommentProjection;
-import org.springframework.data.jpa.repository.Modifying;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
-import org.springframework.stereotype.Repository;
-
 import com.uit.buddy.entity.social.Comment;
-
-import org.springframework.data.repository.CrudRepository;
-
+import com.uit.buddy.repository.social.projection.CommentProjection;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.CrudRepository;
+import org.springframework.data.repository.query.Param;
+import org.springframework.stereotype.Repository;
 
 @Repository
 public interface CommentRepository extends CrudRepository<Comment, UUID> {
 
-    @Query(value = """
+  @Query(
+      value =
+          """
             SELECT
                 c.id as id,
                 c.content as content,
@@ -44,24 +43,25 @@ public interface CommentRepository extends CrudRepository<Comment, UUID> {
               )
             ORDER BY c.created_at DESC, c.id DESC
             LIMIT :limit
-            """, nativeQuery = true)
-    List<CommentProjection> findCommentsWithCursor(
-            @Param("postId") UUID postId,
-            @Param("parentId") UUID parentId,
-            @Param("mssv") String mssv,
-            @Param("cursorTime") LocalDateTime cursorTime,
-            @Param("cursorId") UUID cursorId,
-            @Param("limit") int limit);
+            """,
+      nativeQuery = true)
+  List<CommentProjection> findCommentsWithCursor(
+      @Param("postId") UUID postId,
+      @Param("parentId") UUID parentId,
+      @Param("mssv") String mssv,
+      @Param("cursorTime") LocalDateTime cursorTime,
+      @Param("cursorId") UUID cursorId,
+      @Param("limit") int limit);
 
-    @Modifying
-    @Query("UPDATE Comment c SET c.replyCount = c.replyCount + 1 WHERE c.id = :commentId")
-    void incrementReplyCount(@Param("commentId") UUID commentId);
+  @Modifying
+  @Query("UPDATE Comment c SET c.replyCount = c.replyCount + 1 WHERE c.id = :commentId")
+  void incrementReplyCount(@Param("commentId") UUID commentId);
 
-    @Modifying
-    @Query("UPDATE Comment c SET c.likeCount = c.likeCount + 1 WHERE c.id = :commentId")
-    void incrementLikeCount(@Param("commentId") UUID commentId);
+  @Modifying
+  @Query("UPDATE Comment c SET c.likeCount = c.likeCount + 1 WHERE c.id = :commentId")
+  void incrementLikeCount(@Param("commentId") UUID commentId);
 
-    @Modifying
-    @Query("UPDATE Comment c SET c.likeCount = c.likeCount - 1 WHERE c.id = :commentId")
-    void decrementLikeCount(@Param("commentId") UUID commentId);
+  @Modifying
+  @Query("UPDATE Comment c SET c.likeCount = c.likeCount - 1 WHERE c.id = :commentId")
+  void decrementLikeCount(@Param("commentId") UUID commentId);
 }

@@ -4,31 +4,31 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 public interface PostFeedProjection {
-    UUID getId();
+  UUID getId();
 
-    String getTitle();
+  String getTitle();
 
-    String getContent();
+  String getContent();
 
-    String getMedias();
+  String getMedias();
 
-    Long getLikeCount();
+  Long getLikeCount();
 
-    Long getCommentCount();
+  Long getCommentCount();
 
-    Long getShareCount();
+  Long getShareCount();
 
-    LocalDateTime getCreatedAt();
+  LocalDateTime getCreatedAt();
 
-    LocalDateTime getUpdatedAt();
+  LocalDateTime getUpdatedAt();
 
-    String getAuthorMssv();
+  String getAuthorMssv();
 
-    String getAuthorFullName();
+  String getAuthorFullName();
 
-    String getAuthorAvatarUrl();
+  String getAuthorAvatarUrl();
 
-    String getAuthorHomeClassCode();
+  String getAuthorHomeClassCode();
 
-    boolean isLiked();
+  boolean isLiked();
 }

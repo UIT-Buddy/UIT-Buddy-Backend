@@ -9,19 +9,19 @@ import com.uit.buddy.dto.response.auth.ValidateTokenResponse;
 
 public interface AuthService {
 
-    ValidateTokenResponse initSignUp(ValidateTokenRequest request);
+  ValidateTokenResponse initSignUp(ValidateTokenRequest request);
 
-    AuthResponse completeSignUp(CompleteSignUpRequest request);
+  AuthResponse completeSignUp(CompleteSignUpRequest request);
 
-    AuthResponse signIn(SignInRequest request);
+  AuthResponse signIn(SignInRequest request);
 
-    void forgetPassword(ForgetPasswordRequest request);
+  void forgetPassword(ForgetPasswordRequest request);
 
-    void resetPassword(String mssv, String otpCode, String newPassword);
+  void resetPassword(String mssv, String otpCode, String newPassword);
 
-    AuthResponse refreshToken(String refreshToken);
+  AuthResponse refreshToken(String refreshToken);
 
-    void signOut(String refreshToken);
+  void signOut(String refreshToken);
 
-    String getDecryptedWstoken(String mssv);
+  String getDecryptedWstoken(String mssv);
 }

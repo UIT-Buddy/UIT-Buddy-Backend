@@ -13,20 +13,20 @@ import lombok.*;
 @Builder
 public class UserSetting extends AbstractAuditEntity {
 
-    @Id
-    @Column(name = "mssv", length = 12)
-    private String mssv;
+  @Id
+  @Column(name = "mssv", length = 12)
+  private String mssv;
 
-    @Builder.Default
-    @Column(name = "enable_notification", nullable = false)
-    private boolean enableNotification = true;
+  @Builder.Default
+  @Column(name = "enable_notification", nullable = false)
+  private boolean enableNotification = true;
 
-    @Builder.Default
-    @Column(name = "enable_schedule_reminder", nullable = false)
-    private boolean enableScheduleReminder = true;
+  @Builder.Default
+  @Column(name = "enable_schedule_reminder", nullable = false)
+  private boolean enableScheduleReminder = true;
 
-    @OneToOne(fetch = FetchType.LAZY)
-    @MapsId
-    @JoinColumn(name = "mssv")
-    private Student student;
+  @OneToOne(fetch = FetchType.LAZY)
+  @MapsId
+  @JoinColumn(name = "mssv")
+  private Student student;
 }

@@ -6,11 +6,11 @@ import lombok.Getter;
 @Getter
 public class HomeClassException extends BaseException {
 
-    public HomeClassException(HomeClassErrorCode errorCode) {
-        super(errorCode.getCode(), errorCode.getMessage(), errorCode.getHttpStatus());
-    }
+  public HomeClassException(HomeClassErrorCode errorCode) {
+    super(errorCode.getCode(), errorCode.getMessage(), errorCode.getHttpStatus());
+  }
 
-    public HomeClassException(HomeClassErrorCode errorCode, String customMessage) {
-        super(errorCode.getCode(), customMessage, errorCode.getHttpStatus());
-    }
+  public HomeClassException(HomeClassErrorCode errorCode, String customMessage) {
+    super(errorCode.getCode(), customMessage, errorCode.getHttpStatus());
+  }
 }

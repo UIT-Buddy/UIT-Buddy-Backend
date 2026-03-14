@@ -22,16 +22,18 @@ import org.springframework.web.bind.annotation.RestController;
 @Tag(name = "Notification", description = "Endpoints for testing fcm")
 public class NotificationController extends AbstractBaseController {
 
-    private final FcmService fcmService;
+  private final FcmService fcmService;
 
-    @PostMapping("/send")
-    @Operation(summary = "Send Push Notification", description = "Send a push notification to a specific device token")
-    public ResponseEntity<SingleResponse<String>> sendNotification(
-            @Valid @RequestBody FcmNotificationRequest request) {
+  @PostMapping("/send")
+  @Operation(
+      summary = "Send Push Notification",
+      description = "Send a push notification to a specific device token")
+  public ResponseEntity<SingleResponse<String>> sendNotification(
+      @Valid @RequestBody FcmNotificationRequest request) {
 
-        log.info("[Notification Controller] Received request to send push notification");
-        fcmService.sendPushNotification(request);
+    log.info("[Notification Controller] Received request to send push notification");
+    fcmService.sendPushNotification(request);
 
-        return successSingle("Notification request submitted", "Push notification sent successfully!");
-    }
+    return successSingle("Notification request submitted", "Push notification sent successfully!");
+  }
 }

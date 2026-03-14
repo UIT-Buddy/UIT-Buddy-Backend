@@ -1,27 +1,26 @@
 package com.uit.buddy.util;
 
-import org.springframework.stereotype.Component;
-
 import java.security.SecureRandom;
+import org.springframework.stereotype.Component;
 
 @Component
 public class OtpUtils {
 
-    private static final SecureRandom RANDOM = new SecureRandom();
+  private static final SecureRandom RANDOM = new SecureRandom();
 
-    public String generateNumericOtp(int length) {
-        if (length <= 0) {
-            throw new IllegalArgumentException("OTP length must be greater than 0");
-        }
-
-        StringBuilder otp = new StringBuilder();
-        for (int i = 0; i < length; i++) {
-            otp.append(RANDOM.nextInt(10));
-        }
-        return otp.toString();
+  public String generateNumericOtp(int length) {
+    if (length <= 0) {
+      throw new IllegalArgumentException("OTP length must be greater than 0");
     }
 
-    public String generateNumericOtp() {
-        return generateNumericOtp(6);
+    StringBuilder otp = new StringBuilder();
+    for (int i = 0; i < length; i++) {
+      otp.append(RANDOM.nextInt(10));
     }
+    return otp.toString();
+  }
+
+  public String generateNumericOtp() {
+    return generateNumericOtp(6);
+  }
 }

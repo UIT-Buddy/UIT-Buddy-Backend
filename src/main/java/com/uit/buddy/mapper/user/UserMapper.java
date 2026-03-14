@@ -9,6 +9,7 @@ import org.mapstruct.ReportingPolicy;
 @Mapper(componentModel = "spring", unmappedTargetPolicy = ReportingPolicy.IGNORE)
 public interface UserMapper {
 
-    UserResponse toUserResponse(Student student);
-    FoundUserResponse toFoundUserResponse(Student student);
+  UserResponse toUserResponse(Student student);
+
+  FoundUserResponse toFoundUserResponse(Student student);
 }

@@ -4,25 +4,25 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 public interface CommentProjection {
-    UUID getId();
+  UUID getId();
 
-    String getContent();
+  String getContent();
 
-    Long getLikeCount();
+  Long getLikeCount();
 
-    Long getReplyCount();
+  Long getReplyCount();
 
-    LocalDateTime getCreatedAt();
+  LocalDateTime getCreatedAt();
 
-    LocalDateTime getUpdatedAt();
+  LocalDateTime getUpdatedAt();
 
-    UUID getParentId();
+  UUID getParentId();
 
-    String getMssv();
+  String getMssv();
 
-    String getFullName();
+  String getFullName();
 
-    String getAvatarUrl();
+  String getAvatarUrl();
 
-    boolean isLiked();
+  boolean isLiked();
 }

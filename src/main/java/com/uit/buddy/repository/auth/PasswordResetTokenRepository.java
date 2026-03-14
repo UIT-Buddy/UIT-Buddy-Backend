@@ -7,5 +7,5 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface PasswordResetTokenRepository extends CrudRepository<PasswordResetOtp, String> {
 
-    boolean existsById(String mssv);
+  boolean existsById(String mssv);
 }

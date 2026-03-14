@@ -3,11 +3,11 @@ package com.uit.buddy.repository.social.projection;
 import java.time.LocalDateTime;
 
 public interface ReactionProjection {
-    String getMssv();
+  String getMssv();
 
-    String getFullName();
+  String getFullName();
 
-    String getAvatarUrl();
+  String getAvatarUrl();
 
-    LocalDateTime getReactedAt();
+  LocalDateTime getReactedAt();
 }
