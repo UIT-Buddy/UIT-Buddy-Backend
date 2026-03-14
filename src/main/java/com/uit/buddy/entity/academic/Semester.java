@@ -3,13 +3,12 @@ package com.uit.buddy.entity.academic;
 import com.uit.buddy.entity.AbstractAuditEntity;
 import com.uit.buddy.enums.SemesterType;
 import jakarta.persistence.*;
-import lombok.*;
 import java.time.LocalDate;
+import lombok.*;
 
 @Entity
 @Table(name = "semesters", indexes = {
-        @Index(name = "idx_semester_code", columnList = "semester_code", unique = true)
-})
+        @Index(name = "idx_semester_code", columnList = "semester_code", unique = true) })
 @Getter
 @Setter
 @NoArgsConstructor

@@ -7,11 +7,9 @@ import lombok.*;
 
 @Entity
 @Table(name = "semester_summaries", uniqueConstraints = {
-        @UniqueConstraint(name = "uk_student_semester_summary", columnNames = { "mssv", "semester_code" })
-}, indexes = {
-        @Index(name = "idx_semester_summary_student", columnList = "mssv"),
-        @Index(name = "idx_semester_summary_semester", columnList = "semester_code")
-})
+        @UniqueConstraint(name = "uk_student_semester_summary", columnNames = { "mssv",
+                "semester_code" }) }, indexes = { @Index(name = "idx_semester_summary_student", columnList = "mssv"),
+                        @Index(name = "idx_semester_summary_semester", columnList = "semester_code") })
 @Getter
 @Setter
 @NoArgsConstructor

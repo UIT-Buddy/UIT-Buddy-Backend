@@ -6,11 +6,9 @@ import com.uit.buddy.exception.fcm.FcmErrorCode;
 import com.uit.buddy.exception.fcm.FcmException;
 import com.uit.buddy.repository.user.DeviceTokenRepository;
 import com.uit.buddy.service.fcm.FcmService;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-
-import java.util.List;
-
 import org.springframework.stereotype.Service;
 
 @Service
@@ -32,17 +30,11 @@ public class FcmServiceImpl implements FcmService {
 
     @Override
     public void sendPushNotification(FcmNotificationRequest request) {
-        Notification notification = Notification.builder()
-                .setTitle(request.title())
-                .setBody(request.message())
-                .setImage(request.image())
-                .build();
+        Notification notification = Notification.builder().setTitle(request.title()).setBody(request.message())
+                .setImage(request.image()).build();
 
-        Message message = Message.builder()
-                .setToken(request.targetToken())
-                .setNotification(notification)
-                .putAllData(request.toDataMap())
-                .build();
+        Message message = Message.builder().setToken(request.targetToken()).setNotification(notification)
+                .putAllData(request.toDataMap()).build();
 
         try {
             String response = firebaseMessaging.send(message);
@@ -53,29 +45,22 @@ public class FcmServiceImpl implements FcmService {
     }
 
     @Override
-    public void sendMulticastNotification(List<String> tokens, String notificationId,
-            String title, String body, String type, String dataId) {
+    public void sendMulticastNotification(List<String> tokens, String notificationId, String title, String body,
+            String type, String dataId) {
         if (tokens == null || tokens.isEmpty())
             return;
 
         // MulticastMessage vẫn dùng được để build data chung cho tất cả tokens
-        MulticastMessage message = MulticastMessage.builder()
-                .addAllTokens(tokens)
-                .setNotification(Notification.builder()
-                        .setTitle(title)
-                        .setBody(body)
-                        .build())
-                .putData("id", notificationId)
-                .putData("type", type)
-                .putData("dataId", dataId)
-                .build();
+        MulticastMessage message = MulticastMessage.builder().addAllTokens(tokens)
+                .setNotification(Notification.builder().setTitle(title).setBody(body).build())
+                .putData("id", notificationId).putData("type", type).putData("dataId", dataId).build();
 
         try {
             // SỬ DỤNG sendEachForMulticast thay cho sendMulticast bị deprecated
             BatchResponse response = firebaseMessaging.sendEachForMulticast(message);
 
-            log.info("[FCM Service] Sent notification. Success: {}, Failure: {}",
-                    response.getSuccessCount(), response.getFailureCount());
+            log.info("[FCM Service] Sent notification. Success: {}, Failure: {}", response.getSuccessCount(),
+                    response.getFailureCount());
 
             // BEST PRACTICE: Dọn dẹp token rác ngay lập tức nếu gửi thất bại
             if (response.getFailureCount() > 0) {
@@ -87,9 +72,7 @@ public class FcmServiceImpl implements FcmService {
         }
     }
 
-    /**
-     * Logic xử lý các token bị lỗi (không tồn tại, hết hạn) sau khi gửi multicast
-     */
+    /** Logic xử lý các token bị lỗi (không tồn tại, hết hạn) sau khi gửi multicast */
     private void handleMulticastFailures(BatchResponse response, List<String> tokens) {
         List<SendResponse> responses = response.getResponses();
         List<String> invalidTokens = new java.util.ArrayList<>();

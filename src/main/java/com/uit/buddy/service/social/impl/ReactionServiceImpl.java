@@ -1,14 +1,5 @@
 package com.uit.buddy.service.social.impl;
 
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
-
-import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import com.uit.buddy.dto.response.social.UserReactionResponse;
 import com.uit.buddy.entity.social.Post;
 import com.uit.buddy.entity.social.Reaction;
@@ -21,9 +12,15 @@ import com.uit.buddy.repository.social.ReactionRepository;
 import com.uit.buddy.repository.user.StudentRepository;
 import com.uit.buddy.service.social.ReactionService;
 import com.uit.buddy.util.CursorUtils;
-
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -52,25 +49,15 @@ public class ReactionServiceImpl implements ReactionService {
             return false;
         }
 
-        Reaction newReaction = Reaction.builder()
-                .student(studentRepository.getReferenceById(mssv))
-                .post(post)
-                .build();
+        Reaction newReaction = Reaction.builder().student(studentRepository.getReferenceById(mssv)).post(post).build();
 
         reactionRepository.save(newReaction);
         postRepository.incrementLikeCount(postId);
 
         if (!post.getMssv().equals(mssv)) {
-            String actorName = studentRepository.findById(mssv)
-                    .map(student -> student.getFullName())
-                    .orElse(mssv);
+            String actorName = studentRepository.findById(mssv).map(student -> student.getFullName()).orElse(mssv);
 
-            eventPublisher.publishEvent(new PostLikedEvent(
-                    mssv,
-                    actorName,
-                    post.getMssv(),
-                    postId,
-                    post.getContent()));
+            eventPublisher.publishEvent(new PostLikedEvent(mssv, actorName, post.getMssv(), postId, post.getContent()));
         }
         return true;
     }
@@ -90,9 +77,7 @@ public class ReactionServiceImpl implements ReactionService {
             cursorMssv = contents.id().toString();
         }
 
-        return reactionRepository.findReactionsWithCursor(postId, cursorTime, cursorMssv, limit + 1)
-                .stream()
-                .map(reactionMapper::toReactionResponse)
-                .toList();
+        return reactionRepository.findReactionsWithCursor(postId, cursorTime, cursorMssv, limit + 1).stream()
+                .map(reactionMapper::toReactionResponse).toList();
     }
 }

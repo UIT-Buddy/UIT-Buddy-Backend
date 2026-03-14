@@ -1,17 +1,16 @@
 package com.uit.buddy.util;
 
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Component;
-
-import javax.crypto.Cipher;
-import javax.crypto.SecretKey;
-import javax.crypto.spec.GCMParameterSpec;
-import javax.crypto.spec.SecretKeySpec;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
 import java.util.Base64;
+import javax.crypto.Cipher;
+import javax.crypto.SecretKey;
+import javax.crypto.spec.GCMParameterSpec;
+import javax.crypto.spec.SecretKeySpec;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
 
 @Component
 @Slf4j
@@ -25,8 +24,7 @@ public class EncryptionUtils {
     private final SecretKey secretKey;
     private final SecureRandom secureRandom;
 
-    public EncryptionUtils(
-            @Value("${app.encryption.secret}") String secret,
+    public EncryptionUtils(@Value("${app.encryption.secret}") String secret,
             @Value("${app.encryption.algorithm}") String algorithm) {
 
         byte[] keyBytes = secret.getBytes(StandardCharsets.UTF_8);

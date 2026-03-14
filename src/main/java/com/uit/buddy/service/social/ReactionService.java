@@ -1,9 +1,8 @@
 package com.uit.buddy.service.social;
 
+import com.uit.buddy.dto.response.social.UserReactionResponse;
 import java.util.List;
 import java.util.UUID;
-
-import com.uit.buddy.dto.response.social.UserReactionResponse;
 
 public interface ReactionService {
     boolean togglePostLike(UUID postId, String mssv);

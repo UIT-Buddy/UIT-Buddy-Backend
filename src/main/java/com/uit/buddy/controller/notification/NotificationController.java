@@ -26,8 +26,7 @@ public class NotificationController extends AbstractBaseController {
 
     @PostMapping("/send")
     @Operation(summary = "Send Push Notification", description = "Send a push notification to a specific device token")
-    public ResponseEntity<SingleResponse<String>> sendNotification(
-            @Valid @RequestBody FcmNotificationRequest request) {
+    public ResponseEntity<SingleResponse<String>> sendNotification(@Valid @RequestBody FcmNotificationRequest request) {
 
         log.info("[Notification Controller] Received request to send push notification");
         fcmService.sendPushNotification(request);

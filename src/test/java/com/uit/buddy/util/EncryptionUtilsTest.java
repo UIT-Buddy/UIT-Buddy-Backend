@@ -1,9 +1,9 @@
 package com.uit.buddy.util;
 
+import static org.junit.jupiter.api.Assertions.*;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.*;
 
 class EncryptionUtilsTest {
 
@@ -58,13 +58,11 @@ class EncryptionUtilsTest {
 
     @Test
     void constructor_invalidSecretLength_throwsIllegalArgument() {
-        assertThrows(IllegalArgumentException.class,
-                () -> new EncryptionUtils("short", ALGORITHM));
+        assertThrows(IllegalArgumentException.class, () -> new EncryptionUtils("short", ALGORITHM));
     }
 
     @Test
     void decrypt_tamperedCiphertext_throwsRuntimeException() {
-        assertThrows(RuntimeException.class,
-                () -> encryptionUtils.decrypt("this-is-not-valid-base64-ciphertext!!!!"));
+        assertThrows(RuntimeException.class, () -> encryptionUtils.decrypt("this-is-not-valid-base64-ciphertext!!!!"));
     }
 }

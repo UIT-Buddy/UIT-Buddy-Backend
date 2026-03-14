@@ -1,15 +1,15 @@
 package com.uit.buddy.client.validator;
 
+import static com.uit.buddy.constant.MoodleApiConstants.*;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.uit.buddy.dto.response.client.MoodleErrorResponse;
 import com.uit.buddy.exception.client.ExternalClientErrorCode;
 import com.uit.buddy.exception.client.ExternalClientException;
-import static com.uit.buddy.constant.MoodleApiConstants.*;
-
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
-import java.util.Map;
 
 @Component
 @Slf4j
@@ -38,8 +38,7 @@ public class MoodleResponseValidator {
     }
 
     private void handleMoodleError(MoodleErrorResponse errorResponse) {
-        String errorMessage = String.format("Moodle error: %s - %s",
-                errorResponse.errorcode(),
+        String errorMessage = String.format("Moodle error: %s - %s", errorResponse.errorcode(),
                 errorResponse.message());
         log.error("[Moodle Error] {}", errorMessage);
 
@@ -53,10 +52,10 @@ public class MoodleResponseValidator {
         }
 
         return switch (moodleErrorCode) {
-            case ERROR_INVALID_TOKEN, ERROR_INVALID_LOGIN -> ExternalClientErrorCode.UNAUTHORIZED_REQUEST;
-            case ERROR_ACCESS_EXCEPTION, ERROR_NO_PERMISSION -> ExternalClientErrorCode.FORBIDDEN_REQUEST;
-            case ERROR_INVALID_PARAMETER, ERROR_INVALID_RECORD -> ExternalClientErrorCode.BAD_REQUEST;
-            default -> ExternalClientErrorCode.INVALID_RESPONSE;
+        case ERROR_INVALID_TOKEN, ERROR_INVALID_LOGIN -> ExternalClientErrorCode.UNAUTHORIZED_REQUEST;
+        case ERROR_ACCESS_EXCEPTION, ERROR_NO_PERMISSION -> ExternalClientErrorCode.FORBIDDEN_REQUEST;
+        case ERROR_INVALID_PARAMETER, ERROR_INVALID_RECORD -> ExternalClientErrorCode.BAD_REQUEST;
+        default -> ExternalClientErrorCode.INVALID_RESPONSE;
         };
     }
 }

@@ -5,10 +5,8 @@ import com.uit.buddy.dto.base.CursorPageResponse;
 import com.uit.buddy.dto.base.PageResponse;
 import com.uit.buddy.dto.base.SingleResponse;
 import com.uit.buddy.dto.base.SuccessResponse;
-
 import java.util.List;
 import java.util.function.Function;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -39,21 +37,12 @@ public abstract class AbstractBaseController {
     }
 
     protected <T> ResponseEntity<PageResponse<T>> paging(Page<T> page, String message) {
-        PageResponse<T> response = responseFactory.createPageResponse(
-                HttpStatus.OK,
-                message,
-                page.getContent(),
-                page.getNumber(),
-                page.getSize(),
-                page.getTotalElements(),
-                page.getTotalPages());
+        PageResponse<T> response = responseFactory.createPageResponse(HttpStatus.OK, message, page.getContent(),
+                page.getNumber(), page.getSize(), page.getTotalElements(), page.getTotalPages());
         return ResponseEntity.ok(response);
     }
 
-    protected <T> ResponseEntity<CursorPageResponse<T>> cursorPaging(
-            String message,
-            List<T> data,
-            int limit,
+    protected <T> ResponseEntity<CursorPageResponse<T>> cursorPaging(String message, List<T> data, int limit,
             Function<T, String> cursorExtractor) {
 
         boolean hasMore = data.size() > limit;
@@ -65,11 +54,10 @@ public abstract class AbstractBaseController {
             nextCursor = cursorExtractor.apply(lastItem);
         }
 
-        CursorPageResponse<T> response = responseFactory.createCursorPageResponse(
-                HttpStatus.OK, message, pagedData, nextCursor, hasMore, limit);
+        CursorPageResponse<T> response = responseFactory.createCursorPageResponse(HttpStatus.OK, message, pagedData,
+                nextCursor, hasMore, limit);
 
         return ResponseEntity.ok(response);
-
     }
 
     protected Pageable createPageable(int page, int limit, String sortType, String sortBy) {
@@ -78,8 +66,7 @@ public abstract class AbstractBaseController {
         if (sortBy == null) {
             return PageRequest.of(pageNumber, limit);
         }
-        Sort.Direction direction = (sortType != null && sortType.equalsIgnoreCase("asc"))
-                ? Sort.Direction.ASC
+        Sort.Direction direction = (sortType != null && sortType.equalsIgnoreCase("asc")) ? Sort.Direction.ASC
                 : Sort.Direction.DESC;
         String sortField = !sortBy.isEmpty() ? sortBy : "id";
         Sort sort = Sort.by(direction, sortField);

@@ -1,15 +1,12 @@
 package com.uit.buddy.entity.academic;
 
 import com.uit.buddy.entity.AbstractAuditEntity;
-
 import jakarta.persistence.*;
 import lombok.*;
 
 @Entity
-@Table(name = "courses", indexes = {
-        @Index(name = "idx_course_code", columnList = "course_code", unique = true),
-        @Index(name = "idx_course_faculty", columnList = "faculty_code")
-})
+@Table(name = "courses", indexes = { @Index(name = "idx_course_code", columnList = "course_code", unique = true),
+        @Index(name = "idx_course_faculty", columnList = "faculty_code") })
 @Getter
 @Setter
 @NoArgsConstructor

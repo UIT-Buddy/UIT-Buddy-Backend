@@ -12,7 +12,6 @@ import com.uit.buddy.service.cloudinary.CloudinaryService;
 import com.uit.buddy.service.user.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -86,7 +85,4 @@ public class UserServiceImpl implements UserService {
         log.info("[UserService]: fetching user with keyword and filter");
         return page.map(userMapper::toFoundUserResponse);
     }
-
-
-
 }

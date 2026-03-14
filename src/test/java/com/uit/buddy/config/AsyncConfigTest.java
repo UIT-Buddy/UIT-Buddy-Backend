@@ -1,26 +1,24 @@
 package com.uit.buddy.config;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
+import java.util.concurrent.Executor;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.test.context.TestPropertySource;
 
-import java.util.concurrent.Executor;
-
-import static org.assertj.core.api.Assertions.assertThat;
-
 @SpringBootTest(classes = AsyncConfig.class)
-@TestPropertySource(properties = {
-        "thread.core-thread-pool-size=5",
-        "thread.max-thread-pool-size=10",
-        "thread.thread-queue-capacity=100"
-})
+@TestPropertySource(properties = { "thread.core-thread-pool-size=5", "thread.max-thread-pool-size=10",
+        "thread.thread-queue-capacity=100" })
 @DisplayName("AsyncConfig Tests")
 class AsyncConfigTest {
 
     @Autowired
+    @Qualifier("uploadExecutor")
     private Executor uploadExecutor;
 
     @Test

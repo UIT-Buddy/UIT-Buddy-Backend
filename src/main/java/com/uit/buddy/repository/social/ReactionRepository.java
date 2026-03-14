@@ -1,18 +1,15 @@
 package com.uit.buddy.repository.social;
 
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
-import org.springframework.stereotype.Repository;
-
 import com.uit.buddy.entity.social.Reaction;
-
-import org.springframework.data.repository.CrudRepository;
 import com.uit.buddy.repository.social.projection.ReactionProjection;
-
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.CrudRepository;
+import org.springframework.data.repository.query.Param;
+import org.springframework.stereotype.Repository;
 
 @Repository
 public interface ReactionRepository extends CrudRepository<Reaction, UUID> {
@@ -34,10 +31,8 @@ public interface ReactionRepository extends CrudRepository<Reaction, UUID> {
             ORDER BY r.created_at DESC, s.mssv DESC
             LIMIT :limit
             """, nativeQuery = true)
-    List<ReactionProjection> findReactionsWithCursor(
-            @Param("postId") UUID postId,
-            @Param("cursorTime") LocalDateTime cursorTime,
-            @Param("cursorMssv") String cursorMssv,
+    List<ReactionProjection> findReactionsWithCursor(@Param("postId") UUID postId,
+            @Param("cursorTime") LocalDateTime cursorTime, @Param("cursorMssv") String cursorMssv,
             @Param("limit") int limit);
 
     Optional<Reaction> findByPostIdAndStudentMssv(UUID postId, String mssv);

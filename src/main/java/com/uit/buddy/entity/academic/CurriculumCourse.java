@@ -5,13 +5,10 @@ import jakarta.persistence.*;
 import lombok.*;
 
 @Entity
-@Table(name = "curriculum_courses", uniqueConstraints = {
-        @UniqueConstraint(name = "uk_curr_course_cat", columnNames = { "curriculum_code", "course_code",
-                "category_code" })
-}, indexes = {
-        @Index(name = "idx_curr_course_lookup", columnList = "curriculum_code, course_code"),
-        @Index(name = "idx_curr_category", columnList = "category_code")
-})
+@Table(name = "curriculum_courses", uniqueConstraints = { @UniqueConstraint(name = "uk_curr_course_cat", columnNames = {
+        "curriculum_code", "course_code", "category_code" }) }, indexes = {
+                @Index(name = "idx_curr_course_lookup", columnList = "curriculum_code, course_code"),
+                @Index(name = "idx_curr_category", columnList = "category_code") })
 @Getter
 @Setter
 @NoArgsConstructor

@@ -7,7 +7,6 @@ import com.uit.buddy.constant.CometChatApiConstants;
 import com.uit.buddy.dto.request.client.CometChatUserRequest;
 import com.uit.buddy.dto.response.client.CometChatUserResponse;
 import lombok.extern.slf4j.Slf4j;
-
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
@@ -22,11 +21,8 @@ public class CometChatClientImpl extends AbstractBaseClient implements CometChat
     private final String apiKey;
     private final String appId;
 
-    public CometChatClientImpl(
-            @Qualifier("cometChatClient") RestClient restClient,
-            ObjectMapper objectMapper,
-            @Value("${app.cometchat.api-key}") String apiKey,
-            @Value("${app.cometchat.app-id}") String appId) {
+    public CometChatClientImpl(@Qualifier("cometChatClient") RestClient restClient, ObjectMapper objectMapper,
+            @Value("${app.cometchat.api-key}") String apiKey, @Value("${app.cometchat.app-id}") String appId) {
         super(restClient, objectMapper);
         this.apiKey = apiKey;
         this.appId = appId;
@@ -34,11 +30,8 @@ public class CometChatClientImpl extends AbstractBaseClient implements CometChat
 
     @Override
     public CometChatUserResponse createUser(CometChatUserRequest request) {
-        CometChatUserResponse response = post(
-                CometChatApiConstants.USERS_ENDPOINT,
-                request,
-                CometChatUserResponse.class,
-                createHeaders());
+        CometChatUserResponse response = post(CometChatApiConstants.USERS_ENDPOINT, request,
+                CometChatUserResponse.class, createHeaders());
         return response;
     }
 

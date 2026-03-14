@@ -1,16 +1,14 @@
 package com.uit.buddy.entity.notification;
 
 import com.uit.buddy.entity.AbstractBaseEntity;
-import com.uit.buddy.enums.NotificationType;
 import com.uit.buddy.entity.user.Student;
+import com.uit.buddy.enums.NotificationType;
 import jakarta.persistence.*;
 import lombok.*;
 
 @Entity
-@Table(name = "notifications", indexes = {
-        @Index(name = "idx_notification_student", columnList = "mssv"),
-        @Index(name = "idx_notification_is_read", columnList = "is_read")
-})
+@Table(name = "notifications", indexes = { @Index(name = "idx_notification_student", columnList = "mssv"),
+        @Index(name = "idx_notification_is_read", columnList = "is_read") })
 @Getter
 @Setter
 @NoArgsConstructor

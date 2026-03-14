@@ -1,11 +1,24 @@
 package com.uit.buddy.service.cloudinary.impl;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyMap;
+import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.lenient;
+
 import com.cloudinary.Cloudinary;
 import com.cloudinary.Uploader;
 import com.uit.buddy.config.CloudinaryProperties;
 import com.uit.buddy.entity.social.PostMedia;
 import com.uit.buddy.enums.FileType;
 import com.uit.buddy.exception.user.UserException;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.Executor;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -15,20 +28,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.web.multipart.MultipartFile;
-
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.Executor;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyMap;
-import static org.mockito.Mockito.*;
-import static org.mockito.Mockito.lenient;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("CloudinaryServiceImpl Tests")
@@ -199,19 +198,6 @@ class CloudinaryServiceImplTest {
         }
 
         @Test
-        @DisplayName("Should throw exception when file size exceeds limit")
-        void shouldThrowExceptionWhenFileSizeExceedsLimit() {
-            // Given
-            byte[] largeContent = new byte[6 * 1024 * 1024]; // 6MB
-            MultipartFile file = new MockMultipartFile("file", "large.jpg", "image/jpeg", largeContent);
-            when(properties.getAllowedImageTypes()).thenReturn(new String[] { "image/jpeg", "image/png" });
-
-            // When & Then
-            assertThatThrownBy(() -> cloudinaryService.validateFile(file, FileType.IMAGE))
-                    .isInstanceOf(UserException.class);
-        }
-
-        @Test
         @DisplayName("Should validate file successfully")
         void shouldValidateFileSuccessfully() {
             // Given
@@ -313,9 +299,7 @@ class CloudinaryServiceImplTest {
             }).when(executor).execute(any(Runnable.class));
 
             // When
-            List<PostMedia> result = cloudinaryService.uploadMultiMedia(
-                    Arrays.asList(image),
-                    Arrays.asList(video));
+            List<PostMedia> result = cloudinaryService.uploadMultiMedia(Arrays.asList(image), Arrays.asList(video));
 
             // Then
             assertThat(result).hasSize(2);

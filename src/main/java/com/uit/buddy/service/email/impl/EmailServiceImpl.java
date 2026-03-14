@@ -3,6 +3,8 @@ package com.uit.buddy.service.email.impl;
 import com.uit.buddy.service.email.EmailService;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.ClassPathResource;
@@ -10,9 +12,6 @@ import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
-
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 
 @Service
 @RequiredArgsConstructor
@@ -26,8 +25,7 @@ public class EmailServiceImpl implements EmailService {
     public void sendPasswordResetOtp(String toEmail, String otpCode, long expirationMinutes) {
         try {
             String subject = "Mã OTP đặt lại mật khẩu - UIT Buddy";
-            String htmlContent = loadTemplate("templates/email/password-reset-otp.html")
-                    .replace("{{otpCode}}", otpCode)
+            String htmlContent = loadTemplate("templates/email/password-reset-otp.html").replace("{{otpCode}}", otpCode)
                     .replace("{{expirationMinutes}}", String.valueOf(expirationMinutes));
 
             sendHtmlEmail(toEmail, subject, htmlContent);

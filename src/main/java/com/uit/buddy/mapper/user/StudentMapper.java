@@ -9,5 +9,4 @@ import org.mapstruct.ReportingPolicy;
 public interface StudentMapper {
 
     StudentResponse toStudentResponse(Student student);
-
 }

@@ -6,17 +6,16 @@ import com.uit.buddy.dto.response.social.AuthorInfo;
 import com.uit.buddy.dto.response.social.MediaResponse;
 import com.uit.buddy.dto.response.social.PostDetailResponse;
 import com.uit.buddy.dto.response.social.PostFeedResponse;
-import com.uit.buddy.repository.social.projection.PostFeedProjection;
 import com.uit.buddy.entity.social.Post;
 import com.uit.buddy.entity.user.Student;
+import com.uit.buddy.repository.social.projection.PostFeedProjection;
 import com.uit.buddy.util.TextUtils;
+import java.util.Collections;
+import java.util.List;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.ReportingPolicy;
 import org.springframework.beans.factory.annotation.Autowired;
-
-import java.util.Collections;
-import java.util.List;
 
 @Mapper(componentModel = "spring", unmappedTargetPolicy = ReportingPolicy.IGNORE, imports = { TextUtils.class,
         Collections.class })

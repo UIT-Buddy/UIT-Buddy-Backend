@@ -67,7 +67,7 @@ jobs:
           chmod +x mvnw
 
       - name: Build and Test with Maven
-        run: ./mvnw test -Dtest="OtpUtilsTest,EncryptionUtilsTest" -DfailIfNoTests=false
+        run: ./mvnw test -DfailIfNoTests=false
 
       - name: Publish Test Results
         uses: dorny/test-reporter@v1
