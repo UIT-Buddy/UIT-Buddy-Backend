@@ -197,7 +197,6 @@ class CloudinaryServiceImplTest {
                     .isInstanceOf(UserException.class);
         }
 
-
         @Test
         @DisplayName("Should validate file successfully")
         void shouldValidateFileSuccessfully() {
