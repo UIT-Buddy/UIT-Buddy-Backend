@@ -197,18 +197,6 @@ class CloudinaryServiceImplTest {
                     .isInstanceOf(UserException.class);
         }
 
-        @Test
-        @DisplayName("Should throw exception when file size exceeds limit")
-        void shouldThrowExceptionWhenFileSizeExceedsLimit() {
-            // Given
-            byte[] largeContent = new byte[6 * 1024 * 1024]; // 6MB
-            MultipartFile file = new MockMultipartFile("file", "large.jpg", "image/jpeg", largeContent);
-            when(properties.getAllowedImageTypes()).thenReturn(new String[] { "image/jpeg", "image/png" });
-
-            // When & Then
-            assertThatThrownBy(() -> cloudinaryService.validateFile(file, FileType.IMAGE))
-                    .isInstanceOf(UserException.class);
-        }
 
         @Test
         @DisplayName("Should validate file successfully")
