@@ -172,16 +172,6 @@
                     </excludes>
                 </configuration>
             </plugin>
-            <plugin>
-                <groupId>net.revelc.code.impsort</groupId>
-                <artifactId>impsort-maven-plugin</artifactId>
-                <version>1.13.0</version>
-                <configuration>
-                    <groups>java.,javax.,jakarta.,org.,com.</groups>
-                    <staticGroups>java,*</staticGroups>
-                    <removeUnused>true</removeUnused>
-                </configuration>
-            </plugin>
         </plugins>
     </build>
 </project>
