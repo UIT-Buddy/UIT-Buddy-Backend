@@ -6,6 +6,7 @@ import java.util.concurrent.Executor;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.test.context.TestPropertySource;
@@ -17,6 +18,7 @@ import org.springframework.test.context.TestPropertySource;
 class AsyncConfigTest {
 
     @Autowired
+    @Qualifier("uploadExecutor")
     private Executor uploadExecutor;
 
     @Test
