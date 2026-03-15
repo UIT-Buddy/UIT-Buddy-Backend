@@ -30,7 +30,6 @@ import com.uit.buddy.repository.auth.PasswordResetTokenRepository;
 import com.uit.buddy.repository.auth.PendingAccountRepository;
 import com.uit.buddy.repository.auth.RefreshTokenRepository;
 import com.uit.buddy.repository.user.StudentRepository;
-import com.uit.buddy.repository.user.UserSettingRepository;
 import com.uit.buddy.security.JwtUtils;
 import com.uit.buddy.service.auth.AuthService;
 import com.uit.buddy.service.cloudinary.CloudinaryService;
@@ -59,7 +58,6 @@ public class AuthServiceImpl implements AuthService {
     private final RefreshTokenRepository refreshTokenRepository;
     private final PasswordResetTokenRepository passwordResetTokenRepository;
     private final PendingAccountRepository pendingAccountRepository;
-    private final UserSettingRepository userSettingRepository;
     private final UitClient uitClient;
     private final CometChatClient cometChatClient;
     private final HomeClassRepository homeClassRepository;

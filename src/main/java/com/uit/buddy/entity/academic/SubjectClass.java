@@ -1,6 +1,7 @@
 package com.uit.buddy.entity.academic;
 
 import com.uit.buddy.entity.AbstractAuditEntity;
+import com.uit.buddy.enums.ClassType;
 import jakarta.persistence.*;
 import java.time.LocalTime;
 import lombok.*;
@@ -54,4 +55,13 @@ public class SubjectClass extends AbstractAuditEntity {
 
     @Column(name = "room_code", length = 20)
     private String roomCode;
+
+    @Column(name = "interval_weeks")
+    @Builder.Default
+    private Integer interval = 1;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "class_type", length = 20)
+    @Builder.Default
+    private ClassType classType = ClassType.WEEKLY;
 }

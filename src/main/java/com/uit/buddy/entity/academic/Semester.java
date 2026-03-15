@@ -1,7 +1,6 @@
 package com.uit.buddy.entity.academic;
 
 import com.uit.buddy.entity.AbstractAuditEntity;
-import com.uit.buddy.enums.SemesterType;
 import jakarta.persistence.*;
 import java.time.LocalDate;
 import lombok.*;
@@ -26,9 +25,8 @@ public class Semester extends AbstractAuditEntity {
     @Column(name = "year_end", length = 10)
     private String yearEnd;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "semester_number", length = 20, nullable = false)
-    private SemesterType semesterNumber;
+    @Column(name = "semester_number", nullable = false)
+    private Integer semesterNumber;
 
     @Column(name = "start_date")
     private LocalDate startDate;
