@@ -27,20 +27,29 @@ class IcsParserTest {
                 BEGIN:VEVENT
                 UID:69ad0f61623a4
                 DTSTAMP:20260308T055545Z
-                DTSTART;TZID=Asia/Ho_Chi_Minh:20250220T130000
-                DTEND;TZID=Asia/Ho_Chi_Minh:20250220T151500
+                DTSTART;TZID=Asia/Ho_Chi_Minh:20260220T130000
+                DTEND;TZID=Asia/Ho_Chi_Minh:20260220T151500
                 SUMMARY:NT208.P23.ANTT - P. B1.18
-                DESCRIPTION:Lớp: NT208.P23.ANTT(Lập trình ứng dụng Web) - P. B1.18, Thứ 5, Tiết 678, Giảng viên: Trần Tuấn Dũng,   từ 17/02/2025 - 03/05/2025
-                RRULE:FREQ=WEEKLY;INTERVAL=1;BYDAY=TH;UNTIL=20250503T000000Z
+                DESCRIPTION:Lớp: NT208.P23.ANTT(Lập trình ứng dụng Web) - P. B1.18, Thứ 5, Tiết 678, Giảng viên: Trần Tuấn Dũng,   từ 17/02/2026 - 03/05/2026
+                RRULE:FREQ=WEEKLY;INTERVAL=1;BYDAY=TH;UNTIL=20260503T000000Z
                 END:VEVENT
                 BEGIN:VEVENT
                 UID:69ad0f61623b9
                 DTSTAMP:20260308T055545Z
-                DTSTART;TZID=Asia/Ho_Chi_Minh:20250306T073000
-                DTEND;TZID=Asia/Ho_Chi_Minh:20250306T113000
+                DTSTART;TZID=Asia/Ho_Chi_Minh:20260306T073000
+                DTEND;TZID=Asia/Ho_Chi_Minh:20260306T113000
                 SUMMARY:NT208.P23.ANTT.1 - P. B4.08
-                DESCRIPTION:Lớp: NT208.P23.ANTT.1(Lập trình ứng dụng Web) - P. B4.08, Thứ 5, Tiết 12345, Giảng viên: Nguyễn Bùi Kim Ngân,  Cách 2 tuần, từ 03/03/2025 - 24/05/2025
-                RRULE:FREQ=WEEKLY;INTERVAL=2;BYDAY=TH;UNTIL=20250524T000000Z
+                DESCRIPTION:Lớp: NT208.P23.ANTT.1(Lập trình ứng dụng Web) - P. B4.08, Thứ 5, Tiết 12345, Giảng viên: Nguyễn Bùi Kim Ngân,  Cách 2 tuần, từ 03/03/2026 - 24/05/2026
+                RRULE:FREQ=WEEKLY;INTERVAL=2;BYDAY=TH;UNTIL=20260524T000000Z
+                END:VEVENT
+                BEGIN:VEVENT
+                UID:69ad0f61623c1
+                DTSTAMP:20260308T055545Z
+                DTSTART;TZID=Asia/Ho_Chi_Minh:20260307T073000
+                DTEND;TZID=Asia/Ho_Chi_Minh:20260307T153000
+                SUMMARY:SE104.P25 - P. B4.22
+                DESCRIPTION:Lớp: SE104.P25(Nhập môn Công nghệ phần mềm) - P. B4.22, Thứ 6, Tiết 678910, Giảng viên: Nguyễn Văn A,   từ 07/03/2026 - 30/05/2026
+                RRULE:FREQ=WEEKLY;INTERVAL=1;BYDAY=FR;UNTIL=20260530T000000Z
                 END:VEVENT
                 END:VCALENDAR
                 """;
@@ -50,7 +59,7 @@ class IcsParserTest {
 
         assertNotNull(result);
         assertEquals("23521729", result.getStudentId());
-        assertEquals(2, result.getEvents().size());
+        assertEquals(3, result.getEvents().size());
 
         // Test first event (INTERVAL=1, Tiết 678)
         IcsEvent event1 = result.getEvents().get(0);
@@ -67,5 +76,13 @@ class IcsParserTest {
         assertEquals(2, event2.getInterval());
         assertEquals(1, event2.getStartLesson());
         assertEquals(5, event2.getEndLesson());
+
+        // Test third event (Tiết 678910 - end lesson should be 10)
+        IcsEvent event3 = result.getEvents().get(2);
+        assertEquals("SE104.P25", event3.getClassCode());
+        assertEquals("WEEKLY", event3.getFrequency());
+        assertEquals(1, event3.getInterval());
+        assertEquals(6, event3.getStartLesson());
+        assertEquals(10, event3.getEndLesson());
     }
 }

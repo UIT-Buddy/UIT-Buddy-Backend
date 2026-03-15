@@ -35,8 +35,8 @@ public class IcsParser {
         private LocalTime endTime;
         private Integer startLesson;
         private Integer endLesson;
-        private String frequency; // WEEKLY, MONTHLY, DAILY
-        private Integer interval; // 1, 2, etc.
+        private String frequency;
+        private Integer interval;
     }
 
     @Data
@@ -165,16 +165,22 @@ public class IcsParser {
             event.setTeacherName(teacherMatcher.group(1).trim());
         }
 
-        // Parse lesson numbers từ "Tiết 678" hoặc "Tiết 123"
+        // Parse lesson numbers từ "Tiết 678" hoặc "Tiết 123" hoặc "Tiết 678910"
         Pattern lessonPattern = Pattern.compile(IcsConstants.LESSON_PATTERN);
         Matcher lessonMatcher = lessonPattern.matcher(cleanDesc);
         if (lessonMatcher.find()) {
             String lessons = lessonMatcher.group(1);
             log.debug("[ICS Parser] Found lesson pattern: {}", lessons);
+
             if (lessons.length() >= 2) {
-                // Lấy tiết đầu và tiết cuối
                 int startLesson = Character.getNumericValue(lessons.charAt(0));
-                int endLesson = Character.getNumericValue(lessons.charAt(lessons.length() - 1));
+                int endLesson;
+                if (lessons.length() >= 5 && lessons.endsWith("10")) {
+                    endLesson = 10;
+                } else {
+                    endLesson = Character.getNumericValue(lessons.charAt(lessons.length() - 1));
+                }
+
                 event.setStartLesson(startLesson);
                 event.setEndLesson(endLesson);
                 log.debug("[ICS Parser] Parsed lessons: start={}, end={}", startLesson, endLesson);
@@ -190,19 +196,16 @@ public class IcsParser {
     private void parseSpecialRoomCode(String description, IcsEvent event) {
         // Nếu là môn thể dục và có ghi chú về môn thể thao
         if (event.getClassCode() != null && event.getClassCode().startsWith(IcsConstants.PE_PREFIX)) {
-            // Tìm ghi chú về môn thể thao
             Pattern sportPattern = Pattern.compile(IcsConstants.NOTE_PATTERN);
             Matcher sportMatcher = sportPattern.matcher(description);
             if (sportMatcher.find()) {
                 String sport = sportMatcher.group(1).trim();
-                // Nếu có thông tin về môn thể thao, tạo room code là "Sân + môn"
                 if (!sport.isEmpty() && !sport.toLowerCase().contains("học từ")) {
                     event.setRoomCode(IcsConstants.COURT_PREFIX + sport);
                     return;
                 }
             }
-
-            // Fallback: tìm tên môn thể thao từ các pattern khác
+            // fallback
             for (String sport : IcsConstants.SPORTS) {
                 if (description.toLowerCase().contains(sport.toLowerCase())) {
                     event.setRoomCode(IcsConstants.COURT_PREFIX + sport);
