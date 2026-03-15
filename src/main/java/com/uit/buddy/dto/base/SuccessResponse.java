@@ -3,7 +3,5 @@ package com.uit.buddy.dto.base;
 import com.fasterxml.jackson.annotation.JsonInclude;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public record SuccessResponse(
-        Integer statusCode,
-        String message) {
+public record SuccessResponse(Integer statusCode, String message) {
 }

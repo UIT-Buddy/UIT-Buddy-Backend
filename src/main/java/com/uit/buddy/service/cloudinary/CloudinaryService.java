@@ -1,11 +1,9 @@
 package com.uit.buddy.service.cloudinary;
 
 import com.uit.buddy.entity.social.PostMedia;
-import org.springframework.web.multipart.MultipartFile;
-
 import com.uit.buddy.enums.FileType;
-
 import java.util.List;
+import org.springframework.web.multipart.MultipartFile;
 
 public interface CloudinaryService {
 

@@ -11,8 +11,38 @@ env:
   IMAGE_NAME: ${{ github.repository_owner }}/backend
 
 jobs:
+  format-check:
+    name: Format & Import Check
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 25
+        uses: actions/setup-java@v4
+        with:
+          java-version: "25"
+          distribution: "temurin"
+          cache: maven
+
+      - name: Grant execute permission for mvnw
+        run: |
+          sudo apt-get install -y dos2unix
+          dos2unix mvnw
+          chmod +x mvnw
+
+      - name: Check code formatting
+        run: ./mvnw -q net.revelc.code.formatter:formatter-maven-plugin:2.24.1:validate
+
+      - name: Check import order
+        run: ./mvnw -q net.revelc.code:impsort-maven-plugin:1.13.0:check
+
   build-and-test:
     name: Build & Run Unit Tests
+    needs: format-check
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -37,7 +67,7 @@ jobs:
           chmod +x mvnw
 
       - name: Build and Test with Maven
-        run: ./mvnw test -Dtest="OtpUtilsTest,EncryptionUtilsTest" -DfailIfNoTests=false
+        run: ./mvnw test -DfailIfNoTests=false
 
       - name: Publish Test Results
         uses: dorny/test-reporter@v1

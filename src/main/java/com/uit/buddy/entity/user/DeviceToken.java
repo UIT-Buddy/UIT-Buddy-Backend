@@ -5,10 +5,8 @@ import jakarta.persistence.*;
 import lombok.*;
 
 @Entity
-@Table(name = "device_tokens", indexes = {
-        @Index(name = "idx_device_mssv", columnList = "mssv"),
-        @Index(name = "idx_fcm_token", columnList = "fcm_token")
-})
+@Table(name = "device_tokens", indexes = { @Index(name = "idx_device_mssv", columnList = "mssv"),
+        @Index(name = "idx_fcm_token", columnList = "fcm_token") })
 @Getter
 @Setter
 @NoArgsConstructor

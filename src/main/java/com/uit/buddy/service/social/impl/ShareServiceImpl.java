@@ -1,13 +1,5 @@
 package com.uit.buddy.service.social.impl;
 
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.UUID;
-
-import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import com.uit.buddy.dto.request.social.SharePostRequest;
 import com.uit.buddy.dto.response.social.UserShareResponse;
 import com.uit.buddy.entity.social.Post;
@@ -23,9 +15,14 @@ import com.uit.buddy.repository.social.ShareRepository;
 import com.uit.buddy.repository.user.StudentRepository;
 import com.uit.buddy.service.social.ShareService;
 import com.uit.buddy.util.CursorUtils;
-
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -49,46 +46,32 @@ public class ShareServiceImpl implements ShareService {
 
         boolean isFirstTime = !shareRepository.existsByPostIdAndMssv(postId, mssv);
 
-        Share share = Share.builder()
-                .post(originalPost)
-                .student(student)
-                .type(type)
-                .build();
+        Share share = Share.builder().post(originalPost).student(student).type(type).build();
         shareRepository.save(share);
 
         UUID sharedPostId = null;
 
         switch (type) {
-            case PROFILE -> {
-                Post sharedPost = Post.builder()
-                        .author(student)
-                        .title("") // Title is required
-                        .content(request != null ? request.content() : "")
-                        .originalPost(originalPost)
-                        .type(PostType.SHARE)
-                        .build();
-                sharedPostId = postRepository.save(sharedPost).getId();
-            }
-            case MESSAGE -> {
-                // sau này implement sau
-            }
+        case PROFILE -> {
+            Post sharedPost = Post.builder().author(student).title("") // Title is required
+                    .content(request != null ? request.content() : "").originalPost(originalPost).type(PostType.SHARE)
+                    .build();
+            sharedPostId = postRepository.save(sharedPost).getId();
+        }
+        case MESSAGE -> {
+            // sau này implement sau
+        }
         }
 
         if (isFirstTime) {
             postRepository.incrementShareCount(postId);
 
             if (!originalPost.getMssv().equals(mssv)) {
-                String actorName = studentRepository.findById(mssv)
-                        .map(s -> s.getFullName())
-                        .orElse(mssv);
+                String actorName = studentRepository.findById(mssv).map(s -> s.getFullName()).orElse(mssv);
 
                 // Bắn event với sharedPostId (có thể null nếu share qua message)
-                eventPublisher.publishEvent(new PostSharedEvent(
-                        mssv,
-                        actorName,
-                        originalPost.getMssv(),
-                        originalPost.getId(),
-                        sharedPostId));
+                eventPublisher.publishEvent(new PostSharedEvent(mssv, actorName, originalPost.getMssv(),
+                        originalPost.getId(), sharedPostId));
             }
         }
 
@@ -111,9 +94,7 @@ public class ShareServiceImpl implements ShareService {
             cursorMssv = contents.id().toString();
         }
 
-        return shareRepository.findSharesWithCursor(postId, cursorTime, cursorMssv, limit + 1)
-                .stream()
-                .map(shareMapper::toShareResponse)
-                .toList();
+        return shareRepository.findSharesWithCursor(postId, cursorTime, cursorMssv, limit + 1).stream()
+                .map(shareMapper::toShareResponse).toList();
     }
 }

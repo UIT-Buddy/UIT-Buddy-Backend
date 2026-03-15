@@ -10,5 +10,6 @@ import org.mapstruct.ReportingPolicy;
 public interface UserMapper {
 
     UserResponse toUserResponse(Student student);
+
     FoundUserResponse toFoundUserResponse(Student student);
 }

@@ -4,7 +4,6 @@ import com.uit.buddy.event.social.PostCommentedEvent;
 import com.uit.buddy.event.social.PostLikedEvent;
 import com.uit.buddy.event.social.PostSharedEvent;
 import com.uit.buddy.service.notification.NotificationService;
-
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Async;

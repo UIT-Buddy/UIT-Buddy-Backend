@@ -3,12 +3,12 @@ package com.uit.buddy.controller.user;
 import com.uit.buddy.controller.AbstractBaseController;
 import com.uit.buddy.dto.base.PageResponse;
 import com.uit.buddy.dto.base.SingleResponse;
-import com.uit.buddy.dto.request.user.UpdateUserRequest;
 import com.uit.buddy.dto.request.user.FcmTokenRequest;
+import com.uit.buddy.dto.request.user.UpdateUserRequest;
 import com.uit.buddy.dto.response.user.FoundUserResponse;
 import com.uit.buddy.dto.response.user.UserResponse;
-import com.uit.buddy.service.user.UserService;
 import com.uit.buddy.service.fcm.FcmService;
+import com.uit.buddy.service.user.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -51,8 +51,7 @@ public class UserController extends AbstractBaseController {
 
     @PostMapping(value = "/avatar", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @Operation(summary = "Upload user avatar", description = "Upload a new avatar image for the authenticated user")
-    public ResponseEntity<SingleResponse<String>> uploadAvatar(
-            @RequestParam("file") MultipartFile file,
+    public ResponseEntity<SingleResponse<String>> uploadAvatar(@RequestParam("file") MultipartFile file,
             @AuthenticationPrincipal String mssv) {
         log.info("[User Controller] Request to upload avatar received");
         String avatarUrl = userService.uploadAvatar(mssv, file);
@@ -61,8 +60,7 @@ public class UserController extends AbstractBaseController {
 
     @PatchMapping("/fcm-token")
     @Operation(summary = "Sync FCM Token", description = "Register or update FCM token for multi-device support")
-    public ResponseEntity<SingleResponse<Void>> syncFcmToken(
-            @AuthenticationPrincipal String mssv,
+    public ResponseEntity<SingleResponse<Void>> syncFcmToken(@AuthenticationPrincipal String mssv,
             @Valid @RequestBody FcmTokenRequest request) {
 
         log.info("[User Controller] Syncing FCM token for MSSV: {}", mssv);
@@ -82,14 +80,11 @@ public class UserController extends AbstractBaseController {
     @GetMapping("search")
     @Operation(summary = "Search student", description = "Search information of other student with keyword and filter")
     public ResponseEntity<PageResponse<FoundUserResponse>> searchStudentByKeywordAndFilters(
-            @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "15") int limit,
+            @RequestParam(defaultValue = "1") int page, @RequestParam(defaultValue = "15") int limit,
             @RequestParam(defaultValue = "desc") String sortType,
-            @RequestParam(defaultValue = "created_at") String sortBy,
-            @RequestParam(required = false) String keyword) {
+            @RequestParam(defaultValue = "created_at") String sortBy, @RequestParam(required = false) String keyword) {
         Pageable pageable = createPageable(page, limit, sortType, sortBy);
         Page<FoundUserResponse> responses = userService.searchStudentByKeyword(keyword, pageable);
         return paging(responses, "Search user with keyword and filter successfully");
     }
-
 }

@@ -6,11 +6,9 @@ import jakarta.persistence.*;
 import lombok.*;
 
 @Entity
-@Table(name = "reactions", indexes = {
-        @Index(name = "idx_reaction_post", columnList = "post_id"),
+@Table(name = "reactions", indexes = { @Index(name = "idx_reaction_post", columnList = "post_id"),
         @Index(name = "idx_reaction_student", columnList = "mssv"),
-        @Index(name = "idx_reaction_unique", columnList = "mssv, post_id", unique = true)
-})
+        @Index(name = "idx_reaction_unique", columnList = "mssv, post_id", unique = true) })
 @Getter
 @Setter
 @NoArgsConstructor

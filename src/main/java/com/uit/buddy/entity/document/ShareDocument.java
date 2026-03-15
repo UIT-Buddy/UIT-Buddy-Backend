@@ -8,11 +8,9 @@ import lombok.*;
 
 @Entity
 @Table(name = "share_document", uniqueConstraints = {
-        @UniqueConstraint(name = "uk_document_recipient", columnNames = { "document_id", "mssv" })
-}, indexes = {
-        @Index(name = "idx_share_doc_id", columnList = "document_id"),
-        @Index(name = "idx_share_recipient", columnList = "mssv")
-})
+        @UniqueConstraint(name = "uk_document_recipient", columnNames = { "document_id", "mssv" }) }, indexes = {
+                @Index(name = "idx_share_doc_id", columnList = "document_id"),
+                @Index(name = "idx_share_recipient", columnList = "mssv") })
 @Getter
 @Setter
 @NoArgsConstructor
