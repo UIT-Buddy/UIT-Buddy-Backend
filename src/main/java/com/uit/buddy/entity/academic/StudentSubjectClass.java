@@ -1,18 +1,16 @@
 package com.uit.buddy.entity.academic;
 
 import com.uit.buddy.entity.AbstractBaseEntity; // Sử dụng UUID làm ID
-import com.uit.buddy.enums.StudentClassStatus;
 import com.uit.buddy.entity.user.Student;
+import com.uit.buddy.enums.StudentClassStatus;
 import jakarta.persistence.*;
 import lombok.*;
 
 @Entity
 @Table(name = "student_class", uniqueConstraints = {
-        @UniqueConstraint(name = "uk_student_class", columnNames = { "mssv", "class_code" })
-}, indexes = {
-        @Index(name = "idx_st_class_mssv", columnList = "mssv"),
-        @Index(name = "idx_st_class_code", columnList = "class_code")
-})
+        @UniqueConstraint(name = "uk_student_class", columnNames = { "mssv", "class_code" }) }, indexes = {
+                @Index(name = "idx_st_class_mssv", columnList = "mssv"),
+                @Index(name = "idx_st_class_code", columnList = "class_code") })
 @Getter
 @Setter
 @NoArgsConstructor

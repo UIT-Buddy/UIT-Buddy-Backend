@@ -1,18 +1,5 @@
 package com.uit.buddy.service.social.impl;
 
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.UUID;
-
-import com.uit.buddy.util.CursorUtils;
-
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.multipart.MultipartFile;
-
 import com.uit.buddy.dto.request.social.CreatePostRequest;
 import com.uit.buddy.dto.request.social.UpdatePostRequest;
 import com.uit.buddy.dto.response.social.PostDetailResponse;
@@ -29,9 +16,18 @@ import com.uit.buddy.repository.social.PostRepository;
 import com.uit.buddy.repository.user.StudentRepository;
 import com.uit.buddy.service.cloudinary.CloudinaryService;
 import com.uit.buddy.service.social.PostService;
-
+import com.uit.buddy.util.CursorUtils;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 @Service
 @RequiredArgsConstructor
@@ -45,6 +41,7 @@ public class PostServiceImpl implements PostService {
 
     @Value("${post.limit-upload-images}")
     private int limitNumberOfImages;
+
     @Value("${post.limit-upload-videos}")
     private int limitNumberOfVideos;
 
@@ -64,12 +61,7 @@ public class PostServiceImpl implements PostService {
     protected void saveToDb(String mssv, String title, String content, List<PostMedia> medias) {
         Student author = studentRepository.getReferenceById(mssv);
 
-        Post post = Post.builder()
-                .title(title)
-                .content(content)
-                .author(author)
-                .medias(medias)
-                .build();
+        Post post = Post.builder().title(title).content(content).author(author).medias(medias).build();
 
         postRepository.save(post);
     }
@@ -86,17 +78,14 @@ public class PostServiceImpl implements PostService {
         }
 
         // Lấy thêm 1 record để kiểm tra hasMore
-        return postRepository.findFeed(mssv, cursorTime, cursorId, limit + 1)
-                .stream()
-                .map(postMapper::toPostFeedResponse)
-                .toList();
+        return postRepository.findFeed(mssv, cursorTime, cursorId, limit + 1).stream()
+                .map(postMapper::toPostFeedResponse).toList();
     }
 
     @Override
     @Transactional(readOnly = true)
     public PostDetailResponse getPostDetail(UUID postId, String mssv) {
-        return postRepository.findDetailWithStatus(postId, mssv)
-                .map(postMapper::toPostDetailResponseFromProjection)
+        return postRepository.findDetailWithStatus(postId, mssv).map(postMapper::toPostDetailResponseFromProjection)
                 .orElseThrow(() -> new SocialException(SocialErrorCode.POST_NOT_FOUND, "Post not found"));
     }
 
@@ -135,11 +124,9 @@ public class PostServiceImpl implements PostService {
     @Transactional(readOnly = true)
     public Page<PostFeedResponse> searchPost(String keyword, String mssv, Pageable pageable) {
         if (keyword == null || keyword.isBlank()) {
-            return postRepository.findAllPosts(mssv, pageable)
-                    .map(postMapper::toPostFeedResponse);
+            return postRepository.findAllPosts(mssv, pageable).map(postMapper::toPostFeedResponse);
         }
-        return postRepository.searchPostFull(keyword, mssv, pageable)
-                .map(postMapper::toPostFeedResponse);
+        return postRepository.searchPostFull(keyword, mssv, pageable).map(postMapper::toPostFeedResponse);
     }
 
     private void validateLimitImagesAndVideos(List<MultipartFile> images, List<MultipartFile> videos) {
@@ -156,8 +143,8 @@ public class PostServiceImpl implements PostService {
                 .orElseThrow(() -> new SocialException(SocialErrorCode.POST_NOT_FOUND, "Post not found"));
 
         if (!post.getAuthor().getMssv().equals(mssv)) {
-            log.warn("[Post Service] Unauthorized access attempt: Student {} tried to modify post {} owned by {}",
-                    mssv, postId, post.getAuthor().getMssv());
+            log.warn("[Post Service] Unauthorized access attempt: Student {} tried to modify post {} owned by {}", mssv,
+                    postId, post.getAuthor().getMssv());
 
             throw new SocialException(SocialErrorCode.UNAUTHORIZED);
         }

@@ -2,7 +2,6 @@ package com.uit.buddy.util;
 
 import com.uit.buddy.exception.system.SystemErrorCode;
 import com.uit.buddy.exception.system.SystemException;
-
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.Base64;
@@ -28,9 +27,7 @@ public class CursorUtils {
             byte[] decodedBytes = Base64.getDecoder().decode(cursor);
             String decodedString = new String(decodedBytes, StandardCharsets.UTF_8);
             String[] parts = decodedString.split("\\" + DELIMITER);
-            return new CursorContents(
-                    LocalDateTime.parse(parts[0]),
-                    UUID.fromString(parts[1]));
+            return new CursorContents(LocalDateTime.parse(parts[0]), UUID.fromString(parts[1]));
         } catch (Exception e) {
             throw new SystemException(SystemErrorCode.INVALID_CURSOR_FORMAT);
         }

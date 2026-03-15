@@ -12,8 +12,6 @@ import org.springframework.context.annotation.Configuration;
 public class CloudinaryProperties {
 
     private String defaultAvatarUrl;
-    private long maxImageSize;
-    private long maxVideoSize;
     private String[] allowedImageTypes;
     private String[] allowedVideoTypes;
     private int avatarSize;

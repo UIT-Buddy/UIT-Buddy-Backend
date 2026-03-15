@@ -12,7 +12,6 @@ import org.springframework.data.redis.core.index.Indexed;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-
 public class PasswordResetOtp {
 
     @Id

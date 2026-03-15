@@ -7,15 +7,14 @@ import com.uit.buddy.client.validator.MoodleResponseValidator;
 import com.uit.buddy.constant.MoodleApiConstants;
 import com.uit.buddy.dto.response.client.EnrolledCourseResponse;
 import com.uit.buddy.dto.response.client.SiteInfoResponse;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
-
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
 @Component
 public class UitClientImpl extends AbstractBaseClient implements UitClient {
@@ -24,12 +23,9 @@ public class UitClientImpl extends AbstractBaseClient implements UitClient {
     private final String restFormat;
     private final MoodleResponseValidator moodleResponseValidator;
 
-    public UitClientImpl(
-            @Qualifier("moodleClient") RestClient restClient,
-            ObjectMapper objectMapper,
+    public UitClientImpl(@Qualifier("moodleClient") RestClient restClient, ObjectMapper objectMapper,
             @Value("${app.uit.moodle-server-path}") String moodleServerPath,
-            @Value("${app.uit.rest-format}") String restFormat,
-            MoodleResponseValidator moodleResponseValidator) {
+            @Value("${app.uit.rest-format}") String restFormat, MoodleResponseValidator moodleResponseValidator) {
         super(restClient, objectMapper);
         this.moodleServerPath = moodleServerPath;
         this.restFormat = restFormat;
@@ -53,12 +49,9 @@ public class UitClientImpl extends AbstractBaseClient implements UitClient {
         Map<String, String> queryParams = buildBaseParams(wstoken, MoodleApiConstants.FUNCTION_GET_USERS_COURSES);
         queryParams.put(MoodleApiConstants.PARAM_USERID, String.valueOf(userId));
 
-        List<EnrolledCourseResponse> response = getList(
-                moodleServerPath,
+        List<EnrolledCourseResponse> response = getList(moodleServerPath,
                 new ParameterizedTypeReference<List<EnrolledCourseResponse>>() {
-                },
-                queryParams,
-                null);
+                }, queryParams, null);
 
         return response;
     }

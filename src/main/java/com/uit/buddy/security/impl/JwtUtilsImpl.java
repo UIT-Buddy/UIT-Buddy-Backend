@@ -6,18 +6,17 @@ import com.uit.buddy.repository.auth.RefreshTokenRepository;
 import com.uit.buddy.security.JwtUtils;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.data.redis.core.script.RedisScript;
-import org.springframework.stereotype.Component;
-
-import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.Date;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
+import javax.crypto.SecretKey;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.script.RedisScript;
+import org.springframework.stereotype.Component;
 
 @Component
 @Slf4j
@@ -34,13 +33,11 @@ public class JwtUtilsImpl implements JwtUtils {
     private final RedisScript<Long> revokeRefreshTokenScript;
 
     // Constructor Injection
-    public JwtUtilsImpl(
-            @Value("${app.jwt.secret}") String jwtSecret,
+    public JwtUtilsImpl(@Value("${app.jwt.secret}") String jwtSecret,
             @Value("${app.jwt.access-token-expiration}") long accessTokenExpiration,
             @Value("${app.jwt.refresh-token-expiration}") long refreshTokenExpiration,
             @Value("${app.jwt.refresh-token-remember-me-expiration}") long refreshTokenRememberMeExpiration,
-            RefreshTokenRepository refreshTokenRepository,
-            RedisTemplate<String, Object> redisTemplate,
+            RefreshTokenRepository refreshTokenRepository, RedisTemplate<String, Object> redisTemplate,
             RedisScript<Long> revokeRefreshTokenScript) {
 
         this.secretKey = Keys.hmacShaKeyFor(jwtSecret.getBytes(StandardCharsets.UTF_8));
@@ -57,13 +54,8 @@ public class JwtUtilsImpl implements JwtUtils {
         Date now = new Date();
         Date expiryDate = new Date(now.getTime() + expiration);
 
-        return Jwts.builder()
-                .setSubject(mssv)
-                .claim(CLAIM_TYPE, type)
-                .setIssuedAt(now)
-                .setExpiration(expiryDate)
-                .signWith(secretKey, SignatureAlgorithm.HS512)
-                .compact();
+        return Jwts.builder().setSubject(mssv).claim(CLAIM_TYPE, type).setIssuedAt(now).setExpiration(expiryDate)
+                .signWith(secretKey, SignatureAlgorithm.HS512).compact();
     }
 
     @Override
@@ -78,11 +70,8 @@ public class JwtUtilsImpl implements JwtUtils {
         long expiration = rememberMe ? refreshTokenRememberMeExpiration : refreshTokenExpiration;
         String refreshToken = createToken(mssv, expiration, RedisConstants.TOKEN_TYPE_REFRESH);
 
-        RefreshToken token = RefreshToken.builder()
-                .refreshToken(refreshToken)
-                .mssv(mssv)
-                .ttl(TimeUnit.MILLISECONDS.toSeconds(expiration))
-                .build();
+        RefreshToken token = RefreshToken.builder().refreshToken(refreshToken).mssv(mssv)
+                .ttl(TimeUnit.MILLISECONDS.toSeconds(expiration)).build();
         refreshTokenRepository.save(token);
 
         log.debug("Generated and saved refresh token for user (rememberMe: {})", rememberMe);
@@ -98,10 +87,8 @@ public class JwtUtilsImpl implements JwtUtils {
     @Override
     public void revokeAllSessions(String mssv) {
         try {
-            Long deletedCount = redisTemplate.execute(
-                    revokeRefreshTokenScript,
-                    Collections.singletonList(RedisConstants.REFRESH_TOKEN_KEY_PATTERN),
-                    mssv);
+            Long deletedCount = redisTemplate.execute(revokeRefreshTokenScript,
+                    Collections.singletonList(RedisConstants.REFRESH_TOKEN_KEY_PATTERN), mssv);
             log.info("All sessions revoked for MSSV: {} (deleted {} tokens)", mssv, deletedCount);
         } catch (Exception e) {
             log.error("Failed to revoke sessions using Lua script for MSSV: {}, falling back to repository", mssv, e);
@@ -110,11 +97,7 @@ public class JwtUtilsImpl implements JwtUtils {
     }
 
     private <T> T getClaimFromToken(String token, Function<Claims, T> claimsResolver) {
-        final Claims claims = Jwts.parserBuilder()
-                .setSigningKey(secretKey)
-                .build()
-                .parseClaimsJws(token)
-                .getBody();
+        final Claims claims = Jwts.parserBuilder().setSigningKey(secretKey).build().parseClaimsJws(token).getBody();
         return claimsResolver.apply(claims);
     }
 
