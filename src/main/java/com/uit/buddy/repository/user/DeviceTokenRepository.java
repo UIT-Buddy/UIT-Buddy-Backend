@@ -3,6 +3,8 @@ package com.uit.buddy.repository.user;
 import com.uit.buddy.entity.user.DeviceToken;
 import jakarta.transaction.Transactional;
 import java.util.List;
+import java.util.UUID;
+
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -10,7 +12,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 @Repository
-public interface DeviceTokenRepository extends JpaRepository<DeviceToken, Long> {
+public interface DeviceTokenRepository extends JpaRepository<DeviceToken, UUID> {
 
     @Query("SELECT dt.fcmToken FROM DeviceToken dt WHERE dt.mssv = :mssv")
     List<String> findAllTokensByMssv(@Param("mssv") String mssv);

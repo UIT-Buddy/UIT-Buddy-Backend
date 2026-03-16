@@ -1,7 +1,7 @@
 package com.uit.buddy.entity.academic;
 
-import com.uit.buddy.entity.AbstractAuditEntity;
-import com.uit.buddy.enums.ClassType;
+import com.uit.buddy.entity.AbstractBaseEntity;
+
 import jakarta.persistence.*;
 import java.time.LocalTime;
 import lombok.*;
@@ -9,16 +9,17 @@ import lombok.*;
 @Entity
 @Table(name = "classes", indexes = { @Index(name = "idx_class_code", columnList = "class_code", unique = true),
         @Index(name = "idx_class_semester", columnList = "semester_code"),
-        @Index(name = "idx_class_course", columnList = "course_code") })
+        @Index(name = "idx_class_course", columnList = "course_code") }, uniqueConstraints = {
+                @UniqueConstraint(name = "uc_class_semester", columnNames = { "class_code", "semester_code" })
+        })
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class SubjectClass extends AbstractAuditEntity {
+public class SubjectClass extends AbstractBaseEntity {
 
-    @Id
-    @Column(name = "class_code", length = 30, unique = true, nullable = false)
+    @Column(name = "class_code", length = 30, nullable = false)
     private String classCode;
 
     @Column(name = "course_code", length = 20, insertable = false, updatable = false)
@@ -60,8 +61,7 @@ public class SubjectClass extends AbstractAuditEntity {
     @Builder.Default
     private Integer interval = 1;
 
-    @Enumerated(EnumType.STRING)
     @Column(name = "class_type", length = 20)
     @Builder.Default
-    private ClassType classType = ClassType.WEEKLY;
+    private String classType = "WEEKLY";
 }
