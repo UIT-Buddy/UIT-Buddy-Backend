@@ -16,14 +16,13 @@ import com.uit.buddy.service.academic.ScheduleService;
 import com.uit.buddy.util.IcsParser;
 import com.uit.buddy.util.IcsParser.IcsEvent;
 import com.uit.buddy.util.IcsParser.ParseResult;
+import java.time.LocalDate;
+import java.util.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
-
-import java.time.LocalDate;
-import java.util.*;
 
 @Service
 @RequiredArgsConstructor
@@ -103,11 +102,8 @@ public class ScheduleServiceImpl implements ScheduleService {
         }
 
         List<StudentSubjectClass> finalMappings = newEventsForStudent.values().stream()
-                .map(event -> StudentSubjectClass.builder()
-                        .student(student)
-                        .subjectClass(classMap.get(event.getClassCode()))
-                        .status(StudentClassStatus.STUDYING)
-                        .build())
+                .map(event -> StudentSubjectClass.builder().student(student)
+                        .subjectClass(classMap.get(event.getClassCode())).status(StudentClassStatus.STUDYING).build())
                 .toList();
 
         studentSubjectClassRepository.saveAll(finalMappings);
@@ -124,19 +120,10 @@ public class ScheduleServiceImpl implements ScheduleService {
                     return new ScheduleException(ScheduleErrorCode.COURSE_NOT_FOUND);
                 }));
 
-        return SubjectClass.builder()
-                .classCode(event.getClassCode())
-                .course(course)
-                .semester(semester)
-                .teacherName(event.getTeacherName())
-                .dayOfWeek(event.getDayOfWeek())
-                .startTime(event.getStartTime())
-                .endTime(event.getEndTime())
-                .startLesson(event.getStartLesson())
-                .endLesson(event.getEndLesson())
-                .roomCode(event.getRoomCode())
-                .interval(event.getInterval() != null ? event.getInterval() : 1)
-                .build();
+        return SubjectClass.builder().classCode(event.getClassCode()).course(course).semester(semester)
+                .teacherName(event.getTeacherName()).dayOfWeek(event.getDayOfWeek()).startTime(event.getStartTime())
+                .endTime(event.getEndTime()).startLesson(event.getStartLesson()).endLesson(event.getEndLesson())
+                .roomCode(event.getRoomCode()).interval(event.getInterval() != null ? event.getInterval() : 1).build();
     }
 
     private String extractCourseCode(String classCode) {

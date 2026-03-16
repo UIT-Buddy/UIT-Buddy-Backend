@@ -1,11 +1,10 @@
 package com.uit.buddy.entity.academic;
 
-import java.util.UUID;
-
 import com.uit.buddy.entity.AbstractBaseEntity; // Sử dụng UUID làm ID
 import com.uit.buddy.entity.user.Student;
 import com.uit.buddy.enums.StudentClassStatus;
 import jakarta.persistence.*;
+import java.util.UUID;
 import lombok.*;
 
 @Entity

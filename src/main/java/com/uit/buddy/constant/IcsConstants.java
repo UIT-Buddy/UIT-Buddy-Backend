@@ -21,17 +21,11 @@ public final class IcsConstants {
     public static final Pattern INTERVAL_PATTERN = Pattern.compile("INTERVAL=(\\d+)");
 
     // SPORT KEYWORDS
-    public static final String[] SPORTS = {
-            "Bơi lội", "Pickleball", "Bóng đá", "Bóng rổ", "Bóng bàn",
-            "Cầu lông", "Tennis", "Võ thuật", "Thể dục"
-    };
+    public static final String[] SPORTS = { "Bơi lội", "Pickleball", "Bóng đá", "Bóng rổ", "Bóng bàn", "Cầu lông",
+            "Tennis", "Võ thuật", "Thể dục" };
 
-    public static final Map<String, String> SPORT_LOCATION_MAP = Map.of(
-            "Bơi lội", "Hồ bơi ĐHQG",
-            "Pickleball", "Sân Pickleball",
-            "Bóng đá", "Sân bóng đá",
-            "Bóng rổ", "Sân bóng rổ",
-            "Bóng bàn", "Nhà thi đấu");
+    public static final Map<String, String> SPORT_LOCATION_MAP = Map.of("Bơi lội", "Hồ bơi ĐHQG", "Pickleball",
+            "Sân Pickleball", "Bóng đá", "Sân bóng đá", "Bóng rổ", "Sân bóng rổ", "Bóng bàn", "Nhà thi đấu");
 
     public static final String PE_PREFIX = "PE";
     public static final String COURT_PREFIX = "Sân ";

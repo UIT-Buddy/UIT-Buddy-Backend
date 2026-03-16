@@ -1,7 +1,6 @@
 package com.uit.buddy.entity.academic;
 
 import com.uit.buddy.entity.AbstractBaseEntity;
-
 import jakarta.persistence.*;
 import java.time.LocalTime;
 import lombok.*;
@@ -10,8 +9,7 @@ import lombok.*;
 @Table(name = "classes", indexes = { @Index(name = "idx_class_code", columnList = "class_code", unique = true),
         @Index(name = "idx_class_semester", columnList = "semester_code"),
         @Index(name = "idx_class_course", columnList = "course_code") }, uniqueConstraints = {
-                @UniqueConstraint(name = "uc_class_semester", columnNames = { "class_code", "semester_code" })
-        })
+                @UniqueConstraint(name = "uc_class_semester", columnNames = { "class_code", "semester_code" }) })
 @Getter
 @Setter
 @NoArgsConstructor

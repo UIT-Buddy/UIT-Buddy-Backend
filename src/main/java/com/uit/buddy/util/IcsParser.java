@@ -109,34 +109,30 @@ public class IcsParser {
         String rawKey = keyPart.split(";")[0];
 
         switch (rawKey) {
-            case IcsConstants.SUMMARY -> {
-                Matcher m = IcsConstants.SUMMARY_PATTERN.matcher(value);
-                if (m.find()) {
-                    event.setClassCode(m.group(1));
-                    String rawRoom = m.group(2).trim();
-                    String cleanRoom = rawRoom.replaceAll("^(?i)P\\.\\s*", "");
-                    event.setRoomCode(cleanRoom);
-                }
+        case IcsConstants.SUMMARY -> {
+            Matcher m = IcsConstants.SUMMARY_PATTERN.matcher(value);
+            if (m.find()) {
+                event.setClassCode(m.group(1));
+                String rawRoom = m.group(2).trim();
+                String cleanRoom = rawRoom.replaceAll("^(?i)P\\.\\s*", "");
+                event.setRoomCode(cleanRoom);
             }
-            case IcsConstants.DESCRIPTION -> parseDescriptionStrict(value, event);
-            case IcsConstants.DTSTART -> {
-                LocalDateTime dt = parseDateTime(value);
-                event.setStartDate(dt.toLocalDate());
-                event.setStartTime(dt.toLocalTime());
-                event.setDayOfWeek(dt.getDayOfWeek().getValue());
-            }
-            case IcsConstants.DTEND -> event.setEndTime(parseDateTime(value).toLocalTime());
-            case IcsConstants.RRULE -> parseRRule(value, event);
+        }
+        case IcsConstants.DESCRIPTION -> parseDescriptionStrict(value, event);
+        case IcsConstants.DTSTART -> {
+            LocalDateTime dt = parseDateTime(value);
+            event.setStartDate(dt.toLocalDate());
+            event.setStartTime(dt.toLocalTime());
+            event.setDayOfWeek(dt.getDayOfWeek().getValue());
+        }
+        case IcsConstants.DTEND -> event.setEndTime(parseDateTime(value).toLocalTime());
+        case IcsConstants.RRULE -> parseRRule(value, event);
         }
     }
 
     private void parseDescriptionStrict(String description, IcsEvent event) {
-        String cleanDesc = description
-                .replace("\\,", ",")
-                .replace("\\;", ";")
-                .replace("\u00a0", " ")
-                .replaceAll("\\s+", " ")
-                .trim();
+        String cleanDesc = description.replace("\\,", ",").replace("\\;", ";").replace("\u00a0", " ")
+                .replaceAll("\\s+", " ").trim();
 
         matchAndSet(IcsConstants.COURSE_NAME_PATTERN, cleanDesc, event::setCourseName);
         matchAndSet(IcsConstants.TEACHER_PATTERN, cleanDesc, event::setTeacherName);
@@ -148,8 +144,7 @@ public class IcsParser {
 
         IcsConstants.SPORT_LOCATION_MAP.entrySet().stream()
                 .sorted((e1, e2) -> Integer.compare(e2.getKey().length(), e1.getKey().length()))
-                .filter(entry -> cleanDesc.toLowerCase().contains(entry.getKey().toLowerCase()))
-                .findFirst()
+                .filter(entry -> cleanDesc.toLowerCase().contains(entry.getKey().toLowerCase())).findFirst()
                 .ifPresent(entry -> event.setRoomCode(entry.getValue()));
     }
 
@@ -193,14 +188,9 @@ public class IcsParser {
     }
 
     private void validateStrictEvent(IcsEvent event) {
-        if (event.getClassCode() == null ||
-                event.getCourseName() == null ||
-                event.getStartDate() == null ||
-                event.getEndDate() == null ||
-                event.getStartTime() == null ||
-                event.getEndTime() == null ||
-                event.getStartLesson() == null ||
-                event.getEndLesson() == null) {
+        if (event.getClassCode() == null || event.getCourseName() == null || event.getStartDate() == null
+                || event.getEndDate() == null || event.getStartTime() == null || event.getEndTime() == null
+                || event.getStartLesson() == null || event.getEndLesson() == null) {
 
             log.error("[ICS Parser] Missing mandatory field in event: {}", event);
             throw new ScheduleException(ScheduleErrorCode.INVALID_FILE_FORMAT);
