@@ -123,7 +123,7 @@ public class IcsParser {
             LocalDateTime dt = parseDateTime(value);
             event.setStartDate(dt.toLocalDate());
             event.setStartTime(dt.toLocalTime());
-            event.setDayOfWeek(dt.getDayOfWeek().getValue()); 
+            event.setDayOfWeek(dt.getDayOfWeek().getValue());
         }
         case IcsConstants.DTEND -> event.setEndTime(parseDateTime(value).toLocalTime());
         case IcsConstants.RRULE -> parseRRule(value, event);
