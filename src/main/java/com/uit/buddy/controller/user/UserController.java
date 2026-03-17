@@ -3,6 +3,7 @@ package com.uit.buddy.controller.user;
 import com.uit.buddy.controller.AbstractBaseController;
 import com.uit.buddy.dto.base.PageResponse;
 import com.uit.buddy.dto.base.SingleResponse;
+import com.uit.buddy.dto.base.SuccessResponse;
 import com.uit.buddy.dto.request.user.FcmTokenRequest;
 import com.uit.buddy.dto.request.user.UpdateUserRequest;
 import com.uit.buddy.dto.response.user.FoundUserResponse;
@@ -19,7 +20,15 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 @RestController
@@ -86,5 +95,12 @@ public class UserController extends AbstractBaseController {
         Pageable pageable = createPageable(page, limit, sortType, sortBy);
         Page<FoundUserResponse> responses = userService.searchStudentByKeyword(keyword, pageable);
         return paging(responses, "Search user with keyword and filter successfully");
+    }
+
+    @DeleteMapping("/delete")
+    @Operation(summary = "Delete Account", description = "Permanently delete user's account and all associated data")
+    public ResponseEntity<SuccessResponse> deleteAccount(@AuthenticationPrincipal String mssv) {
+        userService.deleteStudentAccount(mssv);
+        return success("Account deleted successfully! We're sorry to see you go.");
     }
 }
