@@ -42,4 +42,4 @@ jobs:
         run: |
           set -e
           cd gitops-manifests
-          IMAGE_TAG=$IMAGE_TAG make up
+          IMAGE_TAG=$IMAGE_TAG sudo make up
