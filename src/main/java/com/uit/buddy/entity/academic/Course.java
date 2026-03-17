@@ -21,25 +21,6 @@ public class Course extends AbstractAuditEntity {
     @Column(name = "course_name", nullable = false, length = 150)
     private String courseName;
 
-    @Column(name = "theory_credits")
-    private Integer theoryCredits;
-
-    @Column(name = "lab_credits")
-    private Integer labCredits;
-
-    // Score weight
-    @Column(name = "process_weight")
-    private Integer processWeight;
-
-    @Column(name = "midterm_weight")
-    private Integer midtermWeight;
-
-    @Column(name = "final_weight")
-    private Integer finalWeight;
-
-    @Column(name = "lab_weight")
-    private Integer labWeight;
-
     @Column(name = "faculty_code", length = 20, insertable = false, updatable = false)
     private String facultyCode;
 

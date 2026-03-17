@@ -4,13 +4,14 @@ import com.uit.buddy.entity.AbstractBaseEntity; // Sử dụng UUID làm ID
 import com.uit.buddy.entity.user.Student;
 import com.uit.buddy.enums.StudentClassStatus;
 import jakarta.persistence.*;
+import java.util.UUID;
 import lombok.*;
 
 @Entity
 @Table(name = "student_class", uniqueConstraints = {
-        @UniqueConstraint(name = "uk_student_class", columnNames = { "mssv", "class_code" }) }, indexes = {
+        @UniqueConstraint(name = "uk_student_class", columnNames = { "mssv", "class_id" }) }, indexes = {
                 @Index(name = "idx_st_class_mssv", columnList = "mssv"),
-                @Index(name = "idx_st_class_code", columnList = "class_code") })
+                @Index(name = "idx_st_class_id", columnList = "class_id") })
 @Getter
 @Setter
 @NoArgsConstructor
@@ -25,11 +26,11 @@ public class StudentSubjectClass extends AbstractBaseEntity {
     @JoinColumn(name = "mssv", referencedColumnName = "mssv", foreignKey = @ForeignKey(name = "fk_st_class_student"))
     private Student student;
 
-    @Column(name = "class_code", length = 30, insertable = false, updatable = false)
-    private String classCode;
+    @Column(name = "class_id", length = 30, insertable = false, updatable = false)
+    private UUID class_id;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "class_code", referencedColumnName = "class_code", foreignKey = @ForeignKey(name = "fk_st_class_subject"))
+    @JoinColumn(name = "class_id", referencedColumnName = "id", foreignKey = @ForeignKey(name = "fk_st_class_subject"))
     private SubjectClass subjectClass;
 
     @Enumerated(EnumType.STRING)
