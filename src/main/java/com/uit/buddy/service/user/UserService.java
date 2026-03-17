@@ -15,4 +15,6 @@ public interface UserService {
     String uploadAvatar(String mssv, MultipartFile file);
 
     Page<FoundUserResponse> searchStudentByKeyword(String keyword, Pageable pageable);
+
+    void deleteStudentAccount(String mssv);
 }

@@ -1,6 +1,8 @@
 package com.uit.buddy.util;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.uit.buddy.exception.schedule.ScheduleException;
 import com.uit.buddy.util.IcsParser.IcsEvent;

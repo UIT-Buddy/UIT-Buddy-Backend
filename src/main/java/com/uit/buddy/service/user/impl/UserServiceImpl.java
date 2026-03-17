@@ -85,4 +85,16 @@ public class UserServiceImpl implements UserService {
         log.info("[UserService]: fetching user with keyword and filter");
         return page.map(userMapper::toFoundUserResponse);
     }
+
+    @Override
+    @Transactional
+    public void deleteStudentAccount(String mssv) {
+        log.info("[User Service] Deleting account for MSSV: {}", mssv);
+
+        Student student = studentRepository.findById(mssv)
+                .orElseThrow(() -> new UserException(UserErrorCode.STUDENT_NOT_FOUND));
+
+        studentRepository.delete(student);
+        log.info("[User Service] Successfully deleted account for MSSV: {}", mssv);
+    }
 }
