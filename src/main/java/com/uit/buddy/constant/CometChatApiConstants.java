@@ -9,6 +9,8 @@ public final class CometChatApiConstants {
     // API Endpoints
     public static final String USERS_ENDPOINT = "/users";
     public static final String USER_BY_UID_ENDPOINT = "/users/%s";
+    public static final String ADD_FRIENDS_ENDPOINT = "/users/%s/friends";
+    public static final String REMOVE_FRIEND_ENDPOINT = "/users/%s/friends/%s";
 
     // Header Keys
     public static final String API_KEY_HEADER = "apiKey";

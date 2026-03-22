@@ -1,0 +1,89 @@
+package com.uit.buddy.controller.social;
+
+import com.uit.buddy.controller.AbstractBaseController;
+import com.uit.buddy.dto.base.SingleResponse;
+import com.uit.buddy.dto.base.SuccessResponse;
+import com.uit.buddy.dto.request.social.RespondFriendRequestRequest;
+import com.uit.buddy.dto.request.social.SendFriendRequestRequest;
+import com.uit.buddy.dto.response.social.FriendRequestResponse;
+import com.uit.buddy.dto.response.social.FriendshipResponse;
+import com.uit.buddy.service.social.FriendService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
+import java.util.List;
+import java.util.UUID;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.*;
+
+@RestController
+@RequestMapping("/api/friends")
+@RequiredArgsConstructor
+@Slf4j
+@Tag(name = "Friend", description = "Friend management APIs")
+public class FriendController extends AbstractBaseController {
+
+    private final FriendService friendService;
+
+    @PostMapping("/requests")
+    @Operation(summary = "Send friend request", description = "Send a friend request to another user")
+    public ResponseEntity<SuccessResponse> sendFriendRequest(
+            @Valid @RequestBody SendFriendRequestRequest request,
+            @AuthenticationPrincipal String mssv) {
+        log.info("[Friend Controller] Sending friend request from {} to {}", mssv, request.receiverMssv());
+        friendService.sendFriendRequest(mssv, request);
+        return success("Friend request sent successfully");
+    }
+
+    @PutMapping("/requests/{requestId}")
+    @Operation(summary = "Respond to friend request", description = "Accept or reject a friend request")
+    public ResponseEntity<SuccessResponse> respondToFriendRequest(
+            @PathVariable UUID requestId,
+            @Valid @RequestBody RespondFriendRequestRequest request,
+            @AuthenticationPrincipal String mssv) {
+        log.info("[Friend Controller] Responding to friend request {} by {} with action: {}",
+                requestId, mssv, request.action());
+        friendService.respondToFriendRequest(mssv, requestId, request);
+        return success("Friend request responded successfully");
+    }
+
+    @DeleteMapping("/{friendMssv}")
+    @Operation(summary = "Unfriend", description = "Remove a friend from your friends list")
+    public ResponseEntity<SuccessResponse> unfriend(
+            @PathVariable String friendMssv,
+            @AuthenticationPrincipal String mssv) {
+        log.info("[Friend Controller] Unfriending {} by {}", friendMssv, mssv);
+        friendService.unfriend(mssv, friendMssv);
+        return success("Unfriended successfully");
+    }
+
+    @GetMapping("/requests/pending")
+    @Operation(summary = "Get pending friend requests", description = "Get all pending friend requests received by the user")
+    public ResponseEntity<SingleResponse<List<FriendRequestResponse>>> getPendingRequests(
+            @AuthenticationPrincipal String mssv) {
+        log.info("[Friend Controller] Getting pending requests for {}", mssv);
+        List<FriendRequestResponse> requests = friendService.getPendingRequests(mssv);
+        return successSingle(requests, "Pending requests retrieved successfully");
+    }
+
+    @GetMapping("/requests/sent")
+    @Operation(summary = "Get sent friend requests", description = "Get all pending friend requests sent by the user")
+    public ResponseEntity<SingleResponse<List<FriendRequestResponse>>> getSentRequests(
+            @AuthenticationPrincipal String mssv) {
+        log.info("[Friend Controller] Getting sent requests for {}", mssv);
+        List<FriendRequestResponse> requests = friendService.getSentRequests(mssv);
+        return successSingle(requests, "Sent requests retrieved successfully");
+    }
+
+    @GetMapping
+    @Operation(summary = "Get friends list", description = "Get all friends of the user")
+    public ResponseEntity<SingleResponse<List<FriendshipResponse>>> getFriends(
+            @AuthenticationPrincipal String mssv) {
+        log.info("[Friend Controller] Getting friends for {}", mssv);
+        List<FriendshipResponse> friends = friendService.getFriends(mssv);
+        return successSingle(friends, "Friends retrieved successfully");
+    }
+}

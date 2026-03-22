@@ -7,6 +7,10 @@ import com.uit.buddy.constant.CometChatApiConstants;
 import com.uit.buddy.dto.request.client.CometChatUserRequest;
 import com.uit.buddy.dto.response.client.CometChatUserResponse;
 import lombok.extern.slf4j.Slf4j;
+
+import java.util.List;
+import java.util.Map;
+
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
@@ -33,6 +37,19 @@ public class CometChatClientImpl extends AbstractBaseClient implements CometChat
         CometChatUserResponse response = post(CometChatApiConstants.USERS_ENDPOINT, request,
                 CometChatUserResponse.class, createHeaders());
         return response;
+    }
+
+    @Override
+    public void addFriend(String uid, String friendUid) {
+        String endpoint = String.format(CometChatApiConstants.ADD_FRIENDS_ENDPOINT, uid);
+        Map<String, Object> body = Map.of("accepted", List.of(friendUid));
+        post(endpoint, body, Object.class, createHeaders());
+    }
+
+    @Override
+    public void removeFriend(String uid, String friendUid) {
+        String endpoint = String.format(CometChatApiConstants.REMOVE_FRIEND_ENDPOINT, uid, friendUid);
+        delete(endpoint, createHeaders());
     }
 
     @Override
