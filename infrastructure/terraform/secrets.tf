@@ -11,7 +11,7 @@ resource "aws_secretsmanager_secret" "backend_secrets" {
 resource "aws_secretsmanager_secret_version" "backend_secrets_value" {
   secret_id = aws_secretsmanager_secret.backend_secrets.id
 
-  # Lưu dưới dạng chuỗi JSON: db_password + firebase_json
+  # Store as a JSON string: db_password + firebase_json
   secret_string = jsonencode({
     POSTGRES_PASSWORD = var.db_password
     FIREBASE_JSON     = var.firebase_json

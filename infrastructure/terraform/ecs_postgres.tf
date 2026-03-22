@@ -78,11 +78,11 @@ resource "aws_ecs_service" "postgres" {
   desired_count   = 1
   launch_type     = "FARGATE"
 
-  # Bật ECS Exec — cho phép chui vào container qua SSM (thay thế SSH)
+  # Enable ECS Exec — allows exec into containers via SSM (replaces SSH)
   enable_execute_command = true
 
   network_configuration {
-    # Public Subnet để có thể pull image từ Docker Hub và đọc Secrets Manager
+    # Public Subnet to allow pulling images from Docker Hub and reading Secrets Manager
     subnets          = [aws_subnet.public_a.id, aws_subnet.public_b.id]
     security_groups  = [aws_security_group.postgres_sg.id]
     assign_public_ip = true
