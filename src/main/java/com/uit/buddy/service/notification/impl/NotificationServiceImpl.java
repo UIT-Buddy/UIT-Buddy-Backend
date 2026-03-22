@@ -58,31 +58,22 @@ public class NotificationServiceImpl implements NotificationService {
     @Transactional
     public void createFriendRequestNotification(FriendRequestReceivedEvent event) {
         NotificationTemplate template = NotificationTemplate.FRIEND_REQUEST_RECEIVED;
-        processNotification(
-                event.receiverMssv(),
-                template.getTitle(),
-                template.formatContent(event.senderName()),
-                template.getType(),
-                event.requestId().toString());
+        processNotification(event.receiverMssv(), template.getTitle(), template.formatContent(event.senderName()),
+                template.getType(), event.requestId().toString());
     }
 
     @Override
     @Transactional
     public void createFriendRequestAcceptedNotification(FriendRequestAcceptedEvent event) {
         NotificationTemplate template = NotificationTemplate.FRIEND_REQUEST_ACCEPTED;
-        processNotification(
-                event.senderMssv(),
-                template.getTitle(),
-                template.formatContent(event.accepterName()),
-                template.getType(),
-                event.requestId().toString());
+        processNotification(event.senderMssv(), template.getTitle(), template.formatContent(event.accepterName()),
+                template.getType(), event.requestId().toString());
     }
 
     private void processNotification(String receiverMssv, String title, String content, String type, String dataId) {
 
         Notification notification = Notification.builder().student(studentRepository.getReferenceById(receiverMssv))
-                .title(title).content(content).type(NotificationType.SOCIAL).isRead(false)
-                .build();
+                .title(title).content(content).type(NotificationType.SOCIAL).isRead(false).build();
         notificationRepository.save(notification);
 
         List<String> tokens = deviceTokenRepository.findAllTokensByMssv(receiverMssv);

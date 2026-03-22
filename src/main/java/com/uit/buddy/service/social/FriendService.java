@@ -5,13 +5,12 @@ import com.uit.buddy.dto.request.social.SendFriendRequestRequest;
 import com.uit.buddy.dto.response.social.FriendshipResponse;
 import com.uit.buddy.dto.response.social.PendingFriendRequestResponse;
 import com.uit.buddy.dto.response.social.SentFriendRequestResponse;
-
 import java.util.List;
 import java.util.UUID;
 
 public interface FriendService {
 
-    void sendFriendRequest(String senderMssv, SendFriendRequestRequest request);
+    boolean toggleFriendRequest(String senderMssv, SendFriendRequestRequest request);
 
     void respondToFriendRequest(String receiverMssv, UUID requestId, RespondFriendRequestRequest request);
 

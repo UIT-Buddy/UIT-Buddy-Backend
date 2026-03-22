@@ -8,12 +8,10 @@ import lombok.*;
 
 @Entity
 @Table(name = "friend_requests", uniqueConstraints = {
-        @UniqueConstraint(name = "uk_friend_request", columnNames = { "sender_mssv", "receiver_mssv" })
-}, indexes = {
-        @Index(name = "idx_friend_request_sender", columnList = "sender_mssv"),
-        @Index(name = "idx_friend_request_receiver", columnList = "receiver_mssv"),
-        @Index(name = "idx_friend_request_status", columnList = "status")
-})
+        @UniqueConstraint(name = "uk_friend_request", columnNames = { "sender_mssv", "receiver_mssv" }) }, indexes = {
+                @Index(name = "idx_friend_request_sender", columnList = "sender_mssv"),
+                @Index(name = "idx_friend_request_receiver", columnList = "receiver_mssv"),
+                @Index(name = "idx_friend_request_status", columnList = "status") })
 @Getter
 @Setter
 @NoArgsConstructor

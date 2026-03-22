@@ -31,31 +31,28 @@ public class FriendController extends AbstractBaseController {
     private final FriendService friendService;
 
     @PostMapping("/requests")
-    @Operation(summary = "Send friend request", description = "Send a friend request to another user")
-    public ResponseEntity<SuccessResponse> sendFriendRequest(
-            @Valid @RequestBody SendFriendRequestRequest request,
+    @Operation(summary = "Toggle friend request", description = "Send a friend request if not sent, or cancel if already sent")
+    public ResponseEntity<SuccessResponse> toggleFriendRequest(@Valid @RequestBody SendFriendRequestRequest request,
             @AuthenticationPrincipal String mssv) {
-        log.info("[Friend Controller] Sending friend request from {} to {}", mssv, request.receiverMssv());
-        friendService.sendFriendRequest(mssv, request);
-        return success("Friend request sent successfully");
+        log.info("[Friend Controller] Toggling friend request from {} to {}", mssv, request.receiverMssv());
+        boolean isSent = friendService.toggleFriendRequest(mssv, request);
+        String message = isSent ? "Friend request sent successfully" : "Friend request cancelled successfully";
+        return success(message);
     }
 
     @PutMapping("/requests/{requestId}")
     @Operation(summary = "Respond to friend request", description = "Accept or reject a friend request")
-    public ResponseEntity<SuccessResponse> respondToFriendRequest(
-            @PathVariable UUID requestId,
-            @Valid @RequestBody RespondFriendRequestRequest request,
-            @AuthenticationPrincipal String mssv) {
-        log.info("[Friend Controller] Responding to friend request {} by {} with action: {}",
-                requestId, mssv, request.action());
+    public ResponseEntity<SuccessResponse> respondToFriendRequest(@PathVariable UUID requestId,
+            @Valid @RequestBody RespondFriendRequestRequest request, @AuthenticationPrincipal String mssv) {
+        log.info("[Friend Controller] Responding to friend request {} by {} with action: {}", requestId, mssv,
+                request.action());
         friendService.respondToFriendRequest(mssv, requestId, request);
         return success("Friend request responded successfully");
     }
 
     @DeleteMapping("/{friendMssv}")
     @Operation(summary = "Unfriend", description = "Remove a friend from your friends list")
-    public ResponseEntity<SuccessResponse> unfriend(
-            @PathVariable String friendMssv,
+    public ResponseEntity<SuccessResponse> unfriend(@PathVariable String friendMssv,
             @AuthenticationPrincipal String mssv) {
         log.info("[Friend Controller] Unfriending {} by {}", friendMssv, mssv);
         friendService.unfriend(mssv, friendMssv);
@@ -65,8 +62,7 @@ public class FriendController extends AbstractBaseController {
     @GetMapping("/requests/pending")
     @Operation(summary = "Get pending friend requests", description = "Get all pending friend requests received by the user")
     public ResponseEntity<CursorPageResponse<PendingFriendRequestResponse>> getPendingRequests(
-            @RequestParam(required = false) String cursor,
-            @RequestParam(defaultValue = "10") int limit,
+            @RequestParam(required = false) String cursor, @RequestParam(defaultValue = "10") int limit,
             @AuthenticationPrincipal String mssv) {
         log.info("[Friend Controller] Getting pending requests for {}", mssv);
         List<PendingFriendRequestResponse> requests = friendService.getPendingRequests(mssv, cursor, limit);
@@ -77,8 +73,7 @@ public class FriendController extends AbstractBaseController {
     @GetMapping("/requests/sent")
     @Operation(summary = "Get sent friend requests", description = "Get all pending friend requests sent by the user")
     public ResponseEntity<CursorPageResponse<SentFriendRequestResponse>> getSentRequests(
-            @RequestParam(required = false) String cursor,
-            @RequestParam(defaultValue = "10") int limit,
+            @RequestParam(required = false) String cursor, @RequestParam(defaultValue = "10") int limit,
             @AuthenticationPrincipal String mssv) {
         log.info("[Friend Controller] Getting sent requests for {}", mssv);
         List<SentFriendRequestResponse> requests = friendService.getSentRequests(mssv, cursor, limit);
@@ -89,8 +84,7 @@ public class FriendController extends AbstractBaseController {
     @GetMapping
     @Operation(summary = "Get friends list", description = "Get all friends of the user")
     public ResponseEntity<CursorPageResponse<FriendshipResponse>> getFriends(
-            @RequestParam(required = false) String cursor,
-            @RequestParam(defaultValue = "10") int limit,
+            @RequestParam(required = false) String cursor, @RequestParam(defaultValue = "10") int limit,
             @AuthenticationPrincipal String mssv) {
         log.info("[Friend Controller] Getting friends for {}", mssv);
         List<FriendshipResponse> friends = friendService.getFriends(mssv, cursor, limit);

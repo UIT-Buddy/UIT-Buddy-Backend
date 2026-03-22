@@ -1,15 +1,13 @@
 package com.uit.buddy.service.cometchat.impl;
 
+import com.uit.buddy.client.CometChatClient;
+import com.uit.buddy.service.cometchat.CometChatService;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Retryable;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
-
-import com.uit.buddy.client.CometChatClient;
-import com.uit.buddy.service.cometchat.CometChatService;
-
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 
 @Service
 @RequiredArgsConstructor

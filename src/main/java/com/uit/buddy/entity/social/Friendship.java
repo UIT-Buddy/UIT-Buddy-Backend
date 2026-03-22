@@ -2,17 +2,14 @@ package com.uit.buddy.entity.social;
 
 import com.uit.buddy.entity.AbstractBaseEntity;
 import com.uit.buddy.entity.user.Student;
-
 import jakarta.persistence.*;
 import lombok.*;
 
 @Entity
 @Table(name = "friendships", uniqueConstraints = {
-        @UniqueConstraint(name = "uk_friendship", columnNames = { "user1_mssv", "user2_mssv" })
-}, indexes = {
-        @Index(name = "idx_friendship_user1", columnList = "user1_mssv"),
-        @Index(name = "idx_friendship_user2", columnList = "user2_mssv")
-})
+        @UniqueConstraint(name = "uk_friendship", columnNames = { "user1_mssv", "user2_mssv" }) }, indexes = {
+                @Index(name = "idx_friendship_user1", columnList = "user1_mssv"),
+                @Index(name = "idx_friendship_user2", columnList = "user2_mssv") })
 @Getter
 @Setter
 @NoArgsConstructor

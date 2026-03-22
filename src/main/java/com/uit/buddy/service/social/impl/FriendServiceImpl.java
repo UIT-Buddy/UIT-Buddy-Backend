@@ -1,14 +1,5 @@
 package com.uit.buddy.service.social.impl;
 
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
-
-import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import com.uit.buddy.dto.request.social.RespondFriendRequestRequest;
 import com.uit.buddy.dto.request.social.SendFriendRequestRequest;
 import com.uit.buddy.dto.response.social.FriendshipResponse;
@@ -18,6 +9,7 @@ import com.uit.buddy.entity.social.FriendRequest;
 import com.uit.buddy.entity.social.Friendship;
 import com.uit.buddy.entity.user.Student;
 import com.uit.buddy.enums.FriendRequestStatus;
+import com.uit.buddy.enums.FriendResponseAction;
 import com.uit.buddy.event.social.FriendRequestAcceptedEvent;
 import com.uit.buddy.event.social.FriendRequestReceivedEvent;
 import com.uit.buddy.exception.social.SocialErrorCode;
@@ -31,9 +23,15 @@ import com.uit.buddy.repository.user.StudentRepository;
 import com.uit.buddy.service.cometchat.CometChatService;
 import com.uit.buddy.service.social.FriendService;
 import com.uit.buddy.util.CursorUtils;
-
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -49,39 +47,41 @@ public class FriendServiceImpl implements FriendService {
     private final FriendMapper friendMapper;
 
     @Override
-    public void sendFriendRequest(String senderMssv, SendFriendRequestRequest request) {
+    public boolean toggleFriendRequest(String senderMssv, SendFriendRequestRequest request) {
         String receiverMssv = request.receiverMssv();
 
-        if (senderMssv.equals(receiverMssv)) {
+        if (senderMssv.equals(receiverMssv))
             throw new SocialException(SocialErrorCode.CANNOT_FRIEND_YOURSELF);
-        }
-        if (areFriends(senderMssv, receiverMssv)) {
+        if (areFriends(senderMssv, receiverMssv))
             throw new SocialException(SocialErrorCode.ALREADY_FRIENDS);
-        }
-        Optional<FriendRequest> existingRequest = friendRequestRepository
-                .findPendingRequestBetween(senderMssv, receiverMssv);
 
-        if (existingRequest.isPresent()) {
-            throw new SocialException(SocialErrorCode.FRIEND_REQUEST_ALREADY_EXISTS);
-        }
+        Optional<FriendRequest> existing = friendRequestRepository.findPendingRequestBetween(senderMssv, receiverMssv);
 
+        if (existing.isPresent()) {
+            FriendRequest fr = existing.get();
+            if (fr.getSenderMssv().equals(senderMssv)) {
+                friendRequestRepository.delete(fr);
+                log.info("[Friend Service] Cancelled request: {} -> {}", senderMssv, receiverMssv);
+                return false;
+            } else {
+                respondToFriendRequest(senderMssv, fr.getId(),
+                        new RespondFriendRequestRequest(FriendResponseAction.ACCEPT));
+                return true;
+            }
+        }
+        Student sender = studentRepository.getReferenceById(senderMssv);
         Student receiver = studentRepository.findById(receiverMssv)
                 .orElseThrow(() -> new UserException(UserErrorCode.STUDENT_NOT_FOUND));
 
-        Student sender = studentRepository.getReferenceById(senderMssv);
+        FriendRequest newRequest = FriendRequest.builder().sender(sender).receiver(receiver)
+                .status(FriendRequestStatus.PENDING).build();
 
-        FriendRequest friendRequest = FriendRequest.builder()
-                .sender(sender)
-                .receiver(receiver)
-                .status(FriendRequestStatus.PENDING)
-                .build();
+        friendRequestRepository.save(newRequest);
 
-        friendRequest = friendRequestRepository.save(friendRequest);
-        eventPublisher.publishEvent(new FriendRequestReceivedEvent(
-                friendRequest.getId(),
-                senderMssv,
-                sender.getFullName(),
-                receiverMssv));
+        eventPublisher.publishEvent(
+                new FriendRequestReceivedEvent(newRequest.getId(), senderMssv, sender.getFullName(), receiverMssv));
+
+        return true;
     }
 
     @Override
@@ -102,11 +102,8 @@ public class FriendServiceImpl implements FriendService {
             createFriendship(friendRequest.getSenderMssv(), receiverMssv);
             cometChatService.createFriendship(friendRequest.getSenderMssv(), receiverMssv);
 
-            eventPublisher.publishEvent(new FriendRequestAcceptedEvent(
-                    friendRequest.getId(),
-                    receiverMssv,
-                    friendRequest.getReceiver().getFullName(),
-                    friendRequest.getSenderMssv()));
+            eventPublisher.publishEvent(new FriendRequestAcceptedEvent(friendRequest.getId(), receiverMssv,
+                    friendRequest.getReceiver().getFullName(), friendRequest.getSenderMssv()));
 
             log.info("[Friend Service] Friend request accepted: {} and {} are now friends",
                     friendRequest.getSenderMssv(), receiverMssv);
@@ -114,7 +111,6 @@ public class FriendServiceImpl implements FriendService {
             friendRequest.setStatus(FriendRequestStatus.REJECTED);
             log.info("[Friend Service] Friend request rejected by {}", receiverMssv);
         }
-        friendRequestRepository.save(friendRequest);
     }
 
     @Override
@@ -141,14 +137,9 @@ public class FriendServiceImpl implements FriendService {
             cursorId = contents.id();
         }
 
-        return friendRequestRepository.findPendingWithCursor(
-                mssv,
-                FriendRequestStatus.PENDING,
-                cursorTime,
-                cursorId,
-                limit + 1).stream()
-                .map(friendMapper::toPendingRequestResponse)
-                .toList();
+        return friendRequestRepository
+                .findPendingWithCursor(mssv, FriendRequestStatus.PENDING.name(), cursorTime, cursorId, limit + 1)
+                .stream().map(friendMapper::toPendingRequestResponse).toList();
     }
 
     @Override
@@ -163,14 +154,9 @@ public class FriendServiceImpl implements FriendService {
             cursorId = contents.id();
         }
 
-        return friendRequestRepository.findSentWithCursor(
-                mssv,
-                FriendRequestStatus.PENDING,
-                cursorTime,
-                cursorId,
-                limit + 1).stream()
-                .map(friendMapper::toSentRequestResponse)
-                .toList();
+        return friendRequestRepository
+                .findSentWithCursor(mssv, FriendRequestStatus.PENDING.name(), cursorTime, cursorId, limit + 1).stream()
+                .map(friendMapper::toSentRequestResponse).toList();
     }
 
     @Override
@@ -185,17 +171,13 @@ public class FriendServiceImpl implements FriendService {
             cursorId = contents.id();
         }
 
-        return friendshipRepository.findFriendsWithCursor(
-                mssv,
-                cursorTime,
-                cursorId,
-                limit + 1).stream()
-                .map(friendship -> {
-                    Student friend = friendship.getUser1Mssv().equals(mssv) ? friendship.getUser2()
-                            : friendship.getUser1();
-                    return friendMapper.toFriendshipResponse(friendship, friend);
-                })
-                .toList();
+        List<Friendship> friendships = friendshipRepository.findFriendsWithCursor(mssv, cursorTime, cursorId,
+                limit + 1);
+
+        return friendships.stream().limit(limit).map(friendship -> {
+            Student friend = friendship.getUser1Mssv().equals(mssv) ? friendship.getUser2() : friendship.getUser1();
+            return friendMapper.toFriendshipResponse(friendship, friend);
+        }).toList();
     }
 
     @Override
@@ -207,10 +189,8 @@ public class FriendServiceImpl implements FriendService {
     private void createFriendship(String mssv1, String mssv2) {
         String[] sortedMssvs = sortMssvs(mssv1, mssv2);
 
-        Friendship friendship = Friendship.builder()
-                .user1(studentRepository.getReferenceById(sortedMssvs[0]))
-                .user2(studentRepository.getReferenceById(sortedMssvs[1]))
-                .build();
+        Friendship friendship = Friendship.builder().user1(studentRepository.getReferenceById(sortedMssvs[0]))
+                .user2(studentRepository.getReferenceById(sortedMssvs[1])).build();
 
         friendshipRepository.save(friendship);
     }

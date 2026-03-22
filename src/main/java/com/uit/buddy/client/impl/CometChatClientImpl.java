@@ -6,11 +6,9 @@ import com.uit.buddy.client.CometChatClient;
 import com.uit.buddy.constant.CometChatApiConstants;
 import com.uit.buddy.dto.request.client.CometChatUserRequest;
 import com.uit.buddy.dto.response.client.CometChatUserResponse;
-import lombok.extern.slf4j.Slf4j;
-
 import java.util.List;
 import java.util.Map;
-
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
