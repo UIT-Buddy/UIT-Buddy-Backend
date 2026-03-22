@@ -1,7 +1,8 @@
 package com.uit.buddy.mapper.social;
 
-import com.uit.buddy.dto.response.social.FriendRequestResponse;
 import com.uit.buddy.dto.response.social.FriendshipResponse;
+import com.uit.buddy.dto.response.social.PendingFriendRequestResponse;
+import com.uit.buddy.dto.response.social.SentFriendRequestResponse;
 import com.uit.buddy.dto.response.social.UserSummary;
 import com.uit.buddy.entity.social.FriendRequest;
 import com.uit.buddy.entity.social.Friendship;
@@ -15,8 +16,12 @@ public interface FriendMapper {
 
     UserSummary toUserSummary(Student student);
 
-    FriendRequestResponse toFriendRequestResponse(FriendRequest friendRequest);
+    PendingFriendRequestResponse toPendingRequestResponse(FriendRequest friendRequest);
 
+    SentFriendRequestResponse toSentRequestResponse(FriendRequest friendRequest);
+
+    @Mapping(target = "friend", source = "friend")
     @Mapping(target = "createdAt", source = "friendship.createdAt")
+    @Mapping(target = "id", source = "friendship.id")
     FriendshipResponse toFriendshipResponse(Friendship friendship, Student friend);
 }

@@ -33,7 +33,4 @@ public class Notification extends AbstractBaseEntity {
     @Column(name = "is_read", nullable = false)
     @Builder.Default
     private Boolean isRead = false;
-
-    @Column(name = "redirect_url", length = 512)
-    private String redirectUrl;
 }

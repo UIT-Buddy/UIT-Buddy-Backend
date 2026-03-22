@@ -34,7 +34,7 @@ public class NotificationServiceImpl implements NotificationService {
     public void createPostLikeNotification(PostLikedEvent event) {
         NotificationTemplate template = NotificationTemplate.POST_LIKE;
         processNotification(event.receiverMssv(), template.getTitle(), template.formatContent(event.actorName()),
-                template.getType(), event.postId().toString(), "/posts/" + event.postId());
+                template.getType(), event.postId().toString());
     }
 
     @Override
@@ -43,7 +43,7 @@ public class NotificationServiceImpl implements NotificationService {
         NotificationTemplate template = NotificationTemplate.POST_COMMENT;
         processNotification(event.receiverMssv(), template.getTitle(),
                 template.formatContent(event.actorName(), event.commentContent()), template.getType(),
-                event.postId().toString(), "/posts/" + event.postId());
+                event.postId().toString());
     }
 
     @Override
@@ -51,7 +51,7 @@ public class NotificationServiceImpl implements NotificationService {
     public void createPostShareNotification(PostSharedEvent event) {
         NotificationTemplate template = NotificationTemplate.POST_SHARE;
         processNotification(event.receiverMssv(), template.getTitle(), template.formatContent(event.actorName()),
-                template.getType(), event.originalPostId().toString(), "/posts/" + event.originalPostId());
+                template.getType(), event.originalPostId().toString());
     }
 
     @Override
@@ -63,8 +63,7 @@ public class NotificationServiceImpl implements NotificationService {
                 template.getTitle(),
                 template.formatContent(event.senderName()),
                 template.getType(),
-                event.requestId().toString(),
-                "/friends/requests");
+                event.requestId().toString());
     }
 
     @Override
@@ -76,15 +75,13 @@ public class NotificationServiceImpl implements NotificationService {
                 template.getTitle(),
                 template.formatContent(event.accepterName()),
                 template.getType(),
-                event.requestId().toString(),
-                "/friends");
+                event.requestId().toString());
     }
 
-    private void processNotification(String receiverMssv, String title, String content, String type, String dataId,
-            String redirectUrl) {
+    private void processNotification(String receiverMssv, String title, String content, String type, String dataId) {
 
         Notification notification = Notification.builder().student(studentRepository.getReferenceById(receiverMssv))
-                .title(title).content(content).type(NotificationType.SOCIAL).isRead(false).redirectUrl(redirectUrl)
+                .title(title).content(content).type(NotificationType.SOCIAL).isRead(false)
                 .build();
         notificationRepository.save(notification);
 

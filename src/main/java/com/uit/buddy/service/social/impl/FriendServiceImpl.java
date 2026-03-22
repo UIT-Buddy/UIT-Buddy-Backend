@@ -1,17 +1,19 @@
 package com.uit.buddy.service.social.impl;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.uit.buddy.dto.request.social.RespondFriendRequestRequest;
 import com.uit.buddy.dto.request.social.SendFriendRequestRequest;
-import com.uit.buddy.dto.response.social.FriendRequestResponse;
 import com.uit.buddy.dto.response.social.FriendshipResponse;
+import com.uit.buddy.dto.response.social.PendingFriendRequestResponse;
+import com.uit.buddy.dto.response.social.SentFriendRequestResponse;
 import com.uit.buddy.entity.social.FriendRequest;
 import com.uit.buddy.entity.social.Friendship;
 import com.uit.buddy.entity.user.Student;
@@ -28,8 +30,8 @@ import com.uit.buddy.repository.social.FriendshipRepository;
 import com.uit.buddy.repository.user.StudentRepository;
 import com.uit.buddy.service.cometchat.CometChatService;
 import com.uit.buddy.service.social.FriendService;
+import com.uit.buddy.util.CursorUtils;
 
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -128,33 +130,72 @@ public class FriendServiceImpl implements FriendService {
     }
 
     @Override
-    public List<FriendRequestResponse> getPendingRequests(String mssv) {
-        List<FriendRequest> requests = friendRequestRepository.findByReceiverMssvAndStatus(mssv,
-                FriendRequestStatus.PENDING);
-        return requests.stream()
-                .map(friendMapper::toFriendRequestResponse)
-                .collect(Collectors.toList());
+    @Transactional(readOnly = true)
+    public List<PendingFriendRequestResponse> getPendingRequests(String mssv, String cursor, int limit) {
+        LocalDateTime cursorTime = null;
+        UUID cursorId = null;
+
+        if (cursor != null && !cursor.isBlank()) {
+            CursorUtils.CursorContents contents = CursorUtils.decode(cursor);
+            cursorTime = contents.timestamp();
+            cursorId = contents.id();
+        }
+
+        return friendRequestRepository.findPendingWithCursor(
+                mssv,
+                FriendRequestStatus.PENDING,
+                cursorTime,
+                cursorId,
+                limit + 1).stream()
+                .map(friendMapper::toPendingRequestResponse)
+                .toList();
     }
 
     @Override
-    public List<FriendRequestResponse> getSentRequests(String mssv) {
-        List<FriendRequest> requests = friendRequestRepository.findBySenderMssvAndStatus(mssv,
-                FriendRequestStatus.PENDING);
-        return requests.stream()
-                .map(friendMapper::toFriendRequestResponse)
-                .collect(Collectors.toList());
+    @Transactional(readOnly = true)
+    public List<SentFriendRequestResponse> getSentRequests(String mssv, String cursor, int limit) {
+        LocalDateTime cursorTime = null;
+        UUID cursorId = null;
+
+        if (cursor != null && !cursor.isBlank()) {
+            CursorUtils.CursorContents contents = CursorUtils.decode(cursor);
+            cursorTime = contents.timestamp();
+            cursorId = contents.id();
+        }
+
+        return friendRequestRepository.findSentWithCursor(
+                mssv,
+                FriendRequestStatus.PENDING,
+                cursorTime,
+                cursorId,
+                limit + 1).stream()
+                .map(friendMapper::toSentRequestResponse)
+                .toList();
     }
 
     @Override
-    public List<FriendshipResponse> getFriends(String mssv) {
-        List<Friendship> friendships = friendshipRepository.findAllByUserMssv(mssv);
-        return friendships.stream()
+    @Transactional(readOnly = true)
+    public List<FriendshipResponse> getFriends(String mssv, String cursor, int limit) {
+        LocalDateTime cursorTime = null;
+        UUID cursorId = null;
+
+        if (cursor != null && !cursor.isBlank()) {
+            CursorUtils.CursorContents contents = CursorUtils.decode(cursor);
+            cursorTime = contents.timestamp();
+            cursorId = contents.id();
+        }
+
+        return friendshipRepository.findFriendsWithCursor(
+                mssv,
+                cursorTime,
+                cursorId,
+                limit + 1).stream()
                 .map(friendship -> {
                     Student friend = friendship.getUser1Mssv().equals(mssv) ? friendship.getUser2()
                             : friendship.getUser1();
                     return friendMapper.toFriendshipResponse(friendship, friend);
                 })
-                .collect(Collectors.toList());
+                .toList();
     }
 
     @Override

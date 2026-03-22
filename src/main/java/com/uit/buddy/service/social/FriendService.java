@@ -2,8 +2,9 @@ package com.uit.buddy.service.social;
 
 import com.uit.buddy.dto.request.social.RespondFriendRequestRequest;
 import com.uit.buddy.dto.request.social.SendFriendRequestRequest;
-import com.uit.buddy.dto.response.social.FriendRequestResponse;
 import com.uit.buddy.dto.response.social.FriendshipResponse;
+import com.uit.buddy.dto.response.social.PendingFriendRequestResponse;
+import com.uit.buddy.dto.response.social.SentFriendRequestResponse;
 
 import java.util.List;
 import java.util.UUID;
@@ -16,11 +17,11 @@ public interface FriendService {
 
     void unfriend(String mssv, String friendMssv);
 
-    List<FriendRequestResponse> getPendingRequests(String mssv);
+    List<PendingFriendRequestResponse> getPendingRequests(String mssv, String cursor, int limit);
 
-    List<FriendRequestResponse> getSentRequests(String mssv);
+    List<SentFriendRequestResponse> getSentRequests(String mssv, String cursor, int limit);
 
-    List<FriendshipResponse> getFriends(String mssv);
+    List<FriendshipResponse> getFriends(String mssv, String cursor, int limit);
 
     boolean areFriends(String mssv1, String mssv2);
 }

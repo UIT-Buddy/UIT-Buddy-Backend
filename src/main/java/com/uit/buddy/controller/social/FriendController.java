@@ -1,13 +1,15 @@
 package com.uit.buddy.controller.social;
 
 import com.uit.buddy.controller.AbstractBaseController;
-import com.uit.buddy.dto.base.SingleResponse;
+import com.uit.buddy.dto.base.CursorPageResponse;
 import com.uit.buddy.dto.base.SuccessResponse;
 import com.uit.buddy.dto.request.social.RespondFriendRequestRequest;
 import com.uit.buddy.dto.request.social.SendFriendRequestRequest;
-import com.uit.buddy.dto.response.social.FriendRequestResponse;
 import com.uit.buddy.dto.response.social.FriendshipResponse;
+import com.uit.buddy.dto.response.social.PendingFriendRequestResponse;
+import com.uit.buddy.dto.response.social.SentFriendRequestResponse;
 import com.uit.buddy.service.social.FriendService;
+import com.uit.buddy.util.CursorUtils;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -62,28 +64,37 @@ public class FriendController extends AbstractBaseController {
 
     @GetMapping("/requests/pending")
     @Operation(summary = "Get pending friend requests", description = "Get all pending friend requests received by the user")
-    public ResponseEntity<SingleResponse<List<FriendRequestResponse>>> getPendingRequests(
+    public ResponseEntity<CursorPageResponse<PendingFriendRequestResponse>> getPendingRequests(
+            @RequestParam(required = false) String cursor,
+            @RequestParam(defaultValue = "10") int limit,
             @AuthenticationPrincipal String mssv) {
         log.info("[Friend Controller] Getting pending requests for {}", mssv);
-        List<FriendRequestResponse> requests = friendService.getPendingRequests(mssv);
-        return successSingle(requests, "Pending requests retrieved successfully");
+        List<PendingFriendRequestResponse> requests = friendService.getPendingRequests(mssv, cursor, limit);
+        return cursorPaging("Pending requests retrieved successfully", requests, limit,
+                req -> CursorUtils.encode(req.createdAt(), req.id()));
     }
 
     @GetMapping("/requests/sent")
     @Operation(summary = "Get sent friend requests", description = "Get all pending friend requests sent by the user")
-    public ResponseEntity<SingleResponse<List<FriendRequestResponse>>> getSentRequests(
+    public ResponseEntity<CursorPageResponse<SentFriendRequestResponse>> getSentRequests(
+            @RequestParam(required = false) String cursor,
+            @RequestParam(defaultValue = "10") int limit,
             @AuthenticationPrincipal String mssv) {
         log.info("[Friend Controller] Getting sent requests for {}", mssv);
-        List<FriendRequestResponse> requests = friendService.getSentRequests(mssv);
-        return successSingle(requests, "Sent requests retrieved successfully");
+        List<SentFriendRequestResponse> requests = friendService.getSentRequests(mssv, cursor, limit);
+        return cursorPaging("Sent requests retrieved successfully", requests, limit,
+                req -> CursorUtils.encode(req.createdAt(), req.id()));
     }
 
     @GetMapping
     @Operation(summary = "Get friends list", description = "Get all friends of the user")
-    public ResponseEntity<SingleResponse<List<FriendshipResponse>>> getFriends(
+    public ResponseEntity<CursorPageResponse<FriendshipResponse>> getFriends(
+            @RequestParam(required = false) String cursor,
+            @RequestParam(defaultValue = "10") int limit,
             @AuthenticationPrincipal String mssv) {
         log.info("[Friend Controller] Getting friends for {}", mssv);
-        List<FriendshipResponse> friends = friendService.getFriends(mssv);
-        return successSingle(friends, "Friends retrieved successfully");
+        List<FriendshipResponse> friends = friendService.getFriends(mssv, cursor, limit);
+        return cursorPaging("Friends retrieved successfully", friends, limit,
+                friend -> CursorUtils.encode(friend.createdAt(), friend.id()));
     }
 }
