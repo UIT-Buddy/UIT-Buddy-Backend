@@ -20,35 +20,35 @@ public class SocialActivityListener {
 
     private final NotificationService notificationService;
 
-    @Async
+    @Async("notificationExecutor")
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handlePostLikedEvent(PostLikedEvent event) {
         log.info("[Event Listener] Processing post like notification for post: {}", event.postId());
         notificationService.createPostLikeNotification(event);
     }
 
-    @Async
+    @Async("notificationExecutor")
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handlePostCommentedEvent(PostCommentedEvent event) {
         log.info("[Event Listener] Processing post comment notification for post: {}", event.postId());
         notificationService.createPostCommentNotification(event);
     }
 
-    @Async
+    @Async("notificationExecutor")
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handlePostSharedEvent(PostSharedEvent event) {
         log.info("[Event Listener] Processing post share notification for post: {}", event.originalPostId());
         notificationService.createPostShareNotification(event);
     }
 
-    @Async
+    @Async("notificationExecutor")
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handleFriendRequestReceivedEvent(FriendRequestReceivedEvent event) {
         log.info("[Event Listener] Processing friend request notification for receiver: {}", event.receiverMssv());
         notificationService.createFriendRequestNotification(event);
     }
 
-    @Async
+    @Async("notificationExecutor")
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handleFriendRequestAcceptedEvent(FriendRequestAcceptedEvent event) {
         log.info("[Event Listener] Processing friend request accepted notification for sender: {}", event.senderMssv());
