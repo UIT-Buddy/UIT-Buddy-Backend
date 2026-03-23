@@ -169,8 +169,8 @@ public class AuthServiceImpl implements AuthService {
         Student student = Student.builder().mssv(request.mssv()).fullName(pendingAccount.getFullName())
                 .email(request.mssv() + AppConstants.STUDENT_EMAIL_DOMAIN).avatarUrl(avatarUrl).bio(null)
                 .cometUid(request.mssv()).encryptedWstoken(pendingAccount.getEncryptedWstoken())
-                .cometAuthToken(cometAuthToken)
-                .password(passwordEncoder.encode(request.password())).homeClassCode(homeClassCode).build();
+                .cometAuthToken(cometAuthToken).password(passwordEncoder.encode(request.password()))
+                .homeClassCode(homeClassCode).build();
 
         UserSetting userSetting = UserSetting.builder().mssv(request.mssv()).enableNotification(true)
                 .enableScheduleReminder(true).student(student).build();
