@@ -16,6 +16,10 @@ public enum NotificationTemplate {
     private final String contentTemplate;
     private final String type;
 
+    public static final String COUNT_EXTRACT_REGEX = " và (\\d+) người khác";
+    public static final String MSG_SINGLE = "%s đã %s bài viết của bạn";
+    public static final String MSG_MULTIPLE = "%s và %d người khác đã %s bài viết của bạn";
+
     public String formatContent(Object... args) {
         return String.format(this.contentTemplate, args);
     }

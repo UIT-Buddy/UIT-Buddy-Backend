@@ -1,6 +1,7 @@
 package com.uit.buddy.service.cometchat.impl;
 
 import com.uit.buddy.client.CometChatClient;
+import com.uit.buddy.dto.request.client.CometChatPushTokenRequest;
 import com.uit.buddy.dto.request.client.CometChatUserRequest;
 import com.uit.buddy.service.cometchat.CometChatService;
 import lombok.RequiredArgsConstructor;
@@ -53,6 +54,22 @@ public class CometChatServiceImpl implements CometChatService {
             log.info("[CometChat Service] Successfully synced avatar for UID: {}", uid);
         } catch (Exception e) {
             log.error("[CometChat Service] Failed to sync avatar for UID: {}", uid, e);
+            throw e;
+        }
+    }
+
+    @Override
+    @Async("cometChatExecutor")
+    @Retryable(maxAttempts = 3, backoff = @Backoff(delay = 1000, multiplier = 2))
+    public void registerPushToken(String platform, String providerId, String fcmToken, String authToken,
+            String timezone) {
+        try {
+            CometChatPushTokenRequest request = new CometChatPushTokenRequest(platform, providerId, fcmToken,
+                    authToken, timezone);
+            cometChatClient.registerPushToken(request);
+            log.info("[CometChat Service] Successfully registered push token for platform: {}", platform);
+        } catch (Exception e) {
+            log.error("[CometChat Service] Failed to register push token for platform: {}", platform, e);
             throw e;
         }
     }

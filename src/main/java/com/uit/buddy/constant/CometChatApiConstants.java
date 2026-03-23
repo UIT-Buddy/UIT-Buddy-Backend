@@ -13,6 +13,7 @@ public final class CometChatApiConstants {
     public static final String REMOVE_FRIEND_ENDPOINT = "/users/%s/friends/%s";
     public static final String AUTH_TOKEN_ENDPOINT = "/users/%s/auth_tokens";
     public static final String UPDATE_USER_ENDPOINT = "/users/%s";
+    public static final String REGISTER_PUSH_TOKEN_ENDPOINT = "/notifications/push/v1/tokens";
 
     // Header Keys
     public static final String API_KEY_HEADER = "apiKey";

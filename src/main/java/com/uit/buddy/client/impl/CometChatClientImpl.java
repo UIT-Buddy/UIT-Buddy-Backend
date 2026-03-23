@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.uit.buddy.client.AbstractBaseClient;
 import com.uit.buddy.client.CometChatClient;
 import com.uit.buddy.constant.CometChatApiConstants;
+import com.uit.buddy.dto.request.client.CometChatPushTokenRequest;
 import com.uit.buddy.dto.request.client.CometChatUserRequest;
 import com.uit.buddy.dto.response.client.CometChatAuthTokenResponse;
 import com.uit.buddy.dto.response.client.CometChatUserResponse;
@@ -67,6 +68,11 @@ public class CometChatClientImpl extends AbstractBaseClient implements CometChat
     public CometChatUserResponse updateUser(String uid, CometChatUserRequest request) {
         String endpoint = String.format(CometChatApiConstants.UPDATE_USER_ENDPOINT, uid);
         return put(endpoint, request, CometChatUserResponse.class, createHeaders());
+    }
+
+    @Override
+    public void registerPushToken(CometChatPushTokenRequest request) {
+        post(CometChatApiConstants.REGISTER_PUSH_TOKEN_ENDPOINT, request, Object.class, createHeaders());
     }
 
     private HttpHeaders createHeaders() {
