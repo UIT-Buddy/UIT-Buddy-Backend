@@ -214,7 +214,8 @@ public class AuthServiceImpl implements AuthService {
 
         StudentResponse studentResponse = studentMapper.toStudentResponse(student);
 
-        return new AuthResponse(accessToken, refreshToken, studentResponse, student.getCometAuthToken());
+        return new AuthResponse(accessToken, refreshToken, studentResponse, student.getCometAuthToken(),
+                student.getAvatarUrl());
     }
 
     @Override
@@ -250,7 +251,8 @@ public class AuthServiceImpl implements AuthService {
 
         StudentResponse studentResponse = studentMapper.toStudentResponse(student);
 
-        return new AuthResponse(accessToken, refreshToken, studentResponse, student.getCometAuthToken());
+        return new AuthResponse(accessToken, refreshToken, studentResponse, student.getCometAuthToken(),
+                student.getAvatarUrl());
     }
 
     @Override
@@ -344,7 +346,8 @@ public class AuthServiceImpl implements AuthService {
 
         StudentResponse studentResponse = studentMapper.toStudentResponse(student);
 
-        return new AuthResponse(newAccessToken, refreshToken, studentResponse, student.getCometAuthToken());
+        return new AuthResponse(newAccessToken, refreshToken, studentResponse, student.getCometAuthToken(),
+                student.getAvatarUrl());
     }
 
     @Override
