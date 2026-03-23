@@ -3,6 +3,8 @@ package com.uit.buddy.service.notification.impl;
 import com.uit.buddy.entity.notification.Notification;
 import com.uit.buddy.enums.NotificationTemplate;
 import com.uit.buddy.enums.NotificationType;
+import com.uit.buddy.event.social.FriendRequestAcceptedEvent;
+import com.uit.buddy.event.social.FriendRequestReceivedEvent;
 import com.uit.buddy.event.social.PostCommentedEvent;
 import com.uit.buddy.event.social.PostLikedEvent;
 import com.uit.buddy.event.social.PostSharedEvent;
@@ -32,7 +34,7 @@ public class NotificationServiceImpl implements NotificationService {
     public void createPostLikeNotification(PostLikedEvent event) {
         NotificationTemplate template = NotificationTemplate.POST_LIKE;
         processNotification(event.receiverMssv(), template.getTitle(), template.formatContent(event.actorName()),
-                template.getType(), event.postId().toString(), "/posts/" + event.postId());
+                template.getType(), event.postId().toString());
     }
 
     @Override
@@ -41,7 +43,7 @@ public class NotificationServiceImpl implements NotificationService {
         NotificationTemplate template = NotificationTemplate.POST_COMMENT;
         processNotification(event.receiverMssv(), template.getTitle(),
                 template.formatContent(event.actorName(), event.commentContent()), template.getType(),
-                event.postId().toString(), "/posts/" + event.postId());
+                event.postId().toString());
     }
 
     @Override
@@ -49,15 +51,29 @@ public class NotificationServiceImpl implements NotificationService {
     public void createPostShareNotification(PostSharedEvent event) {
         NotificationTemplate template = NotificationTemplate.POST_SHARE;
         processNotification(event.receiverMssv(), template.getTitle(), template.formatContent(event.actorName()),
-                template.getType(), event.originalPostId().toString(), "/posts/" + event.originalPostId());
+                template.getType(), event.originalPostId().toString());
     }
 
-    private void processNotification(String receiverMssv, String title, String content, String type, String dataId,
-            String redirectUrl) {
+    @Override
+    @Transactional
+    public void createFriendRequestNotification(FriendRequestReceivedEvent event) {
+        NotificationTemplate template = NotificationTemplate.FRIEND_REQUEST_RECEIVED;
+        processNotification(event.receiverMssv(), template.getTitle(), template.formatContent(event.senderName()),
+                template.getType(), event.requestId().toString());
+    }
+
+    @Override
+    @Transactional
+    public void createFriendRequestAcceptedNotification(FriendRequestAcceptedEvent event) {
+        NotificationTemplate template = NotificationTemplate.FRIEND_REQUEST_ACCEPTED;
+        processNotification(event.senderMssv(), template.getTitle(), template.formatContent(event.accepterName()),
+                template.getType(), event.requestId().toString());
+    }
+
+    private void processNotification(String receiverMssv, String title, String content, String type, String dataId) {
 
         Notification notification = Notification.builder().student(studentRepository.getReferenceById(receiverMssv))
-                .title(title).content(content).type(NotificationType.SOCIAL).isRead(false).redirectUrl(redirectUrl)
-                .build();
+                .title(title).content(content).type(NotificationType.SOCIAL).isRead(false).build();
         notificationRepository.save(notification);
 
         List<String> tokens = deviceTokenRepository.findAllTokensByMssv(receiverMssv);

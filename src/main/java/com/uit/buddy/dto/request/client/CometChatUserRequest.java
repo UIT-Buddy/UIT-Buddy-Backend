@@ -5,5 +5,5 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public record CometChatUserRequest(@JsonProperty("uid") String uid, @JsonProperty("name") String name,
-        @JsonProperty("avatar") String avatar) {
+        @JsonProperty("avatar") String avatar, @JsonProperty("role") String role) {
 }

@@ -9,8 +9,15 @@ public final class CometChatApiConstants {
     // API Endpoints
     public static final String USERS_ENDPOINT = "/users";
     public static final String USER_BY_UID_ENDPOINT = "/users/%s";
+    public static final String ADD_FRIENDS_ENDPOINT = "/users/%s/friends";
+    public static final String REMOVE_FRIEND_ENDPOINT = "/users/%s/friends/%s";
+    public static final String AUTH_TOKEN_ENDPOINT = "/users/%s/auth_tokens";
+    public static final String UPDATE_USER_ENDPOINT = "/users/%s";
 
     // Header Keys
     public static final String API_KEY_HEADER = "apiKey";
     public static final String APP_ID_HEADER = "appId";
+
+    // User Roles
+    public static final String STUDENT_ROLE = "2"; // Custom role ID for "student"
 }

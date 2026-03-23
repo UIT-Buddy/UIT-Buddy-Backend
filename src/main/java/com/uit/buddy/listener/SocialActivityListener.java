@@ -1,5 +1,7 @@
 package com.uit.buddy.listener;
 
+import com.uit.buddy.event.social.FriendRequestAcceptedEvent;
+import com.uit.buddy.event.social.FriendRequestReceivedEvent;
 import com.uit.buddy.event.social.PostCommentedEvent;
 import com.uit.buddy.event.social.PostLikedEvent;
 import com.uit.buddy.event.social.PostSharedEvent;
@@ -37,5 +39,19 @@ public class SocialActivityListener {
     public void handlePostSharedEvent(PostSharedEvent event) {
         log.info("[Event Listener] Processing post share notification for post: {}", event.originalPostId());
         notificationService.createPostShareNotification(event);
+    }
+
+    @Async
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void handleFriendRequestReceivedEvent(FriendRequestReceivedEvent event) {
+        log.info("[Event Listener] Processing friend request notification for receiver: {}", event.receiverMssv());
+        notificationService.createFriendRequestNotification(event);
+    }
+
+    @Async
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void handleFriendRequestAcceptedEvent(FriendRequestAcceptedEvent event) {
+        log.info("[Event Listener] Processing friend request accepted notification for sender: {}", event.senderMssv());
+        notificationService.createFriendRequestAcceptedNotification(event);
     }
 }

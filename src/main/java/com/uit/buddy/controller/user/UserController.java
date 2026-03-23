@@ -4,11 +4,9 @@ import com.uit.buddy.controller.AbstractBaseController;
 import com.uit.buddy.dto.base.PageResponse;
 import com.uit.buddy.dto.base.SingleResponse;
 import com.uit.buddy.dto.base.SuccessResponse;
-import com.uit.buddy.dto.request.user.FcmTokenRequest;
 import com.uit.buddy.dto.request.user.UpdateUserRequest;
 import com.uit.buddy.dto.response.user.FoundUserResponse;
 import com.uit.buddy.dto.response.user.UserResponse;
-import com.uit.buddy.service.fcm.FcmService;
 import com.uit.buddy.service.user.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -39,7 +37,6 @@ import org.springframework.web.multipart.MultipartFile;
 public class UserController extends AbstractBaseController {
 
     private final UserService userService;
-    private final FcmService fcmService;
 
     @GetMapping("/me")
     @Operation(summary = "Get current user profile", description = "Fetch detailed information of the currently authenticated student")
@@ -65,17 +62,6 @@ public class UserController extends AbstractBaseController {
         log.info("[User Controller] Request to upload avatar received");
         String avatarUrl = userService.uploadAvatar(mssv, file);
         return successSingle(avatarUrl, "Avatar uploaded successfully!");
-    }
-
-    @PatchMapping("/fcm-token")
-    @Operation(summary = "Sync FCM Token", description = "Register or update FCM token for multi-device support")
-    public ResponseEntity<SingleResponse<Void>> syncFcmToken(@AuthenticationPrincipal String mssv,
-            @Valid @RequestBody FcmTokenRequest request) {
-
-        log.info("[User Controller] Syncing FCM token for MSSV: {}", mssv);
-        fcmService.syncDeviceToken(mssv, request.fcmToken());
-
-        return successSingle(null, "FCM token synced successfully!");
     }
 
     @GetMapping("/{mssv}")
