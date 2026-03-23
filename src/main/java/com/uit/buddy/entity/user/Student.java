@@ -47,6 +47,9 @@ public class Student extends AbstractAuditEntity {
     @Column(name = "encrypted_wstoken", length = 512)
     private String encryptedWstoken;
 
+    @Column(name = "comet_auth_token", length = 512)
+    private String cometAuthToken;
+
     @OneToOne(mappedBy = "student", cascade = CascadeType.ALL, orphanRemoval = true)
     private UserSetting userSetting;
 }

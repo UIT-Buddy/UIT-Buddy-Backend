@@ -20,6 +20,9 @@ public interface DeviceTokenRepository extends JpaRepository<DeviceToken, UUID> 
     void deleteByFcmToken(String fcmToken);
 
     @Transactional
+    int deleteByFcmTokenAndMssvNot(String fcmToken, String mssv);
+
+    @Transactional
     void deleteByMssv(String mssv);
 
     @Transactional
