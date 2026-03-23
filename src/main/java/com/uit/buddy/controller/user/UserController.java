@@ -4,6 +4,7 @@ import com.uit.buddy.controller.AbstractBaseController;
 import com.uit.buddy.dto.base.PageResponse;
 import com.uit.buddy.dto.base.SingleResponse;
 import com.uit.buddy.dto.base.SuccessResponse;
+import com.uit.buddy.dto.request.user.FcmTokenRequest;
 import com.uit.buddy.dto.request.user.UpdateUserRequest;
 import com.uit.buddy.dto.response.user.FoundUserResponse;
 import com.uit.buddy.dto.response.user.UserResponse;

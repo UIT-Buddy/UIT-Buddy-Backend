@@ -1,8 +1,10 @@
 package com.uit.buddy.controller.academic;
 
 import com.uit.buddy.controller.AbstractBaseController;
+import com.uit.buddy.dto.base.SingleResponse;
 import com.uit.buddy.dto.base.SuccessResponse;
 import com.uit.buddy.dto.request.academic.UploadScheduleRequest;
+import com.uit.buddy.dto.response.schedule.DeadlineResponse;
 import com.uit.buddy.exception.schedule.ScheduleErrorCode;
 import com.uit.buddy.exception.schedule.ScheduleException;
 import com.uit.buddy.service.academic.ScheduleService;
@@ -14,7 +16,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/schedule")
@@ -39,4 +45,16 @@ public class ScheduleController extends AbstractBaseController {
 
         return success("Schedule uploaded successfully");
     }
+
+    @GetMapping("/deadline")
+    @Operation(summary = "Fetch deadlines from Moodle", description = "Fetch assignment deadlines from Moodle")
+    public ResponseEntity<SingleResponse<DeadlineResponse>> fetchDeadlinesFromMoodle(
+            @AuthenticationPrincipal String mssv) {
+        log.info("[Schedule Controller] Fetching deadlines from Moodle for student: {}", mssv);
+
+        DeadlineResponse deadlines = scheduleService.fetchDeadlinesFromMoodle(mssv);
+
+        return successSingle(deadlines, "Deadlines fetched successfully");
+    }
+
 }
