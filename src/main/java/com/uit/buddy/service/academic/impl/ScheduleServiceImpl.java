@@ -1,8 +1,28 @@
 package com.uit.buddy.service.academic.impl;
 
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
+import java.util.stream.Collectors;
+
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
+
 import com.uit.buddy.client.UitClient;
 import com.uit.buddy.dto.request.academic.UploadScheduleRequest;
 import com.uit.buddy.dto.response.client.CourseDetailResponse;
+import com.uit.buddy.dto.response.client.EnrolledCourseResponse;
+import com.uit.buddy.dto.response.client.SiteInfoResponse;
 import com.uit.buddy.dto.response.schedule.CourseContentResponse;
 import com.uit.buddy.dto.response.schedule.DeadlineResponse;
 import com.uit.buddy.entity.academic.Course;
@@ -27,24 +47,10 @@ import com.uit.buddy.util.EncryptionUtils;
 import com.uit.buddy.util.IcsParser;
 import com.uit.buddy.util.IcsParser.IcsEvent;
 import com.uit.buddy.util.IcsParser.ParseResult;
-import java.time.Instant;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.CompletableFuture;
-import lombok.RequiredArgsConstructor;
+
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.multipart.MultipartFile;
 
 @Service
-@RequiredArgsConstructor
 @Slf4j
 public class ScheduleServiceImpl implements ScheduleService {
 
@@ -56,6 +62,22 @@ public class ScheduleServiceImpl implements ScheduleService {
     private final SemesterRepository semesterRepository;
     private final UitClient uitClient;
     private final EncryptionUtils encryptionUtils;
+    private final Executor executor;
+
+    public ScheduleServiceImpl(IcsParser icsParser, StudentRepository studentRepository,
+            SubjectClassRepository subjectClassRepository, StudentSubjectClassRepository studentSubjectClassRepository,
+            CourseRepository courseRepository, SemesterRepository semesterRepository, UitClient uitClient,
+            EncryptionUtils encryptionUtils, @Qualifier("uploadExecutor") Executor executor) {
+        this.icsParser = icsParser;
+        this.studentRepository = studentRepository;
+        this.subjectClassRepository = subjectClassRepository;
+        this.studentSubjectClassRepository = studentSubjectClassRepository;
+        this.courseRepository = courseRepository;
+        this.semesterRepository = semesterRepository;
+        this.uitClient = uitClient;
+        this.encryptionUtils = encryptionUtils;
+        this.executor = executor;
+    }
 
     @Transactional(rollbackFor = Exception.class)
     public void uploadSchedule(String mssv, UploadScheduleRequest request) {
@@ -147,6 +169,7 @@ public class ScheduleServiceImpl implements ScheduleService {
                     return new ScheduleException(ScheduleErrorCode.COURSE_NOT_FOUND);
                 }));
 
+                
         return SubjectClass.builder().classCode(event.getClassCode()).course(course).semester(semester)
                 .teacherName(event.getTeacherName()).dayOfWeek(event.getDayOfWeek()).startTime(event.getStartTime())
                 .endTime(event.getEndTime()).startLesson(event.getStartLesson()).endLesson(event.getEndLesson())
@@ -180,9 +203,32 @@ public class ScheduleServiceImpl implements ScheduleService {
         Student student = studentRepository.findById(mssv)
                 .orElseThrow(() -> new UserException(UserErrorCode.STUDENT_NOT_FOUND));
         String decryptedWstoken = encryptionUtils.decrypt(student.getEncryptedWstoken());
-        Map<String, List<CourseDetailResponse>> courseContents = uitClient.getCourseContents(decryptedWstoken);
+
+        Map<String, List<CourseDetailResponse>> courseContents = getCourseContents(decryptedWstoken);
         List<CourseContentResponse> deadlines = extractDeadlinesForCourses(courseContents);
         return deadlines;
+    }
+
+    private Map<String, List<CourseDetailResponse>> getCourseContents(String wstoken) {
+        SiteInfoResponse siteInfo = uitClient.fetchSiteInfo(wstoken);
+        Long userId = siteInfo.userid();
+        List<EnrolledCourseResponse> enrolledCourseResponses = uitClient.getUserCourses(wstoken, userId);
+        Map<String, String> coursesInSemester = getCourseSemesters(enrolledCourseResponses);
+
+        List<CompletableFuture<Map.Entry<String, List<CourseDetailResponse>>>> futures = new ArrayList<>();
+
+        for (Map.Entry<String, String> entry : coursesInSemester.entrySet()) {
+            String courseId = entry.getKey();
+            String courseName = entry.getValue();
+
+            futures.add(CompletableFuture.supplyAsync(() -> {
+                List<CourseDetailResponse> details = uitClient.getAllCourseDetail(wstoken, courseId);
+                return Map.entry(courseName, details);
+            }, executor));
+        }
+
+        return futures.stream().map(CompletableFuture::join)
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     }
 
     private List<CourseContentResponse> extractDeadlinesForCourses(
@@ -257,4 +303,33 @@ public class ScheduleServiceImpl implements ScheduleService {
         return LocalDateTime.ofInstant(Instant.ofEpochSecond(epochSeconds), ZoneId.systemDefault());
     }
 
+    private Map<String, String> getCourseSemesters(List<EnrolledCourseResponse> courses) {
+        Map<String, String> coursesInSemester = new HashMap<>();
+        for (EnrolledCourseResponse course : courses) {
+            if (verifySemester(course.startDate())) {
+                coursesInSemester.put(course.id(), course.shortName());
+            }
+        }
+        return coursesInSemester;
+    }
+
+    private boolean verifySemester(String startDate) {
+        long courseTs = Long.parseLong(startDate);
+        long nowTs = Instant.now().getEpochSecond();
+
+        var courseDate = Instant.ofEpochSecond(courseTs).atZone(ZoneId.systemDefault());
+
+        var nowDate = Instant.ofEpochSecond(nowTs).atZone(ZoneId.systemDefault());
+
+        int courseYear = courseDate.getYear();
+        int nowYear = nowDate.getYear();
+
+        int courseMonth = courseDate.getMonthValue();
+        int nowMonth = nowDate.getMonthValue();
+
+        int courseSemester = (courseMonth <= 6) ? 1 : 2;
+        int currentSemester = (nowMonth <= 6) ? 1 : 2;
+
+        return courseYear == nowYear && courseSemester == currentSemester;
+    }
 }

@@ -66,29 +66,7 @@ public class UitClientImpl extends AbstractBaseClient implements UitClient {
     }
 
     @Override
-    public Map<String, List<CourseDetailResponse>> getCourseContents(String wstoken) {
-        SiteInfoResponse siteInfo = fetchSiteInfo(wstoken);
-        Long userId = siteInfo.userid();
-        List<EnrolledCourseResponse> enrolledCourseResponses = getUserCourses(wstoken, userId);
-        Map<String, String> coursesInSemester = getCourseSemesters(enrolledCourseResponses);
-
-        List<CompletableFuture<Map.Entry<String, List<CourseDetailResponse>>>> futures = new ArrayList<>();
-
-        for (Map.Entry<String, String> entry : coursesInSemester.entrySet()) {
-            String courseId = entry.getKey();
-            String courseName = entry.getValue();
-
-            futures.add(CompletableFuture.supplyAsync(() -> {
-                List<CourseDetailResponse> details = getAllCourseDetail(wstoken, courseId);
-                return Map.entry(courseName, details);
-            }, executor));
-        }
-
-        return futures.stream().map(CompletableFuture::join)
-                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-    }
-
-    private List<CourseDetailResponse> getAllCourseDetail(String wstoken, String courseId) {
+    public List<CourseDetailResponse> getAllCourseDetail(String wstoken, String courseId) {
         Map<String, String> queryParams = buildCourseContentsParams(wstoken, courseId);
         List<CourseDetailResponse> details = getList(moodleServerPath,
                 new ParameterizedTypeReference<List<CourseDetailResponse>>() {
@@ -108,36 +86,6 @@ public class UitClientImpl extends AbstractBaseClient implements UitClient {
         Map<String, String> params = buildBaseParams(wstoken, MoodleApiConstants.FUNCTION_GET_COURSE_CONTENTS);
         params.put(MoodleApiConstants.PARAM_COURSEID, courseId);
         return params;
-    }
-
-    private Map<String, String> getCourseSemesters(List<EnrolledCourseResponse> courses) {
-        Map<String, String> coursesInSemester = new HashMap<>();
-        for (EnrolledCourseResponse course : courses) {
-            if (verifySemester(course.startDate())) {
-                coursesInSemester.put(course.id(), course.shortName());
-            }
-        }
-        return coursesInSemester;
-    }
-
-    private boolean verifySemester(String startDate) {
-        long courseTs = Long.parseLong(startDate);
-        long nowTs = Instant.now().getEpochSecond();
-
-        var courseDate = Instant.ofEpochSecond(courseTs).atZone(ZoneId.systemDefault());
-
-        var nowDate = Instant.ofEpochSecond(nowTs).atZone(ZoneId.systemDefault());
-
-        int courseYear = courseDate.getYear();
-        int nowYear = nowDate.getYear();
-
-        int courseMonth = courseDate.getMonthValue();
-        int nowMonth = nowDate.getMonthValue();
-
-        int courseSemester = (courseMonth <= 6) ? 1 : 2;
-        int currentSemester = (nowMonth <= 6) ? 1 : 2;
-
-        return courseYear == nowYear && courseSemester == currentSemester;
     }
 
 }
