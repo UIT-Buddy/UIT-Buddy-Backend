@@ -16,7 +16,7 @@ public interface NotificationRepository extends JpaRepository<Notification, UUID
     @Query(value = """
             SELECT * FROM notifications
             WHERE mssv = :mssv
-              AND (:cursor IS NULL OR created_at < :cursor)
+              AND (CAST(:cursor AS timestamp) IS NULL OR created_at < :cursor)
             ORDER BY created_at DESC
             LIMIT :limit
             """, nativeQuery = true)

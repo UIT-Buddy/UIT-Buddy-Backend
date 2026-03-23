@@ -1,5 +1,7 @@
 package com.uit.buddy.service.notification;
 
+import com.uit.buddy.event.social.FriendRequestAcceptedEvent;
+import com.uit.buddy.event.social.FriendRequestReceivedEvent;
 import com.uit.buddy.event.social.PostCommentedEvent;
 import com.uit.buddy.event.social.PostLikedEvent;
 import com.uit.buddy.event.social.PostSharedEvent;
@@ -10,4 +12,9 @@ public interface NotificationService {
     void createPostCommentNotification(PostCommentedEvent event);
 
     void createPostShareNotification(PostSharedEvent event);
+
+    void createFriendRequestNotification(FriendRequestReceivedEvent event);
+
+    void createFriendRequestAcceptedNotification(FriendRequestAcceptedEvent event);
+
 }

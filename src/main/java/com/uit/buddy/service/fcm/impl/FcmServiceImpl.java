@@ -25,6 +25,13 @@ public class FcmServiceImpl implements FcmService {
             throw new FcmException(FcmErrorCode.INVALID_FCM_TOKEN);
         }
         log.info("[FCM Service] Syncing device token for student: {}", mssv);
+
+        int deletedCount = deviceTokenRepository.deleteByFcmTokenAndMssvNot(fcmToken, mssv);
+        if (deletedCount > 0) {
+            log.info("[FCM Service] Removed token from {} other user(s) before syncing to MSSV: {}", deletedCount,
+                    mssv);
+        }
+
         deviceTokenRepository.upsertToken(mssv, fcmToken);
     }
 
@@ -72,7 +79,9 @@ public class FcmServiceImpl implements FcmService {
         }
     }
 
-    /** Logic xử lý các token bị lỗi (không tồn tại, hết hạn) sau khi gửi multicast */
+    /**
+     * Logic xử lý các token bị lỗi (không tồn tại, hết hạn) sau khi gửi multicast
+     */
     private void handleMulticastFailures(BatchResponse response, List<String> tokens) {
         List<SendResponse> responses = response.getResponses();
         List<String> invalidTokens = new java.util.ArrayList<>();

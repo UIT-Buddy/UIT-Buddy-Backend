@@ -5,7 +5,10 @@ import com.uit.buddy.client.AbstractBaseClient;
 import com.uit.buddy.client.CometChatClient;
 import com.uit.buddy.constant.CometChatApiConstants;
 import com.uit.buddy.dto.request.client.CometChatUserRequest;
+import com.uit.buddy.dto.response.client.CometChatAuthTokenResponse;
 import com.uit.buddy.dto.response.client.CometChatUserResponse;
+import java.util.List;
+import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -36,9 +39,34 @@ public class CometChatClientImpl extends AbstractBaseClient implements CometChat
     }
 
     @Override
+    public void addFriend(String uid, String friendUid) {
+        String endpoint = String.format(CometChatApiConstants.ADD_FRIENDS_ENDPOINT, uid);
+        Map<String, Object> body = Map.of("accepted", List.of(friendUid));
+        post(endpoint, body, Object.class, createHeaders());
+    }
+
+    @Override
+    public void removeFriend(String uid, String friendUid) {
+        String endpoint = String.format(CometChatApiConstants.REMOVE_FRIEND_ENDPOINT, uid, friendUid);
+        delete(endpoint, createHeaders());
+    }
+
+    @Override
     public void deleteUser(String uid) {
         String endpoint = String.format(CometChatApiConstants.USER_BY_UID_ENDPOINT, uid);
         delete(endpoint, createHeaders());
+    }
+
+    @Override
+    public CometChatAuthTokenResponse createCometAuthToken(String uid) {
+        String endpoint = String.format(CometChatApiConstants.AUTH_TOKEN_ENDPOINT, uid);
+        return post(endpoint, Map.of(), CometChatAuthTokenResponse.class, createHeaders());
+    }
+
+    @Override
+    public CometChatUserResponse updateUser(String uid, CometChatUserRequest request) {
+        String endpoint = String.format(CometChatApiConstants.UPDATE_USER_ENDPOINT, uid);
+        return put(endpoint, request, CometChatUserResponse.class, createHeaders());
     }
 
     private HttpHeaders createHeaders() {

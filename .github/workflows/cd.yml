@@ -23,6 +23,7 @@ jobs:
         with:
           repository: UIT-Buddy/UIT-Buddy-GitOps-Manifests
           path: gitops-manifests
+          ref: main-aws
 
       - name: Create backend.env from secret
         env:
