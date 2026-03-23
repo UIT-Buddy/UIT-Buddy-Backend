@@ -6,6 +6,7 @@ import com.uit.buddy.dto.response.social.CommentResponse;
 import com.uit.buddy.entity.social.Comment;
 import com.uit.buddy.entity.social.CommentReaction;
 import com.uit.buddy.entity.social.Post;
+import com.uit.buddy.event.social.CommentLikedEvent;
 import com.uit.buddy.event.social.PostCommentedEvent;
 import com.uit.buddy.exception.social.SocialErrorCode;
 import com.uit.buddy.exception.social.SocialException;
@@ -112,9 +113,8 @@ public class CommentServiceImpl implements CommentService {
     @Override
     @Transactional
     public boolean toggleCommentLike(UUID commentId, String mssv) {
-        if (!commentRepository.existsById(commentId)) {
-            throw new SocialException(SocialErrorCode.COMMENT_NOT_FOUND);
-        }
+        Comment comment = commentRepository.findById(commentId)
+                .orElseThrow(() -> new SocialException(SocialErrorCode.COMMENT_NOT_FOUND));
 
         var existingReaction = commentReactionRepository.findByCommentIdAndMssv(commentId, mssv);
 
@@ -126,6 +126,14 @@ public class CommentServiceImpl implements CommentService {
             CommentReaction reaction = CommentReaction.builder().commentId(commentId).mssv(mssv).build();
             commentReactionRepository.save(reaction);
             commentRepository.incrementLikeCount(commentId);
+
+            // Publish event if not liking own comment
+            if (!comment.getMssv().equals(mssv)) {
+                String actorName = studentRepository.findById(mssv).map(student -> student.getFullName()).orElse(mssv);
+                eventPublisher.publishEvent(new CommentLikedEvent(mssv, actorName, comment.getMssv(), commentId,
+                        comment.getPost().getId()));
+            }
+
             return true;
         }
     }

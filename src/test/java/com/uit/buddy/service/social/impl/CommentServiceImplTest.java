@@ -206,7 +206,7 @@ class CommentServiceImplTest {
 
     @Test
     void shouldToggleCommentLikeSuccessfully() {
-        when(commentRepository.existsById(commentId)).thenReturn(true);
+        when(commentRepository.findById(commentId)).thenReturn(Optional.of(comment));
         when(commentReactionRepository.findByCommentIdAndMssv(commentId, mssv)).thenReturn(Optional.empty());
         when(commentReactionRepository.save(any(CommentReaction.class))).thenReturn(new CommentReaction());
 
@@ -220,7 +220,7 @@ class CommentServiceImplTest {
     @Test
     void shouldUnlikeCommentWhenAlreadyLiked() {
         CommentReaction existingReaction = new CommentReaction();
-        when(commentRepository.existsById(commentId)).thenReturn(true);
+        when(commentRepository.findById(commentId)).thenReturn(Optional.of(comment));
         when(commentReactionRepository.findByCommentIdAndMssv(commentId, mssv))
                 .thenReturn(Optional.of(existingReaction));
 
@@ -233,7 +233,7 @@ class CommentServiceImplTest {
 
     @Test
     void shouldThrowExceptionWhenLikingNonExistentComment() {
-        when(commentRepository.existsById(commentId)).thenReturn(false);
+        when(commentRepository.findById(commentId)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> commentService.toggleCommentLike(commentId, mssv)).isInstanceOf(SocialException.class);
     }

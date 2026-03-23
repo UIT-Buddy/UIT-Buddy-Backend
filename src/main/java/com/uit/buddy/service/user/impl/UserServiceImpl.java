@@ -1,13 +1,18 @@
 package com.uit.buddy.service.user.impl;
 
 import com.uit.buddy.dto.request.user.UpdateUserRequest;
+import com.uit.buddy.dto.request.user.UpdateUserSettingRequest;
 import com.uit.buddy.dto.response.user.FoundUserResponse;
 import com.uit.buddy.dto.response.user.UserResponse;
+import com.uit.buddy.dto.response.user.UserSettingResponse;
 import com.uit.buddy.entity.user.Student;
+import com.uit.buddy.entity.user.UserSetting;
 import com.uit.buddy.exception.user.UserErrorCode;
 import com.uit.buddy.exception.user.UserException;
 import com.uit.buddy.mapper.user.UserMapper;
+import com.uit.buddy.mapper.user.UserSettingMapper;
 import com.uit.buddy.repository.user.StudentRepository;
+import com.uit.buddy.repository.user.UserSettingRepository;
 import com.uit.buddy.service.cloudinary.CloudinaryService;
 import com.uit.buddy.service.cometchat.CometChatService;
 import com.uit.buddy.service.user.UserService;
@@ -28,6 +33,8 @@ public class UserServiceImpl implements UserService {
     private final UserMapper userMapper;
     private final CloudinaryService cloudinaryService;
     private final CometChatService cometChatService;
+    private final UserSettingRepository userSettingRepository;
+    private final UserSettingMapper userSettingMapper;
 
     @Override
     @Transactional(readOnly = true)
@@ -99,5 +106,25 @@ public class UserServiceImpl implements UserService {
 
         studentRepository.delete(student);
         log.info("[User Service] Successfully deleted account for MSSV: {}", mssv);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public UserSettingResponse getUserSettings(String mssv) {
+        UserSetting userSetting = userSettingRepository.findById(mssv)
+                .orElseThrow(() -> new UserException(UserErrorCode.STUDENT_NOT_FOUND));
+        return userSettingMapper.toResponse(userSetting);
+    }
+
+    @Override
+    @Transactional
+    public void updateUserSettings(String mssv, UpdateUserSettingRequest request) {
+        UserSetting userSetting = userSettingRepository.findById(mssv)
+                .orElseThrow(() -> new UserException(UserErrorCode.STUDENT_NOT_FOUND));
+
+        userSetting.setEnableNotification(request.enableNotification());
+        userSetting.setEnableScheduleReminder(request.enableScheduleReminder());
+
+        userSettingRepository.save(userSetting);
     }
 }

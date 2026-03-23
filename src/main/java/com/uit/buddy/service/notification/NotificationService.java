@@ -1,6 +1,7 @@
 package com.uit.buddy.service.notification;
 
 import com.uit.buddy.dto.response.notification.NotificationResponse;
+import com.uit.buddy.event.social.CommentLikedEvent;
 import com.uit.buddy.event.social.FriendRequestAcceptedEvent;
 import com.uit.buddy.event.social.FriendRequestReceivedEvent;
 import com.uit.buddy.event.social.PostCommentedEvent;
@@ -19,6 +20,8 @@ public interface NotificationService {
     void createFriendRequestNotification(FriendRequestReceivedEvent event);
 
     void createFriendRequestAcceptedNotification(FriendRequestAcceptedEvent event);
+
+    void createCommentLikeNotification(CommentLikedEvent event);
 
     List<NotificationResponse> getNotifications(String mssv, String cursor, int limit);
 

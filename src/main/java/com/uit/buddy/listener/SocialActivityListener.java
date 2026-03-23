@@ -1,5 +1,6 @@
 package com.uit.buddy.listener;
 
+import com.uit.buddy.event.social.CommentLikedEvent;
 import com.uit.buddy.event.social.FriendRequestAcceptedEvent;
 import com.uit.buddy.event.social.FriendRequestReceivedEvent;
 import com.uit.buddy.event.social.PostCommentedEvent;
@@ -53,5 +54,12 @@ public class SocialActivityListener {
     public void handleFriendRequestAcceptedEvent(FriendRequestAcceptedEvent event) {
         log.info("[Event Listener] Processing friend request accepted notification for sender: {}", event.senderMssv());
         notificationService.createFriendRequestAcceptedNotification(event);
+    }
+
+    @Async("notificationExecutor")
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void handleCommentLikedEvent(CommentLikedEvent event) {
+        log.info("[Event Listener] Processing comment like notification for comment: {}", event.commentId());
+        notificationService.createCommentLikeNotification(event);
     }
 }

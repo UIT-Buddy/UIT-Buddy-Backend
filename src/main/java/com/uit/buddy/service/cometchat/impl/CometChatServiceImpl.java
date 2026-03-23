@@ -64,8 +64,8 @@ public class CometChatServiceImpl implements CometChatService {
     public void registerPushToken(String platform, String providerId, String fcmToken, String authToken,
             String timezone) {
         try {
-            CometChatPushTokenRequest request = new CometChatPushTokenRequest(platform, providerId, fcmToken,
-                    authToken, timezone);
+            CometChatPushTokenRequest request = new CometChatPushTokenRequest(platform, providerId, fcmToken, authToken,
+                    timezone);
             cometChatClient.registerPushToken(request);
             log.info("[CometChat Service] Successfully registered push token for platform: {}", platform);
         } catch (Exception e) {

@@ -4,6 +4,7 @@ import com.uit.buddy.dto.response.notification.NotificationResponse;
 import com.uit.buddy.entity.notification.Notification;
 import com.uit.buddy.enums.NotificationTemplate;
 import com.uit.buddy.enums.NotificationType;
+import com.uit.buddy.event.social.CommentLikedEvent;
 import com.uit.buddy.event.social.FriendRequestAcceptedEvent;
 import com.uit.buddy.event.social.FriendRequestReceivedEvent;
 import com.uit.buddy.event.social.PostCommentedEvent;
@@ -15,6 +16,7 @@ import com.uit.buddy.mapper.notification.NotificationMapper;
 import com.uit.buddy.repository.notification.NotificationRepository;
 import com.uit.buddy.repository.user.DeviceTokenRepository;
 import com.uit.buddy.repository.user.StudentRepository;
+import com.uit.buddy.repository.user.UserSettingRepository;
 import com.uit.buddy.service.fcm.FcmService;
 import com.uit.buddy.service.notification.NotificationService;
 import com.uit.buddy.util.CursorUtils;
@@ -38,6 +40,7 @@ public class NotificationServiceImpl implements NotificationService {
     private final FcmService fcmService;
     private final StudentRepository studentRepository;
     private final NotificationMapper notificationMapper;
+    private final UserSettingRepository userSettingRepository;
 
     @Override
     @Transactional
@@ -80,6 +83,14 @@ public class NotificationServiceImpl implements NotificationService {
                 template.getType(), event.requestId().toString());
     }
 
+    @Override
+    @Transactional
+    public void createCommentLikeNotification(CommentLikedEvent event) {
+        NotificationTemplate template = NotificationTemplate.COMMENT_LIKE;
+        processAggregatedNotification(event.receiverMssv(), template.getTitle(), event.actorName(), template.getType(),
+                event.commentId().toString(), "thích");
+    }
+
     private void processAggregatedNotification(String receiverMssv, String title, String actorName, String type,
             String dataId, String action) {
 
@@ -101,11 +112,7 @@ public class NotificationServiceImpl implements NotificationService {
             log.info("[Notification Service] Updated aggregated notification for receiver: {}, type: {}, count: {}",
                     receiverMssv, type, newCount);
 
-            List<String> tokens = deviceTokenRepository.findAllTokensByMssv(receiverMssv);
-            if (!tokens.isEmpty()) {
-                fcmService.sendMulticastNotification(tokens, existingNotification.getId().toString(), title, content,
-                        type, dataId);
-            }
+            sendFcmIfEnabled(receiverMssv, existingNotification.getId().toString(), title, content, type, dataId);
         } else {
             content = String.format(NotificationTemplate.MSG_SINGLE, actorName, action);
             processNotification(receiverMssv, title, content, type, dataId);
@@ -118,10 +125,22 @@ public class NotificationServiceImpl implements NotificationService {
                 .title(title).content(content).type(NotificationType.SOCIAL).dataId(dataId).isRead(false).build();
         notificationRepository.save(notification);
 
-        List<String> tokens = deviceTokenRepository.findAllTokensByMssv(receiverMssv);
+        sendFcmIfEnabled(receiverMssv, notification.getId().toString(), title, content, type, dataId);
+    }
 
+    private void sendFcmIfEnabled(String mssv, String notificationId, String title, String content, String type,
+            String dataId) {
+        boolean isEnabled = userSettingRepository.findById(mssv).map(setting -> setting.isEnableNotification())
+                .orElse(true);
+
+        if (!isEnabled) {
+            log.info("[Notification Service] FCM disabled for user: {}", mssv);
+            return;
+        }
+
+        List<String> tokens = deviceTokenRepository.findAllTokensByMssv(mssv);
         if (!tokens.isEmpty()) {
-            fcmService.sendMulticastNotification(tokens, notification.getId().toString(), title, content, type, dataId);
+            fcmService.sendMulticastNotification(tokens, notificationId, title, content, type, dataId);
         }
     }
 

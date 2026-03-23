@@ -5,6 +5,7 @@ import com.uit.buddy.dto.base.CursorPageResponse;
 import com.uit.buddy.dto.base.SingleResponse;
 import com.uit.buddy.dto.base.SuccessResponse;
 import com.uit.buddy.dto.response.notification.NotificationResponse;
+import com.uit.buddy.dto.response.notification.UnreadCountResponse;
 import com.uit.buddy.service.notification.NotificationService;
 import com.uit.buddy.util.CursorUtils;
 import io.swagger.v3.oas.annotations.Operation;
@@ -42,10 +43,11 @@ public class NotificationController extends AbstractBaseController {
 
     @GetMapping("/unread-count")
     @Operation(summary = "Get unread count", description = "Get count of unread notifications")
-    public ResponseEntity<SingleResponse<Long>> getUnreadCount(@AuthenticationPrincipal String mssv) {
+    public ResponseEntity<SingleResponse<UnreadCountResponse>> getUnreadCount(@AuthenticationPrincipal String mssv) {
         log.info("[Notification Controller] Getting unread count for mssv: {}", mssv);
         long count = notificationService.getUnreadCount(mssv);
-        return successSingle(count, "Unread count retrieved successfully");
+        UnreadCountResponse response = new UnreadCountResponse(count);
+        return successSingle(response, "Unread count retrieved successfully");
     }
 
     @PutMapping("/{notificationId}/read")
