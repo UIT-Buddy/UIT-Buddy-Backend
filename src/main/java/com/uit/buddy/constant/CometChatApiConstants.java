@@ -17,4 +17,7 @@ public final class CometChatApiConstants {
     // Header Keys
     public static final String API_KEY_HEADER = "apiKey";
     public static final String APP_ID_HEADER = "appId";
+
+    // User Roles
+    public static final String STUDENT_ROLE = "2"; // Custom role ID for "student"
 }

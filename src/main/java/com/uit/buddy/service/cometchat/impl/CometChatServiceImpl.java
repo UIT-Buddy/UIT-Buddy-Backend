@@ -48,7 +48,7 @@ public class CometChatServiceImpl implements CometChatService {
     @Retryable(maxAttempts = 3, backoff = @Backoff(delay = 1000, multiplier = 2))
     public void syncUserAvatar(String uid, String fullName, String avatarUrl) {
         try {
-            CometChatUserRequest updateRequest = new CometChatUserRequest(uid, fullName, avatarUrl);
+            CometChatUserRequest updateRequest = new CometChatUserRequest(uid, fullName, avatarUrl, null);
             cometChatClient.updateUser(uid, updateRequest);
             log.info("[CometChat Service] Successfully synced avatar for UID: {}", uid);
         } catch (Exception e) {

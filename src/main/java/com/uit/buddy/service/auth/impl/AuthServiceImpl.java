@@ -3,6 +3,7 @@ package com.uit.buddy.service.auth.impl;
 import com.uit.buddy.client.CometChatClient;
 import com.uit.buddy.client.UitClient;
 import com.uit.buddy.constant.AppConstants;
+import com.uit.buddy.constant.CometChatApiConstants;
 import com.uit.buddy.dto.request.auth.CompleteSignUpRequest;
 import com.uit.buddy.dto.request.auth.ForgetPasswordRequest;
 import com.uit.buddy.dto.request.auth.SignInRequest;
@@ -431,7 +432,7 @@ public class AuthServiceImpl implements AuthService {
 
         try {
             CometChatUserRequest cometChatRequest = new CometChatUserRequest(mssv, fullName != null ? fullName : mssv,
-                    avatarUrl);
+                    avatarUrl, CometChatApiConstants.STUDENT_ROLE);
             log.debug("[Auth Service] CometChat request created: {}", cometChatRequest);
 
             cometChatClient.createUser(cometChatRequest);
