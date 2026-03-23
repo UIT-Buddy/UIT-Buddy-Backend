@@ -17,26 +17,18 @@ resource "aws_internet_gateway" "igw" {
 }
 
 # ──────────────────────────────────────────────
-# Public Subnets (ALB, Backend + Redis)
+# Public Subnet (EC2) — AZ a
 # ──────────────────────────────────────────────
-resource "aws_subnet" "public_a" {
+resource "aws_subnet" "public" {
   vpc_id                  = aws_vpc.main.id
-  cidr_block              = var.public_subnet_a_cidr
+  cidr_block              = var.public_subnet_cidr
   availability_zone       = var.az_a
   map_public_ip_on_launch = true
-  tags                    = { Name = "${var.project_name}-public-a" }
-}
-
-resource "aws_subnet" "public_b" {
-  vpc_id                  = aws_vpc.main.id
-  cidr_block              = var.public_subnet_b_cidr
-  availability_zone       = var.az_b
-  map_public_ip_on_launch = true
-  tags                    = { Name = "${var.project_name}-public-b" }
+  tags                    = { Name = "${var.project_name}-public" }
 }
 
 # ──────────────────────────────────────────────
-# Private Subnets (PostgreSQL)
+# Private Subnet 1 (RDS) — AZ a
 # ──────────────────────────────────────────────
 resource "aws_subnet" "private_a" {
   vpc_id            = aws_vpc.main.id
@@ -45,6 +37,9 @@ resource "aws_subnet" "private_a" {
   tags              = { Name = "${var.project_name}-private-a" }
 }
 
+# ──────────────────────────────────────────────
+# Private Subnet 2 (empty, required for RDS DB subnet group) — AZ b
+# ──────────────────────────────────────────────
 resource "aws_subnet" "private_b" {
   vpc_id            = aws_vpc.main.id
   cidr_block        = var.private_subnet_b_cidr
@@ -64,13 +59,8 @@ resource "aws_route_table" "public_rt" {
   tags = { Name = "${var.project_name}-public-rt" }
 }
 
-resource "aws_route_table_association" "public_a" {
-  subnet_id      = aws_subnet.public_a.id
-  route_table_id = aws_route_table.public_rt.id
-}
-
-resource "aws_route_table_association" "public_b" {
-  subnet_id      = aws_subnet.public_b.id
+resource "aws_route_table_association" "public" {
+  subnet_id      = aws_subnet.public.id
   route_table_id = aws_route_table.public_rt.id
 }
 

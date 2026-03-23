@@ -16,28 +16,22 @@ variable "vpc_cidr" {
   default     = "10.0.0.0/16"
 }
 
-variable "public_subnet_a_cidr" {
-  description = "CIDR block for public subnet A"
+variable "public_subnet_cidr" {
+  description = "CIDR block for public subnet"
   type        = string
   default     = "10.0.1.0/24"
 }
 
-variable "public_subnet_b_cidr" {
-  description = "CIDR block for public subnet B"
+variable "private_subnet_a_cidr" {
+  description = "CIDR block for private subnet 1"
   type        = string
   default     = "10.0.2.0/24"
 }
 
-variable "private_subnet_a_cidr" {
-  description = "CIDR block for private subnet A"
-  type        = string
-  default     = "10.0.11.0/24"
-}
-
 variable "private_subnet_b_cidr" {
-  description = "CIDR block for private subnet B"
+  description = "CIDR block for private subnet 2 (for RDS DB subnet group)"
   type        = string
-  default     = "10.0.12.0/24"
+  default     = "10.0.3.0/24"
 }
 
 variable "az_a" {
@@ -64,52 +58,10 @@ variable "postgres_user" {
   default     = "admin"
 }
 
-variable "backend_image" {
-  description = "Docker image for the backend service"
+variable "rds_instance_class" {
+  description = "RDS instance class"
   type        = string
-  default     = "ghcr.io/uit-buddy/backend:latest"
-}
-
-variable "postgres_image" {
-  description = "Docker image for PostgreSQL"
-  type        = string
-  default     = "docker.io/library/postgres:17-alpine"
-}
-
-variable "redis_image" {
-  description = "Docker image for Redis"
-  type        = string
-  default     = "docker.io/library/redis:8-alpine"
-}
-
-variable "backend_cpu" {
-  description = "CPU units for backend task (1024 = 1 vCPU)"
-  type        = number
-  default     = 1024
-}
-
-variable "backend_memory" {
-  description = "Memory (MB) for backend task"
-  type        = number
-  default     = 2048
-}
-
-variable "postgres_cpu" {
-  description = "CPU units for postgres task (1024 = 1 vCPU)"
-  type        = number
-  default     = 1024
-}
-
-variable "postgres_memory" {
-  description = "Memory (MB) for postgres task"
-  type        = number
-  default     = 2048
-}
-
-variable "internal_dns_namespace" {
-  description = "Internal DNS namespace for service discovery"
-  type        = string
-  default     = "uitbuddy.local"
+  default     = "db.t3.micro"
 }
 
 variable "db_password" {
@@ -120,6 +72,12 @@ variable "db_password" {
 
 variable "firebase_json" {
   description = "Firebase service account JSON content (stored in Secrets Manager)"
+  type        = string
+  sensitive   = true
+}
+
+variable "github_runner_token" {
+  description = "GitHub Actions self-hosted runner registration token"
   type        = string
   sensitive   = true
 }

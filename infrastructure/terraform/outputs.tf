@@ -1,14 +1,14 @@
-output "alb_dns_name" {
-  description = "DNS name of the Application Load Balancer"
-  value       = aws_lb.main.dns_name
+output "ec2_elastic_ip" {
+  description = "Elastic IP address of the EC2 instance"
+  value       = aws_eip.main.public_ip
 }
 
-output "backend_url" {
-  description = "URL to access the backend via ALB"
-  value       = "http://${aws_lb.main.dns_name}"
+output "rds_endpoint" {
+  description = "RDS PostgreSQL endpoint"
+  value       = aws_db_instance.postgres.endpoint
 }
 
-output "health_check_url" {
-  description = "URL to check backend health status"
-  value       = "http://${aws_lb.main.dns_name}/actuator/health"
+output "rds_address" {
+  description = "RDS PostgreSQL address (hostname only)"
+  value       = aws_db_instance.postgres.address
 }
