@@ -1,7 +1,14 @@
 package com.uit.buddy.service.academic.impl;
 
+import com.uit.buddy.client.UitClient;
 import com.uit.buddy.dto.request.academic.UploadScheduleRequest;
-import com.uit.buddy.entity.academic.*;
+import com.uit.buddy.dto.response.client.CourseDetailResponse;
+import com.uit.buddy.dto.response.schedule.CourseContentResponse;
+import com.uit.buddy.dto.response.schedule.DeadlineResponse;
+import com.uit.buddy.entity.academic.Course;
+import com.uit.buddy.entity.academic.Semester;
+import com.uit.buddy.entity.academic.StudentSubjectClass;
+import com.uit.buddy.entity.academic.SubjectClass;
 import com.uit.buddy.entity.user.Student;
 import com.uit.buddy.enums.StudentClassStatus;
 import com.uit.buddy.exception.schedule.ScheduleErrorCode;
@@ -10,14 +17,26 @@ import com.uit.buddy.exception.system.SystemErrorCode;
 import com.uit.buddy.exception.system.SystemException;
 import com.uit.buddy.exception.user.UserErrorCode;
 import com.uit.buddy.exception.user.UserException;
-import com.uit.buddy.repository.academic.*;
+import com.uit.buddy.repository.academic.CourseRepository;
+import com.uit.buddy.repository.academic.SemesterRepository;
+import com.uit.buddy.repository.academic.StudentSubjectClassRepository;
+import com.uit.buddy.repository.academic.SubjectClassRepository;
 import com.uit.buddy.repository.user.StudentRepository;
 import com.uit.buddy.service.academic.ScheduleService;
+import com.uit.buddy.util.EncryptionUtils;
 import com.uit.buddy.util.IcsParser;
 import com.uit.buddy.util.IcsParser.IcsEvent;
 import com.uit.buddy.util.IcsParser.ParseResult;
+import java.time.Instant;
 import java.time.LocalDate;
-import java.util.*;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -35,8 +54,9 @@ public class ScheduleServiceImpl implements ScheduleService {
     private final StudentSubjectClassRepository studentSubjectClassRepository;
     private final CourseRepository courseRepository;
     private final SemesterRepository semesterRepository;
+    private final UitClient uitClient;
+    private final EncryptionUtils encryptionUtils;
 
-    @Override
     @Transactional(rollbackFor = Exception.class)
     public void uploadSchedule(String mssv, UploadScheduleRequest request) {
         log.info("[Schedule Service] Processing sync upload for student: {}", mssv);
@@ -63,6 +83,13 @@ public class ScheduleServiceImpl implements ScheduleService {
             log.error("[Schedule Service] Critical error during sync upload for student {}: ", mssv, e);
             throw new SystemException(SystemErrorCode.INTERNAL_ERROR);
         }
+    }
+
+    @Override
+    public DeadlineResponse fetchDeadlinesFromMoodle(String mssv) {
+        List<CourseContentResponse> courseContents = fetchCourseDeadlinesFromMoodle(mssv);
+        int numberOfDeadlines = courseContents.stream().mapToInt(c -> c.exercises().size()).sum();
+        return new DeadlineResponse(numberOfDeadlines, courseContents);
     }
 
     private void saveScheduleData(Student student, List<IcsEvent> events) {
@@ -148,4 +175,86 @@ public class ScheduleServiceImpl implements ScheduleService {
             throw new ScheduleException(ScheduleErrorCode.INVALID_FILE_TYPE);
         }
     }
+
+    private List<CourseContentResponse> fetchCourseDeadlinesFromMoodle(String mssv) {
+        Student student = studentRepository.findById(mssv)
+                .orElseThrow(() -> new UserException(UserErrorCode.STUDENT_NOT_FOUND));
+        String decryptedWstoken = encryptionUtils.decrypt(student.getEncryptedWstoken());
+        Map<String, List<CourseDetailResponse>> courseContents = uitClient.getCourseContents(decryptedWstoken);
+        List<CourseContentResponse> deadlines = extractDeadlinesForCourses(courseContents);
+        return deadlines;
+    }
+
+    private List<CourseContentResponse> extractDeadlinesForCourses(
+            Map<String, List<CourseDetailResponse>> courseContents) {
+        List<CompletableFuture<CourseContentResponse>> futures = new ArrayList<>();
+        for (Map.Entry<String, List<CourseDetailResponse>> entry : courseContents.entrySet()) {
+            String courseName = entry.getKey();
+            List<CourseDetailResponse> details = entry.getValue();
+            if (hasNoDeadline(details))
+                continue;
+            futures.add(CompletableFuture.supplyAsync(() -> extractDeadlinesForCourse(courseName, details)));
+        }
+        return futures.stream().map(CompletableFuture::join).toList();
+    }
+
+    private CourseContentResponse extractDeadlinesForCourse(String courseName, List<CourseDetailResponse> details) {
+        List<CourseContentResponse.exercise> exercises = new ArrayList<>();
+
+        for (CourseDetailResponse detail : details) {
+            if (hasNoDeadline(detail)) {
+                continue;
+            }
+
+            for (CourseDetailResponse.CourseDetailModuleResponse module : detail.moduleResponse()) {
+                if (module.dates() == null) {
+                    continue;
+                }
+                String dueTimestamp = module.dates().stream().filter(d -> "Due:".equalsIgnoreCase(d.label())).map(
+                        CourseDetailResponse.CourseDetailModuleResponse.CourseDetailModuleDatesResonponse::timestamp)
+                        .findFirst().orElse(null);
+
+                if (dueTimestamp != null) {
+                    exercises.add(new CourseContentResponse.exercise(module.name(), toLocalDateTime(dueTimestamp),
+                            module.url()));
+                }
+            }
+        }
+
+        return new CourseContentResponse(courseName, exercises);
+    }
+
+    private boolean hasNoDeadline(List<CourseDetailResponse> details) {
+        for (CourseDetailResponse detail : details) {
+            if (!hasNoDeadline(detail)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private boolean hasNoDeadline(CourseDetailResponse detail) {
+        if (detail.moduleResponse() == null)
+            return true;
+        for (var module : detail.moduleResponse()) {
+            if (module.dates() != null) {
+                for (var date : module.dates()) {
+                    if ("Due:".equalsIgnoreCase(date.label())) {
+                        return false;
+                    }
+                }
+            }
+        }
+        return true;
+    }
+
+    private LocalDateTime toLocalDateTime(String timestamp) {
+        if (timestamp == null)
+            return null;
+
+        long epochSeconds = Long.parseLong(timestamp);
+
+        return LocalDateTime.ofInstant(Instant.ofEpochSecond(epochSeconds), ZoneId.systemDefault());
+    }
+
 }
