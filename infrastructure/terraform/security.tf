@@ -1,6 +1,6 @@
 # ──────────────────────────────────────────────
 # EC2 Security Group
-#   Inbound : 80, 443 from Internet (NO port 22)
+#   Inbound : 80, 443, 8080 from Internet (NO port 22)
 #   Outbound: all
 # ──────────────────────────────────────────────
 resource "aws_security_group" "ec2_sg" {
@@ -12,6 +12,14 @@ resource "aws_security_group" "ec2_sg" {
     description = "HTTP from Internet"
     from_port   = 80
     to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    description = "HTTP from Internet"
+    from_port   = 8080
+    to_port     = 8080
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
