@@ -58,6 +58,18 @@ public abstract class AbstractBaseClient {
         return response;
     }
 
+    protected <T> T put(String path, Object body, Class<T> responseType, HttpHeaders headers) {
+        String jsonBody = serializeBody(body);
+
+        T response = restClient.put().uri(path).contentType(MediaType.APPLICATION_JSON).headers(h -> {
+            if (headers != null)
+                h.putAll(headers);
+        }).body(jsonBody).retrieve().onStatus(HttpStatusCode::isError, this::handleErrorResponse).body(responseType);
+
+        validateResponse(response);
+        return response;
+    }
+
     protected void delete(String path, HttpHeaders headers) {
         restClient.delete().uri(path).headers(h -> {
             if (headers != null)
@@ -116,20 +128,20 @@ public abstract class AbstractBaseClient {
             return responseBody;
         }
         return switch (status.value()) {
-        case 401 -> "Unauthorized access to external service";
-        case 403 -> "Access forbidden to external service";
-        case 404 -> "External resource not found";
-        default -> "External service error: " + status;
+            case 401 -> "Unauthorized access to external service";
+            case 403 -> "Access forbidden to external service";
+            case 404 -> "External resource not found";
+            default -> "External service error: " + status;
         };
     }
 
     private ExternalClientException mapToException(HttpStatusCode status, String message) {
         ExternalClientErrorCode errorCode = switch (status.value()) {
-        case 400 -> ExternalClientErrorCode.BAD_REQUEST;
-        case 401 -> ExternalClientErrorCode.UNAUTHORIZED_REQUEST;
-        case 403 -> ExternalClientErrorCode.FORBIDDEN_REQUEST;
-        case 404 -> ExternalClientErrorCode.NOT_FOUND;
-        default -> ExternalClientErrorCode.EXTERNAL_SERVICE_ERROR;
+            case 400 -> ExternalClientErrorCode.BAD_REQUEST;
+            case 401 -> ExternalClientErrorCode.UNAUTHORIZED_REQUEST;
+            case 403 -> ExternalClientErrorCode.FORBIDDEN_REQUEST;
+            case 404 -> ExternalClientErrorCode.NOT_FOUND;
+            default -> ExternalClientErrorCode.EXTERNAL_SERVICE_ERROR;
         };
         return new ExternalClientException(errorCode, message);
     }

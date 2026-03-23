@@ -9,12 +9,12 @@ import com.uit.buddy.exception.user.UserException;
 import com.uit.buddy.mapper.user.UserMapper;
 import com.uit.buddy.repository.user.StudentRepository;
 import com.uit.buddy.service.cloudinary.CloudinaryService;
+import com.uit.buddy.service.cometchat.CometChatService;
 import com.uit.buddy.service.user.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -27,10 +27,11 @@ public class UserServiceImpl implements UserService {
     private final StudentRepository studentRepository;
     private final UserMapper userMapper;
     private final CloudinaryService cloudinaryService;
+    private final CometChatService cometChatService;
 
     @Override
     @Transactional(readOnly = true)
-    public UserResponse getMyProfile(@AuthenticationPrincipal String mssv) {
+    public UserResponse getMyProfile(String mssv) {
         log.info("[User Service] Fetching profile for MSSV: {}", mssv);
 
         Student student = studentRepository.findById(mssv)
@@ -41,7 +42,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional
-    public UserResponse updateProfile(@AuthenticationPrincipal String mssv, UpdateUserRequest request) {
+    public UserResponse updateProfile(String mssv, UpdateUserRequest request) {
         log.info("[User Service] Updating profile for MSSV: {}", mssv);
 
         Student student = studentRepository.findById(mssv)
@@ -74,6 +75,8 @@ public class UserServiceImpl implements UserService {
 
         student.setAvatarUrl(avatarUrl);
         studentRepository.save(student);
+
+        cometChatService.syncUserAvatar(student.getCometUid(), student.getFullName(), avatarUrl);
 
         log.info("[User Service] Successfully uploaded avatar for MSSV: {}", mssv);
         return avatarUrl;

@@ -1,6 +1,7 @@
 package com.uit.buddy.service.cometchat.impl;
 
 import com.uit.buddy.client.CometChatClient;
+import com.uit.buddy.dto.request.client.CometChatUserRequest;
 import com.uit.buddy.service.cometchat.CometChatService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -38,6 +39,20 @@ public class CometChatServiceImpl implements CometChatService {
             log.info("[CometChat Service] Friendship removed: {} <-> {}", mssv1, mssv2);
         } catch (Exception e) {
             log.error("[CometChat Service] Failed to remove friendship: {} <-> {}", mssv1, mssv2, e);
+            throw e;
+        }
+    }
+
+    @Override
+    @Async("cometChatExecutor")
+    @Retryable(maxAttempts = 3, backoff = @Backoff(delay = 1000, multiplier = 2))
+    public void syncUserAvatar(String uid, String fullName, String avatarUrl) {
+        try {
+            CometChatUserRequest updateRequest = new CometChatUserRequest(uid, fullName, avatarUrl);
+            cometChatClient.updateUser(uid, updateRequest);
+            log.info("[CometChat Service] Successfully synced avatar for UID: {}", uid);
+        } catch (Exception e) {
+            log.error("[CometChat Service] Failed to sync avatar for UID: {}", uid, e);
             throw e;
         }
     }

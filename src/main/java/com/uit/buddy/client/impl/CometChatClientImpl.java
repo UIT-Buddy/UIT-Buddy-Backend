@@ -5,6 +5,7 @@ import com.uit.buddy.client.AbstractBaseClient;
 import com.uit.buddy.client.CometChatClient;
 import com.uit.buddy.constant.CometChatApiConstants;
 import com.uit.buddy.dto.request.client.CometChatUserRequest;
+import com.uit.buddy.dto.response.client.CometChatAuthTokenResponse;
 import com.uit.buddy.dto.response.client.CometChatUserResponse;
 import java.util.List;
 import java.util.Map;
@@ -54,6 +55,18 @@ public class CometChatClientImpl extends AbstractBaseClient implements CometChat
     public void deleteUser(String uid) {
         String endpoint = String.format(CometChatApiConstants.USER_BY_UID_ENDPOINT, uid);
         delete(endpoint, createHeaders());
+    }
+
+    @Override
+    public CometChatAuthTokenResponse createCometAuthToken(String uid) {
+        String endpoint = String.format(CometChatApiConstants.AUTH_TOKEN_ENDPOINT, uid);
+        return post(endpoint, Map.of(), CometChatAuthTokenResponse.class, createHeaders());
+    }
+
+    @Override
+    public CometChatUserResponse updateUser(String uid, CometChatUserRequest request) {
+        String endpoint = String.format(CometChatApiConstants.UPDATE_USER_ENDPOINT, uid);
+        return put(endpoint, request, CometChatUserResponse.class, createHeaders());
     }
 
     private HttpHeaders createHeaders() {

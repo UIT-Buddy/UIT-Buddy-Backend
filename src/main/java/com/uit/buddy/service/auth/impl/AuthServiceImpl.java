@@ -160,6 +160,7 @@ public class AuthServiceImpl implements AuthService {
         }
 
         createCometChatUser(request.mssv(), pendingAccount.getFullName(), avatarUrl);
+        String cometAuthToken = createCometChatAuthToken(request.mssv());
 
         String homeClassCode = pendingAccount.getHomeClassCode();
         ensureHomeClassExists(homeClassCode, request.mssv());
@@ -167,6 +168,7 @@ public class AuthServiceImpl implements AuthService {
         Student student = Student.builder().mssv(request.mssv()).fullName(pendingAccount.getFullName())
                 .email(request.mssv() + AppConstants.STUDENT_EMAIL_DOMAIN).avatarUrl(avatarUrl).bio(null)
                 .cometUid(request.mssv()).encryptedWstoken(pendingAccount.getEncryptedWstoken())
+                .cometAuthToken(cometAuthToken)
                 .password(passwordEncoder.encode(request.password())).homeClassCode(homeClassCode).build();
 
         UserSetting userSetting = UserSetting.builder().mssv(request.mssv()).enableNotification(true)
@@ -211,7 +213,7 @@ public class AuthServiceImpl implements AuthService {
 
         StudentResponse studentResponse = studentMapper.toStudentResponse(student);
 
-        return new AuthResponse(accessToken, refreshToken, studentResponse);
+        return new AuthResponse(accessToken, refreshToken, studentResponse, student.getCometAuthToken());
     }
 
     @Override
@@ -247,7 +249,7 @@ public class AuthServiceImpl implements AuthService {
 
         StudentResponse studentResponse = studentMapper.toStudentResponse(student);
 
-        return new AuthResponse(accessToken, refreshToken, studentResponse);
+        return new AuthResponse(accessToken, refreshToken, studentResponse, student.getCometAuthToken());
     }
 
     @Override
@@ -341,7 +343,7 @@ public class AuthServiceImpl implements AuthService {
 
         StudentResponse studentResponse = studentMapper.toStudentResponse(student);
 
-        return new AuthResponse(newAccessToken, refreshToken, studentResponse);
+        return new AuthResponse(newAccessToken, refreshToken, studentResponse, student.getCometAuthToken());
     }
 
     @Override
@@ -445,6 +447,20 @@ public class AuthServiceImpl implements AuthService {
         } catch (RestClientException e) {
             log.error("[Auth Service] CometChat connection failed for MSSV: {}. Error: {}", mssv, e.getMessage());
             throw new AuthException(AuthErrorCode.EXTERNAL_SERVICE_ERROR, "Failed to connect to chat service");
+        }
+    }
+
+    private String createCometChatAuthToken(String mssv) {
+        log.debug("[Auth Service] Creating CometChat auth token for MSSV: {}", mssv);
+
+        try {
+            var cometAuthResponse = cometChatClient.createCometAuthToken(mssv);
+            String authToken = cometAuthResponse.data().authToken();
+            log.info("[Auth Service] Successfully created CometChat auth token for MSSV: {}", mssv);
+            return authToken;
+        } catch (Exception e) {
+            log.error("[Auth Service] Failed to create CometChat auth token for MSSV: {}", mssv, e);
+            return null;
         }
     }
 
