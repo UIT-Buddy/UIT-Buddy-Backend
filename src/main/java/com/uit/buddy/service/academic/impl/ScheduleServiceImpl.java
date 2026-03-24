@@ -1,5 +1,23 @@
 package com.uit.buddy.service.academic.impl;
 
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
+import java.util.stream.Collectors;
+
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
+
 import com.uit.buddy.client.UitClient;
 import com.uit.buddy.dto.request.academic.UploadScheduleRequest;
 import com.uit.buddy.dto.response.client.AssignmentDetailResponse;
@@ -33,23 +51,8 @@ import com.uit.buddy.util.EncryptionUtils;
 import com.uit.buddy.util.IcsParser;
 import com.uit.buddy.util.IcsParser.IcsEvent;
 import com.uit.buddy.util.IcsParser.ParseResult;
-import java.time.Instant;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Executor;
-import java.util.stream.Collectors;
+
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.multipart.MultipartFile;
 
 @Service
 @Slf4j
@@ -154,18 +157,26 @@ public class ScheduleServiceImpl implements ScheduleService {
         existingGlobalClasses.forEach(c -> classMap.put(c.getClassCode(), c));
 
         List<SubjectClass> classesToCreate = new ArrayList<>();
+        List<SubjectClass> classesToUpdate = new ArrayList<>();
         Map<String, Course> courseCache = new HashMap<>();
 
         for (IcsEvent event : newEventsForStudent.values()) {
-            if (!classMap.containsKey(event.getClassCode())) {
+            SubjectClass existingClass = classMap.get(event.getClassCode());
+            if (existingClass == null) {
                 SubjectClass newClass = buildSubjectClassEntity(event, semester, courseCache);
                 classesToCreate.add(newClass);
                 classMap.put(event.getClassCode(), newClass);
+            } else if (applyEventDataToSubjectClass(existingClass, event)) {
+                classesToUpdate.add(existingClass);
             }
         }
 
         if (!classesToCreate.isEmpty()) {
             subjectClassRepository.saveAll(classesToCreate);
+        }
+
+        if (!classesToUpdate.isEmpty()) {
+            subjectClassRepository.saveAll(classesToUpdate);
         }
 
         List<StudentSubjectClass> finalMappings = newEventsForStudent.values().stream()
@@ -186,11 +197,60 @@ public class ScheduleServiceImpl implements ScheduleService {
                     log.error("[Schedule Service] Course not found in database: {}", code);
                     return new ScheduleException(ScheduleErrorCode.COURSE_NOT_FOUND);
                 }));
-
         return SubjectClass.builder().classCode(event.getClassCode()).course(course).semester(semester)
-                .teacherName(event.getTeacherName()).dayOfWeek(event.getDayOfWeek()).startTime(event.getStartTime())
-                .endTime(event.getEndTime()).startLesson(event.getStartLesson()).endLesson(event.getEndLesson())
-                .roomCode(event.getRoomCode()).interval(event.getInterval() != null ? event.getInterval() : 1).build();
+                .teacherName(event.getTeacherName()).dayOfWeek(event.getDayOfWeek()).startLesson(event.getStartLesson())
+                .endLesson(event.getEndLesson()).startTime(event.getStartTime()).endTime(event.getEndTime())
+                .startDate(event.getStartDate()).endDate(event.getEndDate()).roomCode(event.getRoomCode())
+                .interval(event.getInterval() != null ? event.getInterval() : 1).build();
+    }
+
+    private boolean applyEventDataToSubjectClass(SubjectClass subjectClass, IcsEvent event) {
+        boolean changed = false;
+
+        if (!java.util.Objects.equals(subjectClass.getTeacherName(), event.getTeacherName())) {
+            subjectClass.setTeacherName(event.getTeacherName());
+            changed = true;
+        }
+        if (!java.util.Objects.equals(subjectClass.getDayOfWeek(), event.getDayOfWeek())) {
+            subjectClass.setDayOfWeek(event.getDayOfWeek());
+            changed = true;
+        }
+        if (!java.util.Objects.equals(subjectClass.getStartLesson(), event.getStartLesson())) {
+            subjectClass.setStartLesson(event.getStartLesson());
+            changed = true;
+        }
+        if (!java.util.Objects.equals(subjectClass.getEndLesson(), event.getEndLesson())) {
+            subjectClass.setEndLesson(event.getEndLesson());
+            changed = true;
+        }
+        if (!java.util.Objects.equals(subjectClass.getStartTime(), event.getStartTime())) {
+            subjectClass.setStartTime(event.getStartTime());
+            changed = true;
+        }
+        if (!java.util.Objects.equals(subjectClass.getEndTime(), event.getEndTime())) {
+            subjectClass.setEndTime(event.getEndTime());
+            changed = true;
+        }
+        if (!java.util.Objects.equals(subjectClass.getStartDate(), event.getStartDate())) {
+            subjectClass.setStartDate(event.getStartDate());
+            changed = true;
+        }
+        if (!java.util.Objects.equals(subjectClass.getEndDate(), event.getEndDate())) {
+            subjectClass.setEndDate(event.getEndDate());
+            changed = true;
+        }
+        if (!java.util.Objects.equals(subjectClass.getRoomCode(), event.getRoomCode())) {
+            subjectClass.setRoomCode(event.getRoomCode());
+            changed = true;
+        }
+
+        Integer interval = event.getInterval() != null ? event.getInterval() : 1;
+        if (!java.util.Objects.equals(subjectClass.getInterval(), interval)) {
+            subjectClass.setInterval(interval);
+            changed = true;
+        }
+
+        return changed;
     }
 
     private String extractCourseCode(String classCode) {

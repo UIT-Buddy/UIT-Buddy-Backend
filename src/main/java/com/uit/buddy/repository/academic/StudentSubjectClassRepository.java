@@ -1,15 +1,17 @@
 package com.uit.buddy.repository.academic;
 
-import com.uit.buddy.entity.academic.StudentSubjectClass;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
+
+import com.uit.buddy.entity.academic.StudentSubjectClass;
 
 @Repository
 public interface StudentSubjectClassRepository extends CrudRepository<StudentSubjectClass, UUID> {

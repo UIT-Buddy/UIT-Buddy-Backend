@@ -15,6 +15,11 @@ public interface ScheduleMapper {
     @Mapping(target = "dayOfWeek", source = "subjectClass.dayOfWeek")
     @Mapping(target = "startTime", source = "subjectClass.startTime")
     @Mapping(target = "endTime", source = "subjectClass.endTime")
+    @Mapping(target = "roomCode", source = "subjectClass.roomCode")
+    @Mapping(target = "startLesson", source = "subjectClass.startLesson")
+    @Mapping(target = "endLesson", source = "subjectClass.endLesson")
+    @Mapping(target = "startDate", source = "subjectClass.startDate")
+    @Mapping(target = "endDate", source = "subjectClass.endDate")
     Course toCourse(StudentSubjectClass studentClass);
 
     List<Course> toListCourse(List<StudentSubjectClass> studentClasses);
