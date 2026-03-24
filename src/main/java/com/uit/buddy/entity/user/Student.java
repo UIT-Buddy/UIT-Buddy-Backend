@@ -6,10 +6,8 @@ import jakarta.persistence.*;
 import lombok.*;
 
 @Entity
-@Table(name = "students", indexes = {
-        @Index(name = "idx_student_mssv", columnList = "mssv", unique = true),
-        @Index(name = "idx_student_home_class", columnList = "home_class_code")
-})
+@Table(name = "students", indexes = { @Index(name = "idx_student_mssv", columnList = "mssv", unique = true),
+        @Index(name = "idx_student_home_class", columnList = "home_class_code") })
 @Getter
 @Setter
 @NoArgsConstructor
@@ -48,6 +46,9 @@ public class Student extends AbstractAuditEntity {
 
     @Column(name = "encrypted_wstoken", length = 512)
     private String encryptedWstoken;
+
+    @Column(name = "comet_auth_token", length = 512)
+    private String cometAuthToken;
 
     @OneToOne(mappedBy = "student", cascade = CascadeType.ALL, orphanRemoval = true)
     private UserSetting userSetting;

@@ -94,7 +94,8 @@ CREATE TABLE semesters (
 );
 
 CREATE TABLE classes (
-    class_code VARCHAR(30) PRIMARY KEY,
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    class_code VARCHAR(30),
     course_code VARCHAR(20) NOT NULL,
     semester_code VARCHAR(20) NOT NULL,
     teacher_name VARCHAR(150),
@@ -111,7 +112,7 @@ CREATE TABLE classes (
 CREATE TABLE student_class (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     mssv VARCHAR(12) NOT NULL,
-    class_code VARCHAR(30) NOT NULL,
+    class_id UUID NOT NULL,
     status VARCHAR(20),
     process_grade FLOAT,
     midterm_grade FLOAT,
@@ -155,7 +156,7 @@ CREATE TABLE academic_summary (
 
 CREATE TABLE assignments (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    class_code VARCHAR(30) NOT NULL,
+    class_id UUID NOT NULL,
     title VARCHAR(255) NOT NULL,
     description TEXT,
     type VARCHAR(20) NOT NULL,
@@ -185,7 +186,7 @@ CREATE TABLE student_tasks (
 CREATE TABLE documents (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     mssv VARCHAR(12) NOT NULL,
-    class_code VARCHAR(30),
+    class_id UUID NOT NULL,
     file_url VARCHAR(512) NOT NULL,
     file_name VARCHAR(255) NOT NULL,
     access_level VARCHAR(50),
@@ -212,7 +213,6 @@ CREATE TABLE notifications (
     content TEXT NOT NULL,
     type VARCHAR(50) NOT NULL,
     is_read BOOLEAN NOT NULL DEFAULT FALSE,
-    redirect_url VARCHAR(512),
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     deleted_at TIMESTAMP
@@ -308,20 +308,20 @@ CREATE INDEX idx_class_semester ON classes(semester_code);
 CREATE INDEX idx_class_course ON classes(course_code);
 
 CREATE INDEX idx_st_class_mssv ON student_class(mssv);
-CREATE INDEX idx_st_class_code ON student_class(class_code);
+CREATE INDEX idx_st_class_id ON student_class(class_id);
 
 CREATE INDEX idx_semester_summary_student ON semester_summaries(mssv);
 CREATE INDEX idx_semester_summary_semester ON semester_summaries(semester_code);
 
 CREATE UNIQUE INDEX idx_academic_summary_mssv ON academic_summary(mssv);
 
-CREATE INDEX idx_assignment_class ON assignments(class_code);
+CREATE INDEX idx_assignment_class ON assignments(class_id);
 
 CREATE INDEX idx_task_student ON student_tasks(mssv);
 CREATE INDEX idx_task_assignment ON student_tasks(assignment_id);
 
 CREATE INDEX idx_doc_owner ON documents(mssv);
-CREATE INDEX idx_doc_class ON documents(class_code);
+CREATE INDEX idx_doc_class ON documents(class_id);
 
 CREATE INDEX idx_share_doc_id ON share_document(document_id);
 CREATE INDEX idx_share_recipient ON share_document(mssv);
@@ -377,17 +377,18 @@ ALTER TABLE curriculum_courses
         REFERENCES courses(course_code) ON DELETE SET NULL ON UPDATE CASCADE;
 
 ALTER TABLE classes
+    ADD CONSTRAINT uk_class_semester UNIQUE (class_code, semester_code),
     ADD CONSTRAINT fk_class_course FOREIGN KEY (course_code) 
         REFERENCES courses(course_code) ON DELETE RESTRICT ON UPDATE CASCADE,
     ADD CONSTRAINT fk_class_semester FOREIGN KEY (semester_code) 
         REFERENCES semesters(semester_code) ON DELETE RESTRICT ON UPDATE CASCADE;
 
 ALTER TABLE student_class
-    ADD CONSTRAINT uk_student_class UNIQUE (mssv, class_code),
+    ADD CONSTRAINT uk_student_class UNIQUE (mssv, class_id),
     ADD CONSTRAINT fk_st_class_student FOREIGN KEY (mssv) 
         REFERENCES students(mssv) ON DELETE CASCADE ON UPDATE CASCADE,
-    ADD CONSTRAINT fk_st_class_subject FOREIGN KEY (class_code) 
-        REFERENCES classes(class_code) ON DELETE CASCADE ON UPDATE CASCADE;
+    ADD CONSTRAINT fk_st_class_subject FOREIGN KEY (class_id) 
+        REFERENCES classes(id) ON DELETE CASCADE ON UPDATE CASCADE;
 
 ALTER TABLE semester_summaries
     ADD CONSTRAINT uk_student_semester_summary UNIQUE (mssv, semester_code),
@@ -401,8 +402,8 @@ ALTER TABLE academic_summary
     REFERENCES students(mssv) ON DELETE CASCADE ON UPDATE CASCADE;
 
 ALTER TABLE assignments
-    ADD CONSTRAINT fk_assignment_class FOREIGN KEY (class_code) 
-    REFERENCES classes(class_code) ON DELETE CASCADE ON UPDATE CASCADE;
+    ADD CONSTRAINT fk_assignment_class FOREIGN KEY (class_id) 
+    REFERENCES classes(id) ON DELETE CASCADE ON UPDATE CASCADE;
 
 ALTER TABLE student_tasks
     ADD CONSTRAINT fk_task_student FOREIGN KEY (mssv) 
@@ -413,8 +414,8 @@ ALTER TABLE student_tasks
 ALTER TABLE documents
     ADD CONSTRAINT fk_document_owner FOREIGN KEY (mssv) 
         REFERENCES students(mssv) ON DELETE CASCADE ON UPDATE CASCADE,
-    ADD CONSTRAINT fk_document_class FOREIGN KEY (class_code) 
-        REFERENCES classes(class_code) ON DELETE SET NULL ON UPDATE CASCADE;
+    ADD CONSTRAINT fk_document_class FOREIGN KEY (class_id) 
+        REFERENCES classes(id) ON DELETE SET NULL ON UPDATE CASCADE;
 
 ALTER TABLE share_document
     ADD CONSTRAINT uk_document_recipient UNIQUE (document_id, mssv),

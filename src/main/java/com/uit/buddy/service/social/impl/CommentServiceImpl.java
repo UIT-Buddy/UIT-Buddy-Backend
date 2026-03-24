@@ -1,19 +1,12 @@
 package com.uit.buddy.service.social.impl;
 
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.UUID;
-
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.context.ApplicationEventPublisher;
-
 import com.uit.buddy.dto.request.social.CreateCommentRequest;
 import com.uit.buddy.dto.request.social.UpdateCommentRequest;
 import com.uit.buddy.dto.response.social.CommentResponse;
 import com.uit.buddy.entity.social.Comment;
 import com.uit.buddy.entity.social.CommentReaction;
 import com.uit.buddy.entity.social.Post;
+import com.uit.buddy.event.social.CommentLikedEvent;
 import com.uit.buddy.event.social.PostCommentedEvent;
 import com.uit.buddy.exception.social.SocialErrorCode;
 import com.uit.buddy.exception.social.SocialException;
@@ -24,9 +17,14 @@ import com.uit.buddy.repository.social.PostRepository;
 import com.uit.buddy.repository.user.StudentRepository;
 import com.uit.buddy.service.social.CommentService;
 import com.uit.buddy.util.CursorUtils;
-
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -49,22 +47,16 @@ public class CommentServiceImpl implements CommentService {
         var author = studentRepository.findById(mssv)
                 .orElseThrow(() -> new SocialException(SocialErrorCode.UNAUTHORIZED));
 
-        Comment comment = Comment.builder()
-                .post(post)
-                .author(author)
-                .content(request.content())
-                .build();
+        Comment comment = Comment.builder().post(post).author(author).content(request.content()).build();
 
         comment = commentRepository.save(comment);
         postRepository.incrementCommentCount(postId);
 
         if (!post.getMssv().equals(mssv)) {
-            String actorName = studentRepository.findById(mssv)
-                    .map(student -> student.getFullName())
-                    .orElse(mssv);
+            String actorName = studentRepository.findById(mssv).map(student -> student.getFullName()).orElse(mssv);
 
-            eventPublisher.publishEvent(new PostCommentedEvent(
-                    mssv, actorName, post.getMssv(), postId, comment.getId(), request.content()));
+            eventPublisher.publishEvent(new PostCommentedEvent(mssv, actorName, post.getMssv(), postId, comment.getId(),
+                    request.content()));
         }
     }
 
@@ -76,24 +68,18 @@ public class CommentServiceImpl implements CommentService {
 
         var post = parentComment.getPost();
 
-        Comment reply = Comment.builder()
-                .post(post)
-                .parentComment(parentComment)
-                .author(studentRepository.getReferenceById(mssv))
-                .content(request.content())
-                .build();
+        Comment reply = Comment.builder().post(post).parentComment(parentComment)
+                .author(studentRepository.getReferenceById(mssv)).content(request.content()).build();
 
         reply = commentRepository.save(reply);
         postRepository.incrementCommentCount(post.getId());
         commentRepository.incrementReplyCount(commentId);
 
         if (!parentComment.getMssv().equals(mssv)) {
-            String actorName = studentRepository.findById(mssv)
-                    .map(student -> student.getFullName())
-                    .orElse(mssv);
+            String actorName = studentRepository.findById(mssv).map(student -> student.getFullName()).orElse(mssv);
 
-            eventPublisher.publishEvent(new PostCommentedEvent(
-                    mssv, actorName, parentComment.getMssv(), post.getId(), reply.getId(), request.content()));
+            eventPublisher.publishEvent(new PostCommentedEvent(mssv, actorName, parentComment.getMssv(), post.getId(),
+                    reply.getId(), request.content()));
         }
     }
 
@@ -127,9 +113,8 @@ public class CommentServiceImpl implements CommentService {
     @Override
     @Transactional
     public boolean toggleCommentLike(UUID commentId, String mssv) {
-        if (!commentRepository.existsById(commentId)) {
-            throw new SocialException(SocialErrorCode.COMMENT_NOT_FOUND);
-        }
+        Comment comment = commentRepository.findById(commentId)
+                .orElseThrow(() -> new SocialException(SocialErrorCode.COMMENT_NOT_FOUND));
 
         var existingReaction = commentReactionRepository.findByCommentIdAndMssv(commentId, mssv);
 
@@ -138,12 +123,17 @@ public class CommentServiceImpl implements CommentService {
             commentRepository.decrementLikeCount(commentId);
             return false;
         } else {
-            CommentReaction reaction = CommentReaction.builder()
-                    .commentId(commentId)
-                    .mssv(mssv)
-                    .build();
+            CommentReaction reaction = CommentReaction.builder().commentId(commentId).mssv(mssv).build();
             commentReactionRepository.save(reaction);
             commentRepository.incrementLikeCount(commentId);
+
+            // Publish event if not liking own comment
+            if (!comment.getMssv().equals(mssv)) {
+                String actorName = studentRepository.findById(mssv).map(student -> student.getFullName()).orElse(mssv);
+                eventPublisher.publishEvent(new CommentLikedEvent(mssv, actorName, comment.getMssv(), commentId,
+                        comment.getPost().getId()));
+            }
+
             return true;
         }
     }
@@ -164,10 +154,8 @@ public class CommentServiceImpl implements CommentService {
             cursorId = contents.id();
         }
 
-        return commentRepository.findCommentsWithCursor(postId, null, mssv, cursorTime, cursorId, limit + 1)
-                .stream()
-                .map(commentMapper::toCommentResponse)
-                .toList();
+        return commentRepository.findCommentsWithCursor(postId, null, mssv, cursorTime, cursorId, limit + 1).stream()
+                .map(commentMapper::toCommentResponse).toList();
     }
 
     @Override
@@ -186,11 +174,7 @@ public class CommentServiceImpl implements CommentService {
             cursorId = contents.id();
         }
 
-        return commentRepository
-                .findCommentsWithCursor(parentComment.getPost().getId(), commentId, mssv, cursorTime, cursorId,
-                        limit + 1)
-                .stream()
-                .map(commentMapper::toCommentResponse)
-                .toList();
+        return commentRepository.findCommentsWithCursor(parentComment.getPost().getId(), commentId, mssv, cursorTime,
+                cursorId, limit + 1).stream().map(commentMapper::toCommentResponse).toList();
     }
 }

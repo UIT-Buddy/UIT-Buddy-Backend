@@ -39,3 +39,8 @@ build/
 **/firebase/*.json
 *.json
 firebase-adminsdk-*.json
+
+### Terraform ###
+infrastructure/terraform/terraform.tfvars
+infrastructure/terraform/.terraform/
+infrastructure/terraform/.terraform.lock.hcl

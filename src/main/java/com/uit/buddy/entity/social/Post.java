@@ -1,23 +1,18 @@
 package com.uit.buddy.entity.social;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.type.SqlTypes;
-
 import com.uit.buddy.entity.AbstractBaseEntity;
 import com.uit.buddy.entity.user.Student;
 import com.uit.buddy.enums.PostType;
-
 import jakarta.persistence.*;
+import java.util.ArrayList;
+import java.util.List;
 import lombok.*;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 @Entity
-@Table(name = "posts", indexes = {
-        @Index(name = "idx_post_author", columnList = "mssv"),
-        @Index(name = "idx_post_created_id", columnList = "created_at DESC, id DESC")
-})
+@Table(name = "posts", indexes = { @Index(name = "idx_post_author", columnList = "mssv"),
+        @Index(name = "idx_post_created_id", columnList = "created_at DESC, id DESC") })
 @Getter
 @Setter
 @NoArgsConstructor
@@ -64,5 +59,4 @@ public class Post extends AbstractBaseEntity {
 
     @Enumerated(EnumType.STRING)
     private PostType type;
-
 }

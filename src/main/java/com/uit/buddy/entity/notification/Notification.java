@@ -1,16 +1,14 @@
 package com.uit.buddy.entity.notification;
 
 import com.uit.buddy.entity.AbstractBaseEntity;
-import com.uit.buddy.enums.NotificationType;
 import com.uit.buddy.entity.user.Student;
+import com.uit.buddy.enums.NotificationType;
 import jakarta.persistence.*;
 import lombok.*;
 
 @Entity
-@Table(name = "notifications", indexes = {
-        @Index(name = "idx_notification_student", columnList = "mssv"),
-        @Index(name = "idx_notification_is_read", columnList = "is_read")
-})
+@Table(name = "notifications", indexes = { @Index(name = "idx_notification_student", columnList = "mssv"),
+        @Index(name = "idx_notification_is_read", columnList = "is_read") })
 @Getter
 @Setter
 @NoArgsConstructor
@@ -32,10 +30,10 @@ public class Notification extends AbstractBaseEntity {
     @Column(name = "type", nullable = false, length = 50)
     private NotificationType type;
 
+    @Column(name = "data_id", length = 100)
+    private String dataId;
+
     @Column(name = "is_read", nullable = false)
     @Builder.Default
     private Boolean isRead = false;
-
-    @Column(name = "redirect_url", length = 512)
-    private String redirectUrl;
 }

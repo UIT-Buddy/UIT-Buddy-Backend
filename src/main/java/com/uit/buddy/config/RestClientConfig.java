@@ -1,5 +1,7 @@
 package com.uit.buddy.config;
 
+import java.net.http.HttpClient;
+import java.time.Duration;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -9,9 +11,6 @@ import org.springframework.context.annotation.Primary;
 import org.springframework.http.client.JdkClientHttpRequestFactory;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClient.Builder;
-
-import java.net.http.HttpClient;
-import java.time.Duration;
 
 @Configuration
 @Slf4j
@@ -49,32 +48,24 @@ public class RestClientConfig {
 
     @Bean
     public RestClient moodleClient() {
-        return RestClient.builder()
-                .baseUrl(moodleBaseUrl)
-                .requestFactory(createFactory(moodleConnectTimeout, moodleReadTimeout))
-                .build();
+        return RestClient.builder().baseUrl(moodleBaseUrl)
+                .requestFactory(createFactory(moodleConnectTimeout, moodleReadTimeout)).build();
     }
 
     @Bean
     public RestClient cometChatClient() {
-        return RestClient.builder()
-                .baseUrl(cometChatBaseUrl)
-                .requestFactory(createFactory(cometChatConnectTimeout, cometChatReadTimeout))
-                .build();
+        return RestClient.builder().baseUrl(cometChatBaseUrl)
+                .requestFactory(createFactory(cometChatConnectTimeout, cometChatReadTimeout)).build();
     }
 
     @Bean
     @Primary
     public RestClient restClient() {
-        return RestClient.builder()
-                .requestFactory(createFactory(defaultConnectTimeout, defaultReadTimeout))
-                .build();
+        return RestClient.builder().requestFactory(createFactory(defaultConnectTimeout, defaultReadTimeout)).build();
     }
 
     private JdkClientHttpRequestFactory createFactory(int connectTimeout, int readTimeout) {
-        HttpClient httpClient = HttpClient.newBuilder()
-                .connectTimeout(Duration.ofMillis(connectTimeout))
-                .build();
+        HttpClient httpClient = HttpClient.newBuilder().connectTimeout(Duration.ofMillis(connectTimeout)).build();
         JdkClientHttpRequestFactory factory = new JdkClientHttpRequestFactory(httpClient);
         factory.setReadTimeout(Duration.ofMillis(readTimeout));
         return factory;

@@ -18,7 +18,11 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -46,24 +50,21 @@ public class AuthController extends AbstractBaseController {
 
     @PostMapping("/signin")
     @Operation(summary = "Sign In", description = "Authenticate student using MSSV and password")
-    public ResponseEntity<SingleResponse<AuthResponse>> signIn(
-            @Valid @RequestBody SignInRequest request) {
+    public ResponseEntity<SingleResponse<AuthResponse>> signIn(@Valid @RequestBody SignInRequest request) {
         AuthResponse response = authService.signIn(request);
         return successSingle(response, "Sign in successful!");
     }
 
     @PostMapping("/forget-password")
     @Operation(summary = "Forget Password", description = "Initiate password reset process by sending an OTP to the student's email")
-    public ResponseEntity<SuccessResponse> forgetPassword(
-            @Valid @RequestBody ForgetPasswordRequest request) {
+    public ResponseEntity<SuccessResponse> forgetPassword(@Valid @RequestBody ForgetPasswordRequest request) {
         authService.forgetPassword(request);
         return success("Password reset OTP sent to your email!");
     }
 
     @PostMapping("/reset-password")
     @Operation(summary = "Reset Password", description = "Verify OTP and reset password")
-    public ResponseEntity<SuccessResponse> resetPassword(
-            @Valid @RequestBody ResetPasswordRequest request) {
+    public ResponseEntity<SuccessResponse> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
         if (!request.newPassword().equals(request.confirmPassword())) {
             throw new AuthException(AuthErrorCode.PASSWORD_MISMATCH);
         }
@@ -92,5 +93,4 @@ public class AuthController extends AbstractBaseController {
         authService.signOut(refreshToken);
         return success("Sign out successfully!");
     }
-
 }

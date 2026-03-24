@@ -1,18 +1,15 @@
 package com.uit.buddy.entity.social;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import com.uit.buddy.entity.AbstractBaseEntity;
 import com.uit.buddy.entity.user.Student;
 import jakarta.persistence.*;
+import java.util.ArrayList;
+import java.util.List;
 import lombok.*;
 
 @Entity
-@Table(name = "comments", indexes = {
-        @Index(name = "idx_comment_post", columnList = "post_id"),
-        @Index(name = "idx_comment_author", columnList = "mssv")
-})
+@Table(name = "comments", indexes = { @Index(name = "idx_comment_post", columnList = "post_id"),
+        @Index(name = "idx_comment_author", columnList = "mssv") })
 @Getter
 @Setter
 @NoArgsConstructor

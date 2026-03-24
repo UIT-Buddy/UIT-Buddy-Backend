@@ -6,11 +6,9 @@ import com.uit.buddy.exception.fcm.FcmErrorCode;
 import com.uit.buddy.exception.fcm.FcmException;
 import com.uit.buddy.repository.user.DeviceTokenRepository;
 import com.uit.buddy.service.fcm.FcmService;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-
-import java.util.List;
-
 import org.springframework.stereotype.Service;
 
 @Service
@@ -27,63 +25,62 @@ public class FcmServiceImpl implements FcmService {
             throw new FcmException(FcmErrorCode.INVALID_FCM_TOKEN);
         }
         log.info("[FCM Service] Syncing device token for student: {}", mssv);
+
+        int deletedCount = deviceTokenRepository.deleteByFcmTokenAndMssvNot(fcmToken, mssv);
+        if (deletedCount > 0) {
+            log.info("[FCM Service] Removed token from {} other user(s) before syncing to MSSV: {}", deletedCount,
+                    mssv);
+        }
+
         deviceTokenRepository.upsertToken(mssv, fcmToken);
     }
 
     @Override
     public void sendPushNotification(FcmNotificationRequest request) {
-        Notification notification = Notification.builder()
-                .setTitle(request.title())
-                .setBody(request.message())
-                .setImage(request.image())
-                .build();
+        Notification notification = Notification.builder().setTitle(request.title()).setBody(request.message())
+                .setImage(request.image()).build();
 
-        Message message = Message.builder()
-                .setToken(request.targetToken())
-                .setNotification(notification)
-                .putAllData(request.toDataMap())
-                .build();
+        Message message = Message.builder().setToken(request.targetToken()).setNotification(notification)
+                .putAllData(request.toDataMap()).build();
 
         try {
             String response = firebaseMessaging.send(message);
             log.info("[FCM Service] Successfully sent message. ID: {}", response);
         } catch (FirebaseMessagingException e) {
+            log.error("[FCM Service] Failed to send push notification to token: {}. Error: {}", request.targetToken(),
+                    e.getMessage(), e);
             handleFirebaseError(e, request.targetToken());
         }
     }
 
     @Override
-    public void sendMulticastNotification(List<String> tokens, String notificationId,
-            String title, String body, String type, String dataId) {
+    public void sendMulticastNotification(List<String> tokens, String notificationId, String title, String body,
+            String type, String dataId) {
         if (tokens == null || tokens.isEmpty())
             return;
 
         // MulticastMessage vẫn dùng được để build data chung cho tất cả tokens
-        MulticastMessage message = MulticastMessage.builder()
-                .addAllTokens(tokens)
-                .setNotification(Notification.builder()
-                        .setTitle(title)
-                        .setBody(body)
-                        .build())
-                .putData("id", notificationId)
-                .putData("type", type)
-                .putData("dataId", dataId)
-                .build();
+        MulticastMessage message = MulticastMessage.builder().addAllTokens(tokens)
+                .setNotification(Notification.builder().setTitle(title).setBody(body).build())
+                .putData("id", notificationId).putData("type", type).putData("dataId", dataId).build();
 
         try {
             // SỬ DỤNG sendEachForMulticast thay cho sendMulticast bị deprecated
             BatchResponse response = firebaseMessaging.sendEachForMulticast(message);
 
-            log.info("[FCM Service] Sent notification. Success: {}, Failure: {}",
-                    response.getSuccessCount(), response.getFailureCount());
+            log.info("[FCM Service] Sent notification. Success: {}, Failure: {}", response.getSuccessCount(),
+                    response.getFailureCount());
 
             // BEST PRACTICE: Dọn dẹp token rác ngay lập tức nếu gửi thất bại
             if (response.getFailureCount() > 0) {
+                log.warn("[FCM Service] {} notification(s) failed to send. Processing failures...",
+                        response.getFailureCount());
                 handleMulticastFailures(response, tokens);
             }
 
         } catch (FirebaseMessagingException e) {
-            log.error("[FCM Service] Fatal error sending multicast notification", e);
+            log.error("[FCM Service] Fatal error sending multicast notification. Title: {}, Recipients: {}", title,
+                    tokens.size(), e);
         }
     }
 
@@ -97,6 +94,9 @@ public class FcmServiceImpl implements FcmService {
         for (int i = 0; i < responses.size(); i++) {
             if (!responses.get(i).isSuccessful()) {
                 MessagingErrorCode code = responses.get(i).getException().getMessagingErrorCode();
+                String errorMsg = responses.get(i).getException().getMessage();
+                log.error("[FCM Service] Failed to send to token index {}: [{}] {}", i, code, errorMsg);
+
                 // Nếu token không còn hiệu lực (UNREGISTERED) hoặc sai định dạng
                 if (code == MessagingErrorCode.UNREGISTERED || code == MessagingErrorCode.INVALID_ARGUMENT) {
                     invalidTokens.add(tokens.get(i));

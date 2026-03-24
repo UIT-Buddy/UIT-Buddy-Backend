@@ -4,13 +4,11 @@ import com.uit.buddy.entity.AbstractBaseEntity;
 import com.uit.buddy.entity.academic.SubjectClass;
 import com.uit.buddy.enums.AssignmentType;
 import jakarta.persistence.*;
-import lombok.*;
 import java.time.LocalDateTime;
+import lombok.*;
 
 @Entity
-@Table(name = "assignments", indexes = {
-        @Index(name = "idx_assignment_class", columnList = "class_code")
-})
+@Table(name = "assignments", indexes = { @Index(name = "idx_assignment_class", columnList = "class_code") })
 @Getter
 @Setter
 @NoArgsConstructor

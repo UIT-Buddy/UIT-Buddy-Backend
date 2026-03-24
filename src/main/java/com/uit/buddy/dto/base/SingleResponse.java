@@ -5,8 +5,5 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonPropertyOrder({ "statusCode", "message", "data" })
-public record SingleResponse<T>(
-        Integer statusCode,
-        String message,
-        T data) {
+public record SingleResponse<T>(Integer statusCode, String message, T data) {
 }

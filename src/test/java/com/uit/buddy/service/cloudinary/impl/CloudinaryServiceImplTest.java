@@ -1,11 +1,27 @@
 package com.uit.buddy.service.cloudinary.impl;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyMap;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import com.cloudinary.Cloudinary;
 import com.cloudinary.Uploader;
 import com.uit.buddy.config.CloudinaryProperties;
 import com.uit.buddy.entity.social.PostMedia;
 import com.uit.buddy.enums.FileType;
 import com.uit.buddy.exception.user.UserException;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.Executor;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -15,20 +31,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.web.multipart.MultipartFile;
-
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.Executor;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyMap;
-import static org.mockito.Mockito.*;
-import static org.mockito.Mockito.lenient;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("CloudinaryServiceImpl Tests")
@@ -91,7 +93,6 @@ class CloudinaryServiceImplTest {
             MultipartFile file = new MockMultipartFile("file", "avatar.jpg", "image/jpeg", content);
 
             when(properties.getAllowedImageTypes()).thenReturn(new String[] { "image/jpeg", "image/png" });
-            when(properties.getMaxImageSize()).thenReturn(5L * 1024 * 1024);
             when(properties.getAvatarSize()).thenReturn(200);
 
             Map<String, Object> uploadResult = new HashMap<>();
@@ -121,7 +122,6 @@ class CloudinaryServiceImplTest {
             MultipartFile file = new MockMultipartFile("file", "image.jpg", "image/jpeg", content);
 
             when(properties.getAllowedImageTypes()).thenReturn(new String[] { "image/jpeg", "image/png" });
-            when(properties.getMaxImageSize()).thenReturn(5L * 1024 * 1024);
             when(properties.getPostImageWidth()).thenReturn(1080);
             when(properties.getPostImageHeight()).thenReturn(1080);
 
@@ -149,7 +149,6 @@ class CloudinaryServiceImplTest {
             MultipartFile file = new MockMultipartFile("file", "video.mp4", "video/mp4", content);
 
             when(properties.getAllowedVideoTypes()).thenReturn(new String[] { "video/mp4", "video/avi" });
-            when(properties.getMaxVideoSize()).thenReturn(50L * 1024 * 1024);
 
             Map<String, Object> uploadResult = new HashMap<>();
             uploadResult.put("secure_url", expectedUrl);
@@ -202,26 +201,11 @@ class CloudinaryServiceImplTest {
         }
 
         @Test
-        @DisplayName("Should throw exception when file size exceeds limit")
-        void shouldThrowExceptionWhenFileSizeExceedsLimit() {
-            // Given
-            byte[] largeContent = new byte[6 * 1024 * 1024]; // 6MB
-            MultipartFile file = new MockMultipartFile("file", "large.jpg", "image/jpeg", largeContent);
-            when(properties.getAllowedImageTypes()).thenReturn(new String[] { "image/jpeg", "image/png" });
-            when(properties.getMaxImageSize()).thenReturn(5L * 1024 * 1024); // 5MB limit
-
-            // When & Then
-            assertThatThrownBy(() -> cloudinaryService.validateFile(file, FileType.IMAGE))
-                    .isInstanceOf(UserException.class);
-        }
-
-        @Test
         @DisplayName("Should validate file successfully")
         void shouldValidateFileSuccessfully() {
             // Given
             MultipartFile file = new MockMultipartFile("file", "test.jpg", "image/jpeg", "content".getBytes());
             when(properties.getAllowedImageTypes()).thenReturn(new String[] { "image/jpeg", "image/png" });
-            when(properties.getMaxImageSize()).thenReturn(5L * 1024 * 1024);
 
             // When & Then - should not throw exception
             cloudinaryService.validateFile(file, FileType.IMAGE);
@@ -272,7 +256,6 @@ class CloudinaryServiceImplTest {
             List<MultipartFile> images = Arrays.asList(image1, image2);
 
             when(properties.getAllowedImageTypes()).thenReturn(new String[] { "image/jpeg", "image/png" });
-            when(properties.getMaxImageSize()).thenReturn(5L * 1024 * 1024);
             when(properties.getPostImageWidth()).thenReturn(1080);
             when(properties.getPostImageHeight()).thenReturn(1080);
 
@@ -305,8 +288,6 @@ class CloudinaryServiceImplTest {
 
             when(properties.getAllowedImageTypes()).thenReturn(new String[] { "image/jpeg" });
             when(properties.getAllowedVideoTypes()).thenReturn(new String[] { "video/mp4" });
-            when(properties.getMaxImageSize()).thenReturn(5L * 1024 * 1024);
-            when(properties.getMaxVideoSize()).thenReturn(50L * 1024 * 1024);
             when(properties.getPostImageWidth()).thenReturn(1080);
             when(properties.getPostImageHeight()).thenReturn(1080);
 
@@ -321,9 +302,7 @@ class CloudinaryServiceImplTest {
             }).when(executor).execute(any(Runnable.class));
 
             // When
-            List<PostMedia> result = cloudinaryService.uploadMultiMedia(
-                    Arrays.asList(image),
-                    Arrays.asList(video));
+            List<PostMedia> result = cloudinaryService.uploadMultiMedia(Arrays.asList(image), Arrays.asList(video));
 
             // Then
             assertThat(result).hasSize(2);
@@ -336,7 +315,6 @@ class CloudinaryServiceImplTest {
             MultipartFile image = new MockMultipartFile("image", "image.jpg", "image/jpeg", "content".getBytes());
 
             when(properties.getAllowedImageTypes()).thenReturn(new String[] { "image/jpeg" });
-            when(properties.getMaxImageSize()).thenReturn(5L * 1024 * 1024);
             when(properties.getPostImageWidth()).thenReturn(1080);
             when(properties.getPostImageHeight()).thenReturn(1080);
             when(uploader.upload(any(), anyMap())).thenThrow(new RuntimeException("Upload failed"));

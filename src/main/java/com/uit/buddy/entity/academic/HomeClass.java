@@ -7,8 +7,7 @@ import lombok.*;
 @Entity
 @Table(name = "home_classes", indexes = {
         @Index(name = "idx_home_class_code", columnList = "home_class_code", unique = true),
-        @Index(name = "idx_home_class_major", columnList = "major_code")
-})
+        @Index(name = "idx_home_class_major", columnList = "major_code") })
 @Getter
 @Setter
 @NoArgsConstructor

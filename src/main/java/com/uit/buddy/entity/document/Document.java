@@ -9,10 +9,8 @@ import jakarta.persistence.*;
 import lombok.*;
 
 @Entity
-@Table(name = "documents", indexes = {
-        @Index(name = "idx_doc_owner", columnList = "mssv"),
-        @Index(name = "idx_doc_class", columnList = "class_code")
-})
+@Table(name = "documents", indexes = { @Index(name = "idx_doc_owner", columnList = "mssv"),
+        @Index(name = "idx_doc_class", columnList = "class_code") })
 @Getter
 @Setter
 @NoArgsConstructor

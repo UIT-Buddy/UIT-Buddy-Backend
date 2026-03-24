@@ -5,14 +5,12 @@ import com.uit.buddy.entity.user.Student;
 import com.uit.buddy.enums.TaskPriority;
 import com.uit.buddy.enums.TaskType;
 import jakarta.persistence.*;
-import lombok.*;
 import java.time.LocalDateTime;
+import lombok.*;
 
 @Entity
-@Table(name = "student_tasks", indexes = {
-        @Index(name = "idx_task_student", columnList = "mssv"),
-        @Index(name = "idx_task_assignment", columnList = "assignment_id")
-})
+@Table(name = "student_tasks", indexes = { @Index(name = "idx_task_student", columnList = "mssv"),
+        @Index(name = "idx_task_assignment", columnList = "assignment_id") })
 @Getter
 @Setter
 @NoArgsConstructor

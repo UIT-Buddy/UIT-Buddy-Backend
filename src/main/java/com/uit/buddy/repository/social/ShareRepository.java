@@ -1,18 +1,15 @@
 package com.uit.buddy.repository.social;
 
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
-import org.springframework.stereotype.Repository;
-
 import com.uit.buddy.entity.social.Share;
 import com.uit.buddy.repository.social.projection.ShareProjection;
-
-import org.springframework.data.repository.CrudRepository;
-
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.CrudRepository;
+import org.springframework.data.repository.query.Param;
+import org.springframework.stereotype.Repository;
 
 @Repository
 public interface ShareRepository extends CrudRepository<Share, UUID> {
@@ -32,10 +29,8 @@ public interface ShareRepository extends CrudRepository<Share, UUID> {
             ORDER BY sh.created_at DESC, s.mssv DESC
             LIMIT :limit
             """, nativeQuery = true)
-    List<ShareProjection> findSharesWithCursor(
-            @Param("postId") UUID postId,
-            @Param("cursorTime") LocalDateTime cursorTime,
-            @Param("cursorMssv") String cursorMssv,
+    List<ShareProjection> findSharesWithCursor(@Param("postId") UUID postId,
+            @Param("cursorTime") LocalDateTime cursorTime, @Param("cursorMssv") String cursorMssv,
             @Param("limit") int limit);
 
     Optional<Share> findByPostIdAndMssv(UUID postId, String mssv);

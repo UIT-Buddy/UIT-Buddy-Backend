@@ -3,6 +3,7 @@ package com.uit.buddy.service.auth.impl;
 import com.uit.buddy.client.CometChatClient;
 import com.uit.buddy.client.UitClient;
 import com.uit.buddy.constant.AppConstants;
+import com.uit.buddy.constant.CometChatApiConstants;
 import com.uit.buddy.dto.request.auth.CompleteSignUpRequest;
 import com.uit.buddy.dto.request.auth.ForgetPasswordRequest;
 import com.uit.buddy.dto.request.auth.SignInRequest;
@@ -30,14 +31,16 @@ import com.uit.buddy.repository.auth.PasswordResetTokenRepository;
 import com.uit.buddy.repository.auth.PendingAccountRepository;
 import com.uit.buddy.repository.auth.RefreshTokenRepository;
 import com.uit.buddy.repository.user.StudentRepository;
-import com.uit.buddy.repository.user.UserSettingRepository;
 import com.uit.buddy.security.JwtUtils;
 import com.uit.buddy.service.auth.AuthService;
+import com.uit.buddy.service.cloudinary.CloudinaryService;
+import com.uit.buddy.service.cometchat.CometChatService;
 import com.uit.buddy.service.email.EmailService;
 import com.uit.buddy.service.encryption.WsTokenEncryptionService;
 import com.uit.buddy.service.fcm.FcmService;
-import com.uit.buddy.service.cloudinary.CloudinaryService;
 import com.uit.buddy.util.OtpUtils;
+import java.util.List;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -48,9 +51,6 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestClientException;
 
-import java.util.List;
-import java.util.UUID;
-
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -60,7 +60,6 @@ public class AuthServiceImpl implements AuthService {
     private final RefreshTokenRepository refreshTokenRepository;
     private final PasswordResetTokenRepository passwordResetTokenRepository;
     private final PendingAccountRepository pendingAccountRepository;
-    private final UserSettingRepository userSettingRepository;
     private final UitClient uitClient;
     private final CometChatClient cometChatClient;
     private final HomeClassRepository homeClassRepository;
@@ -73,6 +72,7 @@ public class AuthServiceImpl implements AuthService {
     private final FcmService fcmService;
     private final OtpUtils otpUtils;
     private final CloudinaryService cloudinaryService;
+    private final CometChatService cometChatService;
 
     @Value("${app.otp.length}")
     private int otpLength;
@@ -85,6 +85,15 @@ public class AuthServiceImpl implements AuthService {
 
     @Value("${app.pending-account.expiration-seconds}")
     private long pendingAccountExpirationSeconds;
+
+    @Value("${app.cometchat.app-platform}")
+    private String cometChatPlatform;
+
+    @Value("${app.cometchat.app-provider-id}")
+    private String cometChatProviderId;
+
+    @Value("${app.cometchat.app-timezone}")
+    private String cometChatTimezone;
 
     @Override
     @Transactional
@@ -110,30 +119,22 @@ public class AuthServiceImpl implements AuthService {
 
         if (homeClassCode == null || homeClassCode.isBlank()) {
             log.error("HomeClassCode is null or empty for MSSV: {}", mssv);
-            throw new AuthException(
-                    AuthErrorCode.INVALID_CREDENTIALS,
+            throw new AuthException(AuthErrorCode.INVALID_CREDENTIALS,
                     "Cannot determine your home class from Moodle. Please contact support.");
         }
 
         String signupToken = UUID.randomUUID().toString();
         log.info("Generated signup token for MSSV: {}", mssv);
 
-        PendingAccount pendingAccount = PendingAccount.builder()
-                .mssv(mssv)
-                .signupToken(signupToken)
+        PendingAccount pendingAccount = PendingAccount.builder().mssv(mssv).signupToken(signupToken)
                 .encryptedWstoken(wsTokenEncryptionService.encryptWstoken(request.wstoken()))
-                .fullName(siteInfo.fullname())
-                .homeClassCode(homeClassCode)
-                .ttl(pendingAccountExpirationSeconds)
+                .fullName(siteInfo.fullname()).homeClassCode(homeClassCode).ttl(pendingAccountExpirationSeconds)
                 .build();
 
         pendingAccountRepository.save(pendingAccount);
         log.info("Created pending account for MSSV: {} with homeClassCode: {}", mssv, homeClassCode);
 
-        return new ValidateTokenResponse(
-                signupToken,
-                mssv,
-                siteInfo.fullname());
+        return new ValidateTokenResponse(signupToken, mssv, siteInfo.fullname());
     }
 
     @Override
@@ -155,48 +156,35 @@ public class AuthServiceImpl implements AuthService {
                 .orElseThrow(() -> new AuthException(AuthErrorCode.PENDING_ACCOUNT_NOT_FOUND));
 
         if (!pendingAccount.getSignupToken().equals(request.signupToken())) {
-            throw new AuthException(
-                    AuthErrorCode.INVALID_CREDENTIALS,
+            throw new AuthException(AuthErrorCode.INVALID_CREDENTIALS,
                     "Invalid signup token. Please validate your token again.");
         }
 
         if (!pendingAccount.getMssv().equals(request.mssv())) {
-            throw new AuthException(
-                    AuthErrorCode.INVALID_CREDENTIALS,
-                    "Invalid signup request. MSSV does not match.");
+            throw new AuthException(AuthErrorCode.INVALID_CREDENTIALS, "Invalid signup request. MSSV does not match.");
         }
 
         if (pendingAccount.getHomeClassCode() == null || pendingAccount.getHomeClassCode().isBlank()) {
             log.error("HomeClassCode is null in pending account for MSSV: {}", request.mssv());
             pendingAccountRepository.delete(pendingAccount);
-            throw new AuthException(
-                    AuthErrorCode.INVALID_CREDENTIALS,
+            throw new AuthException(AuthErrorCode.INVALID_CREDENTIALS,
                     "Invalid account data. Please validate your token again.");
         }
 
         createCometChatUser(request.mssv(), pendingAccount.getFullName(), avatarUrl);
+        String cometAuthToken = createCometChatAuthToken(request.mssv());
 
         String homeClassCode = pendingAccount.getHomeClassCode();
         ensureHomeClassExists(homeClassCode, request.mssv());
 
-        Student student = Student.builder()
-                .mssv(request.mssv())
-                .fullName(pendingAccount.getFullName())
-                .email(request.mssv() + AppConstants.STUDENT_EMAIL_DOMAIN)
-                .avatarUrl(avatarUrl)
-                .bio(null)
-                .cometUid(request.mssv())
-                .encryptedWstoken(pendingAccount.getEncryptedWstoken())
-                .password(passwordEncoder.encode(request.password()))
-                .homeClassCode(homeClassCode)
-                .build();
+        Student student = Student.builder().mssv(request.mssv()).fullName(pendingAccount.getFullName())
+                .email(request.mssv() + AppConstants.STUDENT_EMAIL_DOMAIN).avatarUrl(avatarUrl).bio(null)
+                .cometUid(request.mssv()).encryptedWstoken(pendingAccount.getEncryptedWstoken())
+                .cometAuthToken(cometAuthToken).password(passwordEncoder.encode(request.password()))
+                .homeClassCode(homeClassCode).build();
 
-        UserSetting userSetting = UserSetting.builder()
-                .mssv(request.mssv())
-                .enableNotification(true)
-                .enableScheduleReminder(true)
-                .student(student)
-                .build();
+        UserSetting userSetting = UserSetting.builder().mssv(request.mssv()).enableNotification(true)
+                .enableScheduleReminder(true).student(student).build();
 
         student.setUserSetting(userSetting);
 
@@ -205,6 +193,8 @@ public class AuthServiceImpl implements AuthService {
             log.info("Successfully created student with UserSetting for MSSV: {}", request.mssv());
             if (request.fcmToken() != null && !request.fcmToken().isBlank()) {
                 fcmService.syncDeviceToken(request.mssv(), request.fcmToken());
+                cometChatService.registerPushToken(cometChatPlatform, cometChatProviderId, request.fcmToken(),
+                        cometAuthToken, cometChatTimezone);
             }
             log.info("Successfully created student: {} with homeClassCode: {}", request.mssv(), homeClassCode);
         } catch (Exception e) {
@@ -226,8 +216,7 @@ public class AuthServiceImpl implements AuthService {
                 log.error("Failed to rollback Cloudinary avatar for MSSV: {}", request.mssv(), ex);
             }
 
-            throw new AuthException(
-                    AuthErrorCode.EXTERNAL_SERVICE_ERROR,
+            throw new AuthException(AuthErrorCode.EXTERNAL_SERVICE_ERROR,
                     "Failed to create account. Please try again.");
         }
 
@@ -238,7 +227,8 @@ public class AuthServiceImpl implements AuthService {
 
         StudentResponse studentResponse = studentMapper.toStudentResponse(student);
 
-        return new AuthResponse(accessToken, refreshToken, studentResponse);
+        return new AuthResponse(accessToken, refreshToken, studentResponse, student.getCometAuthToken(),
+                student.getAvatarUrl());
     }
 
     @Override
@@ -274,7 +264,8 @@ public class AuthServiceImpl implements AuthService {
 
         StudentResponse studentResponse = studentMapper.toStudentResponse(student);
 
-        return new AuthResponse(accessToken, refreshToken, studentResponse);
+        return new AuthResponse(accessToken, refreshToken, studentResponse, student.getCometAuthToken(),
+                student.getAvatarUrl());
     }
 
     @Override
@@ -287,12 +278,8 @@ public class AuthServiceImpl implements AuthService {
 
         String otpCode = otpUtils.generateNumericOtp(otpLength);
 
-        PasswordResetOtp passwordResetOtp = PasswordResetOtp.builder()
-                .mssv(request.mssv())
-                .otpCode(passwordEncoder.encode(otpCode))
-                .attempts(0)
-                .ttl(otpExpirationSeconds)
-                .build();
+        PasswordResetOtp passwordResetOtp = PasswordResetOtp.builder().mssv(request.mssv())
+                .otpCode(passwordEncoder.encode(otpCode)).attempts(0).ttl(otpExpirationSeconds).build();
 
         passwordResetTokenRepository.save(passwordResetOtp);
 
@@ -362,8 +349,7 @@ public class AuthServiceImpl implements AuthService {
 
         if (!refreshTokenRepository.existsById(refreshToken)) {
             log.warn("Refresh token not found in Redis for user");
-            throw new AuthException(AuthErrorCode.REFRESH_TOKEN_EXPIRED,
-                    "Refresh token has been revoked or expired");
+            throw new AuthException(AuthErrorCode.REFRESH_TOKEN_EXPIRED, "Refresh token has been revoked or expired");
         }
 
         Student student = studentRepository.findById(mssv)
@@ -373,7 +359,8 @@ public class AuthServiceImpl implements AuthService {
 
         StudentResponse studentResponse = studentMapper.toStudentResponse(student);
 
-        return new AuthResponse(newAccessToken, refreshToken, studentResponse);
+        return new AuthResponse(newAccessToken, refreshToken, studentResponse, student.getCometAuthToken(),
+                student.getAvatarUrl());
     }
 
     @Override
@@ -448,25 +435,20 @@ public class AuthServiceImpl implements AuthService {
         String yearStr = homeClassCode.replaceAll("[^0-9]", "");
         String academicYear = yearStr.length() >= 4 ? yearStr.substring(0, 4) : "2024";
 
-        HomeClass newHomeClass = HomeClass.builder()
-                .homeClassCode(homeClassCode)
-                .majorCode(majorCode)
-                .academicYear(academicYear)
-                .build();
+        HomeClass newHomeClass = HomeClass.builder().homeClassCode(homeClassCode).majorCode(majorCode)
+                .academicYear(academicYear).build();
 
         homeClassRepository.save(newHomeClass);
         log.info("Successfully created missing HomeClass in DB: {}", homeClassCode);
     }
 
     private void createCometChatUser(String mssv, String fullName, String avatarUrl) {
-        log.debug("[Auth Service] Preparing CometChat request - mssv: {}, fullName: {}, avatarUrl: {}",
-                mssv, fullName, avatarUrl);
+        log.debug("[Auth Service] Preparing CometChat request - mssv: {}, fullName: {}, avatarUrl: {}", mssv, fullName,
+                avatarUrl);
 
         try {
-            CometChatUserRequest cometChatRequest = new CometChatUserRequest(
-                    mssv,
-                    fullName != null ? fullName : mssv,
-                    avatarUrl);
+            CometChatUserRequest cometChatRequest = new CometChatUserRequest(mssv, fullName != null ? fullName : mssv,
+                    avatarUrl, CometChatApiConstants.STUDENT_ROLE);
             log.debug("[Auth Service] CometChat request created: {}", cometChatRequest);
 
             cometChatClient.createUser(cometChatRequest);
@@ -485,6 +467,20 @@ public class AuthServiceImpl implements AuthService {
         }
     }
 
+    private String createCometChatAuthToken(String mssv) {
+        log.debug("[Auth Service] Creating CometChat auth token for MSSV: {}", mssv);
+
+        try {
+            var cometAuthResponse = cometChatClient.createCometAuthToken(mssv);
+            String authToken = cometAuthResponse.data().authToken();
+            log.info("[Auth Service] Successfully created CometChat auth token for MSSV: {}", mssv);
+            return authToken;
+        } catch (Exception e) {
+            log.error("[Auth Service] Failed to create CometChat auth token for MSSV: {}", mssv, e);
+            return null;
+        }
+    }
+
     private String extractHomeClassCode(String wstoken, Long userid, String mssv) {
         try {
             List<EnrolledCourseResponse> courses = uitClient.getUserCourses(wstoken, userid);
@@ -496,9 +492,7 @@ public class AuthServiceImpl implements AuthService {
 
             return courses.stream()
                     .filter(course -> course.fullName() != null && course.fullName().toUpperCase().contains("CVHT"))
-                    .map(EnrolledCourseResponse::shortName)
-                    .findFirst()
-                    .orElse(null);
+                    .map(EnrolledCourseResponse::shortName).findFirst().orElse(null);
 
         } catch (ExternalClientException | RestClientException e) {
             log.error("[Auth Service] Moodle API error for MSSV: {}. Error: {}", mssv, e.getMessage());
