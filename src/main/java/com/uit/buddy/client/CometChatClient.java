@@ -1,6 +1,7 @@
 package com.uit.buddy.client;
 
 import com.uit.buddy.dto.request.client.CometChatPushTokenRequest;
+import com.uit.buddy.dto.request.client.CometChatSendMessageRequest;
 import com.uit.buddy.dto.request.client.CometChatUserRequest;
 import com.uit.buddy.dto.response.client.CometChatAuthTokenResponse;
 import com.uit.buddy.dto.response.client.CometChatUserResponse;
@@ -19,4 +20,7 @@ public interface CometChatClient {
     CometChatUserResponse updateUser(String uid, CometChatUserRequest request);
 
     void registerPushToken(CometChatPushTokenRequest request);
+
+    void sendMessage(CometChatSendMessageRequest request, String onBehalfOf);
+
 }

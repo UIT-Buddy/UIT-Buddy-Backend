@@ -5,6 +5,7 @@ import com.uit.buddy.client.AbstractBaseClient;
 import com.uit.buddy.client.CometChatClient;
 import com.uit.buddy.constant.CometChatApiConstants;
 import com.uit.buddy.dto.request.client.CometChatPushTokenRequest;
+import com.uit.buddy.dto.request.client.CometChatSendMessageRequest;
 import com.uit.buddy.dto.request.client.CometChatUserRequest;
 import com.uit.buddy.dto.response.client.CometChatAuthTokenResponse;
 import com.uit.buddy.dto.response.client.CometChatUserResponse;
@@ -73,6 +74,13 @@ public class CometChatClientImpl extends AbstractBaseClient implements CometChat
     @Override
     public void registerPushToken(CometChatPushTokenRequest request) {
         post(CometChatApiConstants.REGISTER_PUSH_TOKEN_ENDPOINT, request, Object.class, createHeaders());
+    }
+
+    @Override
+    public void sendMessage(CometChatSendMessageRequest request, String onBehalfOf) {
+        HttpHeaders headers = createHeaders();
+        headers.set("onBehalfOf", onBehalfOf);
+        post(CometChatApiConstants.SEND_MESSAGE_ENDPOINT, request, Object.class, headers);
     }
 
     private HttpHeaders createHeaders() {

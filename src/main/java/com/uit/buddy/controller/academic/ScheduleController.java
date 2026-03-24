@@ -5,12 +5,14 @@ import com.uit.buddy.dto.base.SingleResponse;
 import com.uit.buddy.dto.base.SuccessResponse;
 import com.uit.buddy.dto.request.academic.UploadScheduleRequest;
 import com.uit.buddy.dto.response.schedule.DeadlineResponse;
+import com.uit.buddy.dto.response.schedule.ScheduleResponse;
 import com.uit.buddy.exception.schedule.ScheduleErrorCode;
 import com.uit.buddy.exception.schedule.ScheduleException;
 import com.uit.buddy.service.academic.ScheduleService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
@@ -33,17 +35,17 @@ public class ScheduleController extends AbstractBaseController {
 
     @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @Operation(summary = "Upload ICS schedule file", description = "Upload student schedule from ICS file")
-    public ResponseEntity<SuccessResponse> uploadSchedule(@Valid @ModelAttribute UploadScheduleRequest request,
-            @AuthenticationPrincipal String mssv) {
+    public ResponseEntity<SingleResponse<List<ScheduleResponse>>> uploadSchedule(
+            @Valid @ModelAttribute UploadScheduleRequest request, @AuthenticationPrincipal String mssv) {
 
         if (!request.isIcsFile()) {
             throw new ScheduleException(ScheduleErrorCode.INVALID_FILE_TYPE);
         }
         log.info("[Schedule Controller] Uploading schedule for student: {}", mssv);
 
-        scheduleService.uploadSchedule(mssv, request);
+        List<ScheduleResponse> schedules = scheduleService.uploadSchedule(mssv, request);
 
-        return success("Schedule uploaded successfully");
+        return successSingle(schedules, "Schedule uploaded successfully");
     }
 
     @GetMapping("/deadline")
