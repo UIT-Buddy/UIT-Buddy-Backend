@@ -46,23 +46,28 @@ public class ShareServiceImpl implements ShareService {
     @Override
     @Transactional
     public boolean sharePost(UUID postId, String mssv, ShareType type, SharePostRequest request) {
-        Post originalPost = postRepository.findById(postId)
+        Post postToShare = postRepository.findById(postId)
                 .orElseThrow(() -> new SocialException(SocialErrorCode.POST_NOT_FOUND));
 
         var student = studentRepository.findById(mssv)
                 .orElseThrow(() -> new SocialException(SocialErrorCode.UNAUTHORIZED));
 
-        boolean isFirstTime = !shareRepository.existsByPostIdAndMssv(postId, mssv);
+        Post rootOriginalPost = postToShare;
+        while (rootOriginalPost.getOriginalPost() != null) {
+            rootOriginalPost = rootOriginalPost.getOriginalPost();
+        }
 
-        Share share = Share.builder().post(originalPost).student(student).type(type).build();
+        boolean isFirstTime = !shareRepository.existsByPostIdAndMssv(rootOriginalPost.getId(), mssv);
+
+        Share share = Share.builder().post(rootOriginalPost).student(student).type(type).build();
         shareRepository.save(share);
 
         UUID sharedPostId = null;
 
         switch (type) {
             case PROFILE -> {
-                Post sharedPost = Post.builder().author(student).title("") // Title is required
-                        .content(request != null ? request.content() : "").originalPost(originalPost)
+                Post sharedPost = Post.builder().author(student).title("")
+                        .content(request != null ? request.content() : "").originalPost(rootOriginalPost)
                         .type(PostType.SHARE)
                         .build();
                 sharedPostId = postRepository.save(sharedPost).getId();
@@ -94,7 +99,7 @@ public class ShareServiceImpl implements ShareService {
                         .type("text")
                         .data(java.util.Map.of(
                                 "text", messageText,
-                                "metadata", Map.of("postId", postId.toString())))
+                                "metadata", Map.of("postId", rootOriginalPost.getId().toString())))
                         .build();
 
                 cometChatClient.sendMessage(messageRequest, mssv);
@@ -102,12 +107,12 @@ public class ShareServiceImpl implements ShareService {
         }
 
         if (isFirstTime) {
-            postRepository.incrementShareCount(postId);
+            postRepository.incrementShareCount(rootOriginalPost.getId());
 
-            if (!originalPost.getMssv().equals(mssv)) {
+            if (!rootOriginalPost.getMssv().equals(mssv)) {
                 String actorName = studentRepository.findById(mssv).map(s -> s.getFullName()).orElse(mssv);
-                eventPublisher.publishEvent(new PostSharedEvent(mssv, actorName, originalPost.getMssv(),
-                        originalPost.getId(), sharedPostId));
+                eventPublisher.publishEvent(new PostSharedEvent(mssv, actorName, rootOriginalPost.getMssv(),
+                        rootOriginalPost.getId(), sharedPostId));
             }
         }
 

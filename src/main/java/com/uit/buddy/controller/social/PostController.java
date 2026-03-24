@@ -100,4 +100,32 @@ public class PostController extends AbstractBaseController {
         postService.createPost(mssv, title, content, request);
         return created("Upload posts successfully with multimedia");
     }
+
+    @GetMapping("/user/{mssv}")
+    @Operation(summary = "Get user posts", description = "Get all posts from a specific user with cursor-based pagination")
+    public ResponseEntity<CursorPageResponse<PostFeedResponse>> getUserPosts(@PathVariable String mssv,
+            @RequestParam(required = false) String cursor, @RequestParam(defaultValue = "10") int limit,
+            @AuthenticationPrincipal String currentMssv) {
+
+        log.info("[Post Controller] Getting posts for user: {} with cursor: {}, limit: {}", mssv, cursor, limit);
+
+        List<PostFeedResponse> postList = postService.getUserPosts(mssv, currentMssv, cursor, limit);
+
+        return cursorPaging("User posts retrieved successfully", postList, limit,
+                post -> CursorUtils.encode(post.createdAt(), post.id()));
+    }
+
+    @GetMapping("/me")
+    @Operation(summary = "Get my posts", description = "Get all posts from the current authenticated user with cursor-based pagination")
+    public ResponseEntity<CursorPageResponse<PostFeedResponse>> getMyPosts(
+            @RequestParam(required = false) String cursor,
+            @RequestParam(defaultValue = "10") int limit, @AuthenticationPrincipal String mssv) {
+
+        log.info("[Post Controller] Getting my posts with cursor: {}, limit: {}", cursor, limit);
+
+        List<PostFeedResponse> postList = postService.getUserPosts(mssv, mssv, cursor, limit);
+
+        return cursorPaging("My posts retrieved successfully", postList, limit,
+                post -> CursorUtils.encode(post.createdAt(), post.id()));
+    }
 }

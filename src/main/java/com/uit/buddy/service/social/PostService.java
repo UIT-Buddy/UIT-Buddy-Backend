@@ -22,4 +22,6 @@ public interface PostService {
     PostDetailResponse getPostDetail(UUID postId, String mssv);
 
     Page<PostFeedResponse> searchPost(String keyword, String mssv, Pageable pageable);
+
+    List<PostFeedResponse> getUserPosts(String targetMssv, String currentMssv, String cursor, int limit);
 }

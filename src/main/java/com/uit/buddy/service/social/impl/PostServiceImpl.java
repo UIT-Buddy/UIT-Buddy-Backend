@@ -46,7 +46,6 @@ public class PostServiceImpl implements PostService {
     private int limitNumberOfVideos;
 
     @Override
-    // KHÔNG có @Transactional ở đây
     public void createPost(String mssv, String title, String content, CreatePostRequest request) {
         log.info("[Post Service] Create post for mssv: {}", mssv);
         validateLimitImagesAndVideos(request.images(), request.videos());
@@ -127,6 +126,27 @@ public class PostServiceImpl implements PostService {
             return postRepository.findAllPosts(mssv, pageable).map(postMapper::toPostFeedResponse);
         }
         return postRepository.searchPostFull(keyword, mssv, pageable).map(postMapper::toPostFeedResponse);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<PostFeedResponse> getUserPosts(String targetMssv, String currentMssv, String cursor, int limit) {
+        log.info("[Post Service] Getting posts for user: {}", targetMssv);
+
+        if (!studentRepository.existsById(targetMssv)) {
+            throw new UserException(UserErrorCode.STUDENT_NOT_FOUND);
+        }
+
+        LocalDateTime cursorTime = null;
+        UUID cursorId = null;
+        if (cursor != null && !cursor.isBlank()) {
+            CursorUtils.CursorContents contents = CursorUtils.decode(cursor);
+            cursorTime = contents.timestamp();
+            cursorId = contents.id();
+        }
+
+        return postRepository.findUserPosts(targetMssv, currentMssv, cursorTime, cursorId, limit + 1).stream()
+                .map(postMapper::toPostFeedResponse).toList();
     }
 
     private void validateLimitImagesAndVideos(List<MultipartFile> images, List<MultipartFile> videos) {
