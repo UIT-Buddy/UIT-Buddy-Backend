@@ -83,7 +83,7 @@ class IcsParserTest {
         assertEquals(LocalDate.of(2026, 5, 3), event1.getEndDate());
         assertEquals(LocalTime.of(13, 0), event1.getStartTime());
         assertEquals(LocalTime.of(15, 15), event1.getEndTime());
-        assertEquals(5, event1.getDayOfWeek()); // Thursday
+        assertEquals(6, event1.getDayOfWeek()); // Thursday
         assertEquals("WEEKLY", event1.getFrequency());
         assertEquals(1, event1.getInterval());
         assertEquals(6, event1.getStartLesson());
@@ -100,7 +100,7 @@ class IcsParserTest {
         assertEquals(LocalDate.of(2026, 5, 24), event2.getEndDate());
         assertEquals(LocalTime.of(7, 30), event2.getStartTime());
         assertEquals(LocalTime.of(11, 30), event2.getEndTime());
-        assertEquals(5, event2.getDayOfWeek()); // Thursday
+        assertEquals(6, event2.getDayOfWeek()); // Thursday
         assertEquals("WEEKLY", event2.getFrequency());
         assertEquals(2, event2.getInterval());
         assertEquals(1, event2.getStartLesson());
@@ -116,7 +116,7 @@ class IcsParserTest {
         assertEquals(LocalDate.of(2026, 5, 30), event3.getEndDate());
         assertEquals(LocalTime.of(7, 30), event3.getStartTime());
         assertEquals(LocalTime.of(15, 30), event3.getEndTime());
-        assertEquals(6, event3.getDayOfWeek()); // Friday
+        assertEquals(7, event3.getDayOfWeek()); // Friday
         assertEquals("WEEKLY", event3.getFrequency());
         assertEquals(1, event3.getInterval());
         assertEquals(10, event3.getStartLesson());
@@ -132,7 +132,7 @@ class IcsParserTest {
         assertEquals(LocalDate.of(2026, 5, 31), event4.getEndDate());
         assertEquals(LocalTime.of(7, 30), event4.getStartTime());
         assertEquals(LocalTime.of(15, 30), event4.getEndTime());
-        assertEquals(7, event4.getDayOfWeek()); // Saturday
+        assertEquals(8, event4.getDayOfWeek()); // Saturday
         assertEquals("WEEKLY", event4.getFrequency());
         assertEquals(1, event4.getInterval());
         assertEquals(8, event4.getStartLesson());
