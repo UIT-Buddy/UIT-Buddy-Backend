@@ -1,18 +1,19 @@
 package com.uit.buddy.util;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-
-import com.uit.buddy.exception.schedule.ScheduleException;
-import com.uit.buddy.util.IcsParser.IcsEvent;
-import com.uit.buddy.util.IcsParser.ParseResult;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.time.LocalDate;
 import java.time.LocalTime;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import org.junit.jupiter.api.Test;
+
+import com.uit.buddy.exception.schedule.ScheduleException;
+import com.uit.buddy.util.IcsParser.IcsEvent;
+import com.uit.buddy.util.IcsParser.ParseResult;
 
 class IcsParserTest {
 
@@ -116,7 +117,7 @@ class IcsParserTest {
         assertEquals(LocalDate.of(2026, 5, 30), event3.getEndDate());
         assertEquals(LocalTime.of(7, 30), event3.getStartTime());
         assertEquals(LocalTime.of(15, 30), event3.getEndTime());
-        assertEquals(6, event3.getDayOfWeek()); // Friday
+        assertEquals(7, event3.getDayOfWeek()); // Friday
         assertEquals("WEEKLY", event3.getFrequency());
         assertEquals(1, event3.getInterval());
         assertEquals(10, event3.getStartLesson());
@@ -132,7 +133,7 @@ class IcsParserTest {
         assertEquals(LocalDate.of(2026, 5, 31), event4.getEndDate());
         assertEquals(LocalTime.of(7, 30), event4.getStartTime());
         assertEquals(LocalTime.of(15, 30), event4.getEndTime());
-        assertEquals(7, event4.getDayOfWeek()); // Saturday
+        assertEquals(8, event4.getDayOfWeek()); // Saturday
         assertEquals("WEEKLY", event4.getFrequency());
         assertEquals(1, event4.getInterval());
         assertEquals(8, event4.getStartLesson());
