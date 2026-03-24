@@ -34,6 +34,7 @@ import com.uit.buddy.repository.user.StudentRepository;
 import com.uit.buddy.security.JwtUtils;
 import com.uit.buddy.service.auth.AuthService;
 import com.uit.buddy.service.cloudinary.CloudinaryService;
+import com.uit.buddy.service.cometchat.CometChatService;
 import com.uit.buddy.service.email.EmailService;
 import com.uit.buddy.service.encryption.WsTokenEncryptionService;
 import com.uit.buddy.service.fcm.FcmService;
@@ -71,6 +72,7 @@ public class AuthServiceImpl implements AuthService {
     private final FcmService fcmService;
     private final OtpUtils otpUtils;
     private final CloudinaryService cloudinaryService;
+    private final CometChatService cometChatService;
 
     @Value("${app.otp.length}")
     private int otpLength;
@@ -83,6 +85,15 @@ public class AuthServiceImpl implements AuthService {
 
     @Value("${app.pending-account.expiration-seconds}")
     private long pendingAccountExpirationSeconds;
+
+    @Value("${app.cometchat.app-platform}")
+    private String cometChatPlatform;
+
+    @Value("${app.cometchat.app-provider-id}")
+    private String cometChatProviderId;
+
+    @Value("${app.cometchat.app-timezone}")
+    private String cometChatTimezone;
 
     @Override
     @Transactional
@@ -182,6 +193,8 @@ public class AuthServiceImpl implements AuthService {
             log.info("Successfully created student with UserSetting for MSSV: {}", request.mssv());
             if (request.fcmToken() != null && !request.fcmToken().isBlank()) {
                 fcmService.syncDeviceToken(request.mssv(), request.fcmToken());
+                cometChatService.registerPushToken(cometChatPlatform, cometChatProviderId, request.fcmToken(),
+                        cometAuthToken, cometChatTimezone);
             }
             log.info("Successfully created student: {} with homeClassCode: {}", request.mssv(), homeClassCode);
         } catch (Exception e) {

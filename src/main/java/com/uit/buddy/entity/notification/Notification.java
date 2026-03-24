@@ -30,6 +30,9 @@ public class Notification extends AbstractBaseEntity {
     @Column(name = "type", nullable = false, length = 50)
     private NotificationType type;
 
+    @Column(name = "data_id", length = 100)
+    private String dataId;
+
     @Column(name = "is_read", nullable = false)
     @Builder.Default
     private Boolean isRead = false;

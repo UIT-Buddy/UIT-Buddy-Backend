@@ -5,8 +5,10 @@ import com.uit.buddy.dto.base.PageResponse;
 import com.uit.buddy.dto.base.SingleResponse;
 import com.uit.buddy.dto.base.SuccessResponse;
 import com.uit.buddy.dto.request.user.UpdateUserRequest;
+import com.uit.buddy.dto.request.user.UpdateUserSettingRequest;
 import com.uit.buddy.dto.response.user.FoundUserResponse;
 import com.uit.buddy.dto.response.user.UserResponse;
+import com.uit.buddy.dto.response.user.UserSettingResponse;
 import com.uit.buddy.service.user.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -88,5 +90,22 @@ public class UserController extends AbstractBaseController {
     public ResponseEntity<SuccessResponse> deleteAccount(@AuthenticationPrincipal String mssv) {
         userService.deleteStudentAccount(mssv);
         return success("Account deleted successfully! We're sorry to see you go.");
+    }
+
+    @GetMapping("/settings")
+    @Operation(summary = "Get user settings", description = "Get notification and reminder settings")
+    public ResponseEntity<SingleResponse<UserSettingResponse>> getUserSettings(@AuthenticationPrincipal String mssv) {
+        log.info("[User Controller] Getting settings for mssv: {}", mssv);
+        UserSettingResponse response = userService.getUserSettings(mssv);
+        return successSingle(response, "User settings retrieved successfully");
+    }
+
+    @PatchMapping("/settings")
+    @Operation(summary = "Update user settings", description = "Update notification and reminder settings")
+    public ResponseEntity<SuccessResponse> updateUserSettings(@AuthenticationPrincipal String mssv,
+            @Valid @RequestBody UpdateUserSettingRequest request) {
+        log.info("[User Controller] Updating settings for mssv: {}", mssv);
+        userService.updateUserSettings(mssv, request);
+        return success("User settings updated successfully");
     }
 }
