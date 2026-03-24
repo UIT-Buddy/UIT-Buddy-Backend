@@ -25,6 +25,13 @@ public class FcmServiceImpl implements FcmService {
             throw new FcmException(FcmErrorCode.INVALID_FCM_TOKEN);
         }
         log.info("[FCM Service] Syncing device token for student: {}", mssv);
+
+        int deletedCount = deviceTokenRepository.deleteByFcmTokenAndMssvNot(fcmToken, mssv);
+        if (deletedCount > 0) {
+            log.info("[FCM Service] Removed token from {} other user(s) before syncing to MSSV: {}", deletedCount,
+                    mssv);
+        }
+
         deviceTokenRepository.upsertToken(mssv, fcmToken);
     }
 
@@ -40,6 +47,8 @@ public class FcmServiceImpl implements FcmService {
             String response = firebaseMessaging.send(message);
             log.info("[FCM Service] Successfully sent message. ID: {}", response);
         } catch (FirebaseMessagingException e) {
+            log.error("[FCM Service] Failed to send push notification to token: {}. Error: {}", request.targetToken(),
+                    e.getMessage(), e);
             handleFirebaseError(e, request.targetToken());
         }
     }
@@ -64,15 +73,20 @@ public class FcmServiceImpl implements FcmService {
 
             // BEST PRACTICE: Dọn dẹp token rác ngay lập tức nếu gửi thất bại
             if (response.getFailureCount() > 0) {
+                log.warn("[FCM Service] {} notification(s) failed to send. Processing failures...",
+                        response.getFailureCount());
                 handleMulticastFailures(response, tokens);
             }
 
         } catch (FirebaseMessagingException e) {
-            log.error("[FCM Service] Fatal error sending multicast notification", e);
+            log.error("[FCM Service] Fatal error sending multicast notification. Title: {}, Recipients: {}", title,
+                    tokens.size(), e);
         }
     }
 
-    /** Logic xử lý các token bị lỗi (không tồn tại, hết hạn) sau khi gửi multicast */
+    /**
+     * Logic xử lý các token bị lỗi (không tồn tại, hết hạn) sau khi gửi multicast
+     */
     private void handleMulticastFailures(BatchResponse response, List<String> tokens) {
         List<SendResponse> responses = response.getResponses();
         List<String> invalidTokens = new java.util.ArrayList<>();
@@ -80,6 +94,9 @@ public class FcmServiceImpl implements FcmService {
         for (int i = 0; i < responses.size(); i++) {
             if (!responses.get(i).isSuccessful()) {
                 MessagingErrorCode code = responses.get(i).getException().getMessagingErrorCode();
+                String errorMsg = responses.get(i).getException().getMessage();
+                log.error("[FCM Service] Failed to send to token index {}: [{}] {}", i, code, errorMsg);
+
                 // Nếu token không còn hiệu lực (UNREGISTERED) hoặc sai định dạng
                 if (code == MessagingErrorCode.UNREGISTERED || code == MessagingErrorCode.INVALID_ARGUMENT) {
                     invalidTokens.add(tokens.get(i));

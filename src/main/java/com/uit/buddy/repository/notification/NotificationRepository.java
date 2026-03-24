@@ -16,7 +16,7 @@ public interface NotificationRepository extends JpaRepository<Notification, UUID
     @Query(value = """
             SELECT * FROM notifications
             WHERE mssv = :mssv
-              AND (:cursor IS NULL OR created_at < :cursor)
+              AND (CAST(:cursor AS timestamp) IS NULL OR created_at < :cursor)
             ORDER BY created_at DESC
             LIMIT :limit
             """, nativeQuery = true)
@@ -32,4 +32,8 @@ public interface NotificationRepository extends JpaRepository<Notification, UUID
     @Modifying
     @Query("UPDATE Notification n SET n.isRead = true WHERE n.student.mssv = :mssv AND n.isRead = false")
     void markAllAsRead(@Param("mssv") String mssv);
+
+    @Query("SELECT n FROM Notification n WHERE n.student.mssv = :mssv AND n.type = :type AND n.dataId = :dataId")
+    Notification findByMssvAndTypeAndDataId(@Param("mssv") String mssv, @Param("type") String type,
+            @Param("dataId") String dataId);
 }

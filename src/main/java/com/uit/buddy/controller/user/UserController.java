@@ -4,11 +4,11 @@ import com.uit.buddy.controller.AbstractBaseController;
 import com.uit.buddy.dto.base.PageResponse;
 import com.uit.buddy.dto.base.SingleResponse;
 import com.uit.buddy.dto.base.SuccessResponse;
-import com.uit.buddy.dto.request.user.FcmTokenRequest;
 import com.uit.buddy.dto.request.user.UpdateUserRequest;
+import com.uit.buddy.dto.request.user.UpdateUserSettingRequest;
 import com.uit.buddy.dto.response.user.FoundUserResponse;
 import com.uit.buddy.dto.response.user.UserResponse;
-import com.uit.buddy.service.fcm.FcmService;
+import com.uit.buddy.dto.response.user.UserSettingResponse;
 import com.uit.buddy.service.user.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -39,7 +39,6 @@ import org.springframework.web.multipart.MultipartFile;
 public class UserController extends AbstractBaseController {
 
     private final UserService userService;
-    private final FcmService fcmService;
 
     @GetMapping("/me")
     @Operation(summary = "Get current user profile", description = "Fetch detailed information of the currently authenticated student")
@@ -67,17 +66,6 @@ public class UserController extends AbstractBaseController {
         return successSingle(avatarUrl, "Avatar uploaded successfully!");
     }
 
-    @PatchMapping("/fcm-token")
-    @Operation(summary = "Sync FCM Token", description = "Register or update FCM token for multi-device support")
-    public ResponseEntity<SingleResponse<Void>> syncFcmToken(@AuthenticationPrincipal String mssv,
-            @Valid @RequestBody FcmTokenRequest request) {
-
-        log.info("[User Controller] Syncing FCM token for MSSV: {}", mssv);
-        fcmService.syncDeviceToken(mssv, request.fcmToken());
-
-        return successSingle(null, "FCM token synced successfully!");
-    }
-
     @GetMapping("/{mssv}")
     @Operation(summary = "Get other student profile", description = "Fetch detailed information of other student")
     public ResponseEntity<SingleResponse<UserResponse>> getOtherStudentProfile(@PathVariable String mssv) {
@@ -102,5 +90,22 @@ public class UserController extends AbstractBaseController {
     public ResponseEntity<SuccessResponse> deleteAccount(@AuthenticationPrincipal String mssv) {
         userService.deleteStudentAccount(mssv);
         return success("Account deleted successfully! We're sorry to see you go.");
+    }
+
+    @GetMapping("/settings")
+    @Operation(summary = "Get user settings", description = "Get notification and reminder settings")
+    public ResponseEntity<SingleResponse<UserSettingResponse>> getUserSettings(@AuthenticationPrincipal String mssv) {
+        log.info("[User Controller] Getting settings for mssv: {}", mssv);
+        UserSettingResponse response = userService.getUserSettings(mssv);
+        return successSingle(response, "User settings retrieved successfully");
+    }
+
+    @PatchMapping("/settings")
+    @Operation(summary = "Update user settings", description = "Update notification and reminder settings")
+    public ResponseEntity<SuccessResponse> updateUserSettings(@AuthenticationPrincipal String mssv,
+            @Valid @RequestBody UpdateUserSettingRequest request) {
+        log.info("[User Controller] Updating settings for mssv: {}", mssv);
+        userService.updateUserSettings(mssv, request);
+        return success("User settings updated successfully");
     }
 }

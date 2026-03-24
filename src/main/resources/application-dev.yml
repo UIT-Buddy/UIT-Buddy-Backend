@@ -68,6 +68,10 @@ app:
     api-url: ${COMETCHAT_API_URL:https://api-us.cometchat.io/v3}
     api-key: ${COMETCHAT_API_KEY}
     app-id: ${COMETCHAT_APP_ID}
+    app-region: ${COMETCHAT_REGION:us}
+    app-timezone: ${COMETCHAT_TIMEZONE:Asia/Ho_Chi_Minh}
+    app-provider-id: ${COMETCHAT_PROVIDER_ID:uit-buddy}
+    app-platform: ${COMETCHAT_PLATFORM}
 
   jwt:
     secret: ${JWT_SECRET}

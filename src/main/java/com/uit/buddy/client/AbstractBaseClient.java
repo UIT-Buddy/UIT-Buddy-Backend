@@ -58,6 +58,18 @@ public abstract class AbstractBaseClient {
         return response;
     }
 
+    protected <T> T put(String path, Object body, Class<T> responseType, HttpHeaders headers) {
+        String jsonBody = serializeBody(body);
+
+        T response = restClient.put().uri(path).contentType(MediaType.APPLICATION_JSON).headers(h -> {
+            if (headers != null)
+                h.putAll(headers);
+        }).body(jsonBody).retrieve().onStatus(HttpStatusCode::isError, this::handleErrorResponse).body(responseType);
+
+        validateResponse(response);
+        return response;
+    }
+
     protected void delete(String path, HttpHeaders headers) {
         restClient.delete().uri(path).headers(h -> {
             if (headers != null)
@@ -94,7 +106,6 @@ public abstract class AbstractBaseClient {
     private void handleErrorResponse(HttpRequest request, ClientHttpResponse response) throws IOException {
         HttpStatusCode status = response.getStatusCode();
         String responseBody = readBody(response);
-
         log.error("[External Call Error] {} {} - Status: {} - Body: {}", request.getMethod(), request.getURI(), status,
                 responseBody);
 
