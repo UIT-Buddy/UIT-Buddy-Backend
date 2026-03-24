@@ -106,7 +106,6 @@ public abstract class AbstractBaseClient {
     private void handleErrorResponse(HttpRequest request, ClientHttpResponse response) throws IOException {
         HttpStatusCode status = response.getStatusCode();
         String responseBody = readBody(response);
-
         log.error("[External Call Error] {} {} - Status: {} - Body: {}", request.getMethod(), request.getURI(), status,
                 responseBody);
 
