@@ -29,7 +29,7 @@ services:
     env_file:
       - .env
     volumes:
-      - ./uit-buddy-firebase-adminsdk-fbsvc-67bdd3f673.json:/app/uit-buddy-firebase-adminsdk-fbsvc-67bdd3f673.json:ro
+      - ./uit-buddy-firebase-adminsdk-fbsvc-e3e18ce04a.json:/app/uit-buddy-firebase-adminsdk-fbsvc-e3e18ce04a.json:ro
     environment:
       - DEV_DATABASE_URL=jdbc:postgresql://postgres:5432/${POSTGRES_DB}
       - DEV_REDIS_HOST=redis
