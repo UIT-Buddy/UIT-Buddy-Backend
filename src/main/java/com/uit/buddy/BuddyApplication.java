@@ -12,6 +12,7 @@ import org.springframework.scheduling.annotation.EnableAsync;
 public class BuddyApplication {
     @Value("${app.cometchat.app-platform}")
     public static String test;
+
     static void main(String[] args) {
         System.out.println(test);
         SpringApplication.run(BuddyApplication.class, args);

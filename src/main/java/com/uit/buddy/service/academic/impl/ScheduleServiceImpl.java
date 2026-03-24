@@ -1,23 +1,5 @@
 package com.uit.buddy.service.academic.impl;
 
-import java.time.Instant;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Executor;
-import java.util.stream.Collectors;
-
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.multipart.MultipartFile;
-
 import com.uit.buddy.client.UitClient;
 import com.uit.buddy.dto.request.academic.UploadScheduleRequest;
 import com.uit.buddy.dto.response.client.AssignmentDetailResponse;
@@ -51,8 +33,23 @@ import com.uit.buddy.util.EncryptionUtils;
 import com.uit.buddy.util.IcsParser;
 import com.uit.buddy.util.IcsParser.IcsEvent;
 import com.uit.buddy.util.IcsParser.ParseResult;
-
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
+import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 @Service
 @Slf4j
@@ -72,7 +69,8 @@ public class ScheduleServiceImpl implements ScheduleService {
     public ScheduleServiceImpl(IcsParser icsParser, StudentRepository studentRepository,
             SubjectClassRepository subjectClassRepository, StudentSubjectClassRepository studentSubjectClassRepository,
             CourseRepository courseRepository, SemesterRepository semesterRepository, UitClient uitClient,
-            EncryptionUtils encryptionUtils, @Qualifier("uploadExecutor") Executor executor, ScheduleMapper scheduleMapper) {
+            EncryptionUtils encryptionUtils, @Qualifier("uploadExecutor") Executor executor,
+            ScheduleMapper scheduleMapper) {
         this.icsParser = icsParser;
         this.studentRepository = studentRepository;
         this.subjectClassRepository = subjectClassRepository;
@@ -112,18 +110,21 @@ public class ScheduleServiceImpl implements ScheduleService {
             throw new SystemException(SystemErrorCode.INTERNAL_ERROR);
         }
     }
+
     /**
      * @param mssv
+     *
      * @return
      */
     @Override
     public CourseCalendarResponse fetchCourseCalendar(String mssv) {
-        List<StudentSubjectClass> studentClasses = studentSubjectClassRepository.findAllByStudentMssvAndSemester(
-                mssv, getActiveSemester().getSemesterCode());
+        List<StudentSubjectClass> studentClasses = studentSubjectClassRepository.findAllByStudentMssvAndSemester(mssv,
+                getActiveSemester().getSemesterCode());
         System.out.println(studentClasses.get(1));
         List<CourseCalendarResponse.Course> courses = scheduleMapper.toListCourse(studentClasses);
         return new CourseCalendarResponse(courses.size(), courses);
     }
+
     @Override
     public DeadlineResponse fetchDeadlinesFromMoodle(String mssv) {
         List<CourseContentResponse> courseContents = fetchCourseDeadlinesFromMoodle(mssv);
@@ -368,9 +369,8 @@ public class ScheduleServiceImpl implements ScheduleService {
 
     }
 
-    private void removePreviousSchedule(String mssv)
-    {
+    private void removePreviousSchedule(String mssv) {
         studentSubjectClassRepository.deleteAllByMssv(mssv);
     }
-    
+
 }

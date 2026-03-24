@@ -11,7 +11,7 @@ public final class IcsConstants {
 
     // REGEX PATTERNS
     public static final Pattern SUMMARY_PATTERN = Pattern.compile("^([A-Z0-9.]+)\\s*-\\s*(.+)$");
-        public static final Pattern COURSE_NAME_PATTERN = Pattern
+    public static final Pattern COURSE_NAME_PATTERN = Pattern
             .compile("\\(([^)]+)\\)|\\b([A-Z]{2,}\\d{3}(?:\\.[A-Z0-9]+){1,2})\\b");
     public static final Pattern TEACHER_PATTERN = Pattern.compile("Giảng viên:\\s*([^,]+)");
     public static final Pattern LESSON_PATTERN = Pattern.compile("Tiết\\s*([0-9]+)");

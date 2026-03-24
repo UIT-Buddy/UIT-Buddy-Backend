@@ -21,7 +21,7 @@ public interface NotificationRepository extends JpaRepository<Notification, UUID
             LIMIT :limit
             """, nativeQuery = true)
     List<Notification> findByMssvWithCursor(@Param("mssv") String mssv, @Param("cursor") LocalDateTime cursor,
-                                            @Param("limit") int limit);
+            @Param("limit") int limit);
 
     long countByStudentMssvAndIsReadFalse(String mssv);
 
@@ -35,5 +35,5 @@ public interface NotificationRepository extends JpaRepository<Notification, UUID
 
     @Query("SELECT n FROM Notification n WHERE n.student.mssv = :mssv AND n.type = :type AND n.dataId = :dataId")
     Notification findByMssvAndTypeAndDataId(@Param("mssv") String mssv, @Param("type") String type,
-                                            @Param("dataId") String dataId);
+            @Param("dataId") String dataId);
 }

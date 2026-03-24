@@ -1,17 +1,5 @@
 package com.uit.buddy.service.auth.impl;
 
-import java.util.List;
-import java.util.UUID;
-
-import com.uit.buddy.service.cometchat.CometChatService;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.mail.MailException;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.client.RestClientException;
-
 import com.uit.buddy.client.CometChatClient;
 import com.uit.buddy.client.UitClient;
 import com.uit.buddy.constant.AppConstants;
@@ -46,13 +34,22 @@ import com.uit.buddy.repository.user.StudentRepository;
 import com.uit.buddy.security.JwtUtils;
 import com.uit.buddy.service.auth.AuthService;
 import com.uit.buddy.service.cloudinary.CloudinaryService;
+import com.uit.buddy.service.cometchat.CometChatService;
 import com.uit.buddy.service.email.EmailService;
 import com.uit.buddy.service.encryption.WsTokenEncryptionService;
 import com.uit.buddy.service.fcm.FcmService;
 import com.uit.buddy.util.OtpUtils;
-
+import java.util.List;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.mail.MailException;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.client.RestClientException;
 
 @Service
 @RequiredArgsConstructor

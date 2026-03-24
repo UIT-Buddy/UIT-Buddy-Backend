@@ -92,7 +92,7 @@ public class NotificationServiceImpl implements NotificationService {
     }
 
     private void processAggregatedNotification(String receiverMssv, String title, String actorName, String type,
-                                               String dataId, String action) {
+            String dataId, String action) {
 
         Notification existingNotification = notificationRepository.findByMssvAndTypeAndDataId(receiverMssv, type,
                 dataId);
@@ -129,7 +129,7 @@ public class NotificationServiceImpl implements NotificationService {
     }
 
     private void sendFcmIfEnabled(String mssv, String notificationId, String title, String content, String type,
-                                  String dataId) {
+            String dataId) {
         boolean isEnabled = userSettingRepository.findById(mssv).map(setting -> setting.isEnableNotification())
                 .orElse(true);
 

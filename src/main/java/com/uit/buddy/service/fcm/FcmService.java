@@ -1,8 +1,7 @@
 package com.uit.buddy.service.fcm;
 
-import java.util.List;
-
 import com.uit.buddy.dto.request.fcm.FcmNotificationRequest;
+import java.util.List;
 
 public interface FcmService {
     void syncDeviceToken(String mssv, String fcmToken);

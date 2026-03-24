@@ -1,13 +1,11 @@
 package com.uit.buddy.mapper.schedule;
 
-import java.time.LocalTime;
-import java.util.List;
-
-import org.mapstruct.Mapper;
-import org.mapstruct.Mapping;
-
 import com.uit.buddy.dto.response.schedule.CourseCalendarResponse.Course;
 import com.uit.buddy.entity.academic.StudentSubjectClass;
+import java.time.LocalTime;
+import java.util.List;
+import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
 
 @Mapper(componentModel = "spring")
 public interface ScheduleMapper {
