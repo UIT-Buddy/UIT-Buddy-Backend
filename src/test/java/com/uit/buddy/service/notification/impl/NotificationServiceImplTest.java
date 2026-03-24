@@ -90,8 +90,7 @@ class NotificationServiceImplTest {
         PostLikedEvent event = new PostLikedEvent(actorMssv, "Actor Name", receiverMssv, postId, "Test content");
 
         when(notificationRepository.findByMssvAndTypeAndDataId(receiverMssv, NotificationTemplate.POST_LIKE,
-                postId.toString()))
-                .thenReturn(null);
+                postId.toString())).thenReturn(null);
         when(studentRepository.getReferenceById(receiverMssv)).thenReturn(receiver);
         when(userSettingRepository.findById(receiverMssv)).thenReturn(Optional.of(userSetting));
         when(deviceTokenRepository.findAllTokensByMssv(receiverMssv)).thenReturn(List.of("token1"));
@@ -109,8 +108,7 @@ class NotificationServiceImplTest {
         userSetting.setEnableNotification(false);
 
         when(notificationRepository.findByMssvAndTypeAndDataId(receiverMssv, NotificationTemplate.POST_LIKE,
-                postId.toString()))
-                .thenReturn(null);
+                postId.toString())).thenReturn(null);
         when(studentRepository.getReferenceById(receiverMssv)).thenReturn(receiver);
         when(userSettingRepository.findById(receiverMssv)).thenReturn(Optional.of(userSetting));
 
@@ -125,8 +123,7 @@ class NotificationServiceImplTest {
         PostLikedEvent event = new PostLikedEvent(actorMssv, "Actor Name", receiverMssv, postId, "Test content");
 
         when(notificationRepository.findByMssvAndTypeAndDataId(receiverMssv, NotificationTemplate.POST_LIKE,
-                postId.toString()))
-                .thenReturn(null);
+                postId.toString())).thenReturn(null);
         when(studentRepository.getReferenceById(receiverMssv)).thenReturn(receiver);
         when(userSettingRepository.findById(receiverMssv)).thenReturn(Optional.empty());
         when(deviceTokenRepository.findAllTokensByMssv(receiverMssv)).thenReturn(List.of("token1"));
@@ -146,8 +143,7 @@ class NotificationServiceImplTest {
         existingNotification.setDataId(postId.toString());
 
         when(notificationRepository.findByMssvAndTypeAndDataId(receiverMssv, NotificationTemplate.POST_LIKE,
-                postId.toString()))
-                .thenReturn(existingNotification);
+                postId.toString())).thenReturn(existingNotification);
         when(userSettingRepository.findById(receiverMssv)).thenReturn(Optional.of(userSetting));
         when(deviceTokenRepository.findAllTokensByMssv(receiverMssv)).thenReturn(List.of("token1"));
 
@@ -179,8 +175,7 @@ class NotificationServiceImplTest {
         PostSharedEvent event = new PostSharedEvent(actorMssv, "Actor Name", receiverMssv, postId, UUID.randomUUID());
 
         when(notificationRepository.findByMssvAndTypeAndDataId(receiverMssv, NotificationTemplate.POST_SHARE,
-                postId.toString()))
-                .thenReturn(null);
+                postId.toString())).thenReturn(null);
         when(studentRepository.getReferenceById(receiverMssv)).thenReturn(receiver);
         when(userSettingRepository.findById(receiverMssv)).thenReturn(Optional.of(userSetting));
         when(deviceTokenRepository.findAllTokensByMssv(receiverMssv)).thenReturn(List.of("token1"));
@@ -197,8 +192,7 @@ class NotificationServiceImplTest {
         CommentLikedEvent event = new CommentLikedEvent(actorMssv, "Actor Name", receiverMssv, commentId, postId);
 
         when(notificationRepository.findByMssvAndTypeAndDataId(receiverMssv, NotificationTemplate.COMMENT_LIKE,
-                commentId.toString()))
-                .thenReturn(null);
+                commentId.toString())).thenReturn(null);
         when(studentRepository.getReferenceById(receiverMssv)).thenReturn(receiver);
         when(userSettingRepository.findById(receiverMssv)).thenReturn(Optional.of(userSetting));
         when(deviceTokenRepository.findAllTokensByMssv(receiverMssv)).thenReturn(List.of("token1"));

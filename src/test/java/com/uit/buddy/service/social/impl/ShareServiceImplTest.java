@@ -357,13 +357,8 @@ class ShareServiceImplTest {
 
         // B's shared post (points to A's post)
         UUID sharedPostByBId = UUID.randomUUID();
-        Post sharedPostByB = Post.builder()
-                .title("")
-                .content("B's caption")
-                .author(studentB)
-                .originalPost(originalPost)
-                .type(PostType.SHARE)
-                .build();
+        Post sharedPostByB = Post.builder().title("").content("B's caption").author(studentB).originalPost(originalPost)
+                .type(PostType.SHARE).build();
         ReflectionTestUtils.setField(sharedPostByB, "id", sharedPostByBId);
         ReflectionTestUtils.setField(sharedPostByB, "mssv", "22100002");
 
@@ -415,13 +410,8 @@ class ShareServiceImplTest {
         ReflectionTestUtils.setField(originalPost, "mssv", "22100001");
 
         UUID sharedPostByBId = UUID.randomUUID();
-        Post sharedPostByB = Post.builder()
-                .title("")
-                .content("B's caption")
-                .author(studentB)
-                .originalPost(originalPost)
-                .type(PostType.SHARE)
-                .build();
+        Post sharedPostByB = Post.builder().title("").content("B's caption").author(studentB).originalPost(originalPost)
+                .type(PostType.SHARE).build();
         ReflectionTestUtils.setField(sharedPostByB, "id", sharedPostByBId);
         ReflectionTestUtils.setField(sharedPostByB, "mssv", "22100002");
 

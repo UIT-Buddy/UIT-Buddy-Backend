@@ -127,20 +127,20 @@ public abstract class AbstractBaseClient {
             return responseBody;
         }
         return switch (status.value()) {
-            case 401 -> "Unauthorized access to external service";
-            case 403 -> "Access forbidden to external service";
-            case 404 -> "External resource not found";
-            default -> "External service error: " + status;
+        case 401 -> "Unauthorized access to external service";
+        case 403 -> "Access forbidden to external service";
+        case 404 -> "External resource not found";
+        default -> "External service error: " + status;
         };
     }
 
     private ExternalClientException mapToException(HttpStatusCode status, String message) {
         ExternalClientErrorCode errorCode = switch (status.value()) {
-            case 400 -> ExternalClientErrorCode.BAD_REQUEST;
-            case 401 -> ExternalClientErrorCode.UNAUTHORIZED_REQUEST;
-            case 403 -> ExternalClientErrorCode.FORBIDDEN_REQUEST;
-            case 404 -> ExternalClientErrorCode.NOT_FOUND;
-            default -> ExternalClientErrorCode.EXTERNAL_SERVICE_ERROR;
+        case 400 -> ExternalClientErrorCode.BAD_REQUEST;
+        case 401 -> ExternalClientErrorCode.UNAUTHORIZED_REQUEST;
+        case 403 -> ExternalClientErrorCode.FORBIDDEN_REQUEST;
+        case 404 -> ExternalClientErrorCode.NOT_FOUND;
+        default -> ExternalClientErrorCode.EXTERNAL_SERVICE_ERROR;
         };
         return new ExternalClientException(errorCode, message);
     }

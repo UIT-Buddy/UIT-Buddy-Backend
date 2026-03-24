@@ -4,20 +4,13 @@ import java.util.List;
 
 public record CometChatConversationResponse(List<ConversationData> data) {
 
-        public record ConversationData(
-                        String conversationId,
-                        String conversationType,
-                        ConversationWith conversationWith,
-                        LastMessage lastMessage) {
-        }
+    public record ConversationData(String conversationId, String conversationType, ConversationWith conversationWith,
+            LastMessage lastMessage) {
+    }
 
-        public record ConversationWith(
-                        String uid,
-                        String guid,
-                        String name,
-                        String avatar) {
-        }
+    public record ConversationWith(String uid, String guid, String name, String avatar) {
+    }
 
-        public record LastMessage(Long sentAt) {
-        }
+    public record LastMessage(Long sentAt) {
+    }
 }

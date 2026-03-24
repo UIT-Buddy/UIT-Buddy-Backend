@@ -23,8 +23,8 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.List;
-import java.util.UUID;
 import java.util.Map;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
@@ -65,45 +65,37 @@ public class ShareServiceImpl implements ShareService {
         UUID sharedPostId = null;
 
         switch (type) {
-            case PROFILE -> {
-                Post sharedPost = Post.builder().author(student).title("")
-                        .content(request != null ? request.content() : "").originalPost(rootOriginalPost)
-                        .type(PostType.SHARE)
-                        .build();
-                sharedPostId = postRepository.save(sharedPost).getId();
+        case PROFILE -> {
+            Post sharedPost = Post.builder().author(student).title("").content(request != null ? request.content() : "")
+                    .originalPost(rootOriginalPost).type(PostType.SHARE).build();
+            sharedPostId = postRepository.save(sharedPost).getId();
+        }
+        case MESSAGE -> {
+            if (request == null || request.receiverId() == null || request.receiverId().isBlank()) {
+                throw new SocialException(SocialErrorCode.INVALID_REQUEST);
             }
-            case MESSAGE -> {
-                if (request == null || request.receiverId() == null || request.receiverId().isBlank()) {
-                    throw new SocialException(SocialErrorCode.INVALID_REQUEST);
-                }
 
-                String receiverType = request.receiverType() != null ? request.receiverType() : "user";
+            String receiverType = request.receiverType() != null ? request.receiverType() : "user";
 
-                if (!receiverType.equals("user") && !receiverType.equals("group")) {
-                    throw new SocialException(SocialErrorCode.INVALID_RECEIVE_TYPE);
-                }
-
-                if ("user".equals(receiverType)) {
-                    studentRepository.findById(request.receiverId())
-                            .orElseThrow(() -> new SocialException(SocialErrorCode.STUDENT_NOT_FOUND));
-                }
-
-                String messageText = request.content() != null && !request.content().isBlank()
-                        ? request.content()
-                        : "";
-
-                CometChatSendMessageRequest messageRequest = CometChatSendMessageRequest.builder()
-                        .receiver(request.receiverId())
-                        .receiverType(receiverType)
-                        .category("message")
-                        .type("text")
-                        .data(java.util.Map.of(
-                                "text", messageText,
-                                "metadata", Map.of("postId", rootOriginalPost.getId().toString())))
-                        .build();
-
-                cometChatClient.sendMessage(messageRequest, mssv);
+            if (!receiverType.equals("user") && !receiverType.equals("group")) {
+                throw new SocialException(SocialErrorCode.INVALID_RECEIVE_TYPE);
             }
+
+            if ("user".equals(receiverType)) {
+                studentRepository.findById(request.receiverId())
+                        .orElseThrow(() -> new SocialException(SocialErrorCode.STUDENT_NOT_FOUND));
+            }
+
+            String messageText = request.content() != null && !request.content().isBlank() ? request.content() : "";
+
+            CometChatSendMessageRequest messageRequest = CometChatSendMessageRequest.builder()
+                    .receiver(request.receiverId()).receiverType(receiverType).category("message").type("text")
+                    .data(java.util.Map.of("text", messageText, "metadata",
+                            Map.of("postId", rootOriginalPost.getId().toString())))
+                    .build();
+
+            cometChatClient.sendMessage(messageRequest, mssv);
+        }
         }
 
         if (isFirstTime) {
@@ -144,8 +136,7 @@ public class ShareServiceImpl implements ShareService {
     public List<ShareTargetResponse> getShareTargets(String mssv) {
         log.info("[Share Service] Getting share targets for user: {}", mssv);
 
-        studentRepository.findById(mssv)
-                .orElseThrow(() -> new SocialException(SocialErrorCode.UNAUTHORIZED));
+        studentRepository.findById(mssv).orElseThrow(() -> new SocialException(SocialErrorCode.UNAUTHORIZED));
 
         List<ShareTargetResponse> targets = new java.util.ArrayList<>();
 
@@ -162,18 +153,12 @@ public class ShareServiceImpl implements ShareService {
                             : LocalDateTime.now();
 
                     if ("user".equals(conversation.conversationType())) {
-                        targets.add(new ShareTargetResponse(
-                                conversationWith.uid(),
-                                conversationWith.name(),
-                                conversationWith.avatar(),
-                                com.uit.buddy.enums.ShareTargetType.USER,
+                        targets.add(new ShareTargetResponse(conversationWith.uid(), conversationWith.name(),
+                                conversationWith.avatar(), com.uit.buddy.enums.ShareTargetType.USER,
                                 lastInteractionAt));
                     } else if ("group".equals(conversation.conversationType())) {
-                        targets.add(new ShareTargetResponse(
-                                conversationWith.guid(),
-                                conversationWith.name(),
-                                conversationWith.avatar(),
-                                com.uit.buddy.enums.ShareTargetType.GROUP,
+                        targets.add(new ShareTargetResponse(conversationWith.guid(), conversationWith.name(),
+                                conversationWith.avatar(), com.uit.buddy.enums.ShareTargetType.GROUP,
                                 lastInteractionAt));
                     }
                 }

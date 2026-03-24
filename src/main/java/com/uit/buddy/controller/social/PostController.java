@@ -118,8 +118,8 @@ public class PostController extends AbstractBaseController {
     @GetMapping("/me")
     @Operation(summary = "Get my posts", description = "Get all posts from the current authenticated user with cursor-based pagination")
     public ResponseEntity<CursorPageResponse<PostFeedResponse>> getMyPosts(
-            @RequestParam(required = false) String cursor,
-            @RequestParam(defaultValue = "10") int limit, @AuthenticationPrincipal String mssv) {
+            @RequestParam(required = false) String cursor, @RequestParam(defaultValue = "10") int limit,
+            @AuthenticationPrincipal String mssv) {
 
         log.info("[Post Controller] Getting my posts with cursor: {}, limit: {}", cursor, limit);
 

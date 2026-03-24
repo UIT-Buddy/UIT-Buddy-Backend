@@ -54,8 +54,7 @@ public class NotificationServiceImpl implements NotificationService {
     public void createPostCommentNotification(PostCommentedEvent event) {
         NotificationTemplate template = NotificationTemplate.POST_COMMENT;
         processNotification(event.receiverMssv(), template.getTitle(),
-                template.formatContent(event.actorName(), event.commentContent()), template,
-                event.postId().toString());
+                template.formatContent(event.actorName(), event.commentContent()), template, event.postId().toString());
     }
 
     @Override
@@ -91,11 +90,9 @@ public class NotificationServiceImpl implements NotificationService {
     }
 
     private void processAggregatedNotification(String receiverMssv, String title, String actorName,
-            NotificationTemplate type,
-            String dataId, String action) {
+            NotificationTemplate type, String dataId, String action) {
 
-        Notification existingNotification = notificationRepository.findByMssvAndTypeAndDataId(receiverMssv,
-                type,
+        Notification existingNotification = notificationRepository.findByMssvAndTypeAndDataId(receiverMssv, type,
                 dataId);
 
         String content;
