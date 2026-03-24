@@ -2,7 +2,6 @@ package com.uit.buddy.controller.academic;
 
 import com.uit.buddy.controller.AbstractBaseController;
 import com.uit.buddy.dto.base.SingleResponse;
-import com.uit.buddy.dto.base.SuccessResponse;
 import com.uit.buddy.dto.request.academic.UploadScheduleRequest;
 import com.uit.buddy.dto.response.schedule.DeadlineResponse;
 import com.uit.buddy.dto.response.schedule.ScheduleResponse;

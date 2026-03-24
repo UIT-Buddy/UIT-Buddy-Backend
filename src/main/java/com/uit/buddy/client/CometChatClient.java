@@ -4,6 +4,8 @@ import com.uit.buddy.dto.request.client.CometChatPushTokenRequest;
 import com.uit.buddy.dto.request.client.CometChatSendMessageRequest;
 import com.uit.buddy.dto.request.client.CometChatUserRequest;
 import com.uit.buddy.dto.response.client.CometChatAuthTokenResponse;
+import com.uit.buddy.dto.response.client.CometChatConversationResponse;
+import com.uit.buddy.dto.response.client.CometChatGroupResponse;
 import com.uit.buddy.dto.response.client.CometChatUserResponse;
 
 public interface CometChatClient {
@@ -23,4 +25,7 @@ public interface CometChatClient {
 
     void sendMessage(CometChatSendMessageRequest request, String onBehalfOf);
 
+    CometChatGroupResponse getUserGroups(String uid);
+
+    CometChatConversationResponse getConversations(String uid);
 }

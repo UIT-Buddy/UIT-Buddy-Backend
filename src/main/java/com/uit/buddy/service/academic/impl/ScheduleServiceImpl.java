@@ -2,7 +2,10 @@ package com.uit.buddy.service.academic.impl;
 
 import com.uit.buddy.client.UitClient;
 import com.uit.buddy.dto.request.academic.UploadScheduleRequest;
+import com.uit.buddy.dto.response.client.AssignmentDetailResponse;
 import com.uit.buddy.dto.response.client.CourseDetailResponse;
+import com.uit.buddy.dto.response.client.EnrolledCourseResponse;
+import com.uit.buddy.dto.response.client.SiteInfoResponse;
 import com.uit.buddy.dto.response.schedule.CourseContentResponse;
 import com.uit.buddy.dto.response.schedule.DeadlineResponse;
 import com.uit.buddy.dto.response.schedule.ScheduleResponse;
@@ -11,6 +14,7 @@ import com.uit.buddy.entity.academic.Semester;
 import com.uit.buddy.entity.academic.StudentSubjectClass;
 import com.uit.buddy.entity.academic.SubjectClass;
 import com.uit.buddy.entity.user.Student;
+import com.uit.buddy.enums.DeadlineStatus;
 import com.uit.buddy.enums.StudentClassStatus;
 import com.uit.buddy.exception.schedule.ScheduleErrorCode;
 import com.uit.buddy.exception.schedule.ScheduleException;
@@ -39,14 +43,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
-import lombok.RequiredArgsConstructor;
+import java.util.concurrent.Executor;
+import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 @Service
-@RequiredArgsConstructor
 @Slf4j
 public class ScheduleServiceImpl implements ScheduleService {
 
@@ -58,8 +63,27 @@ public class ScheduleServiceImpl implements ScheduleService {
     private final SemesterRepository semesterRepository;
     private final UitClient uitClient;
     private final EncryptionUtils encryptionUtils;
+    private final Executor executor;
     private final ScheduleMapper scheduleMapper;
 
+    public ScheduleServiceImpl(IcsParser icsParser, StudentRepository studentRepository,
+            SubjectClassRepository subjectClassRepository, StudentSubjectClassRepository studentSubjectClassRepository,
+            CourseRepository courseRepository, SemesterRepository semesterRepository, UitClient uitClient,
+            EncryptionUtils encryptionUtils, @Qualifier("uploadExecutor") Executor executor,
+            ScheduleMapper scheduleMapper) {
+        this.icsParser = icsParser;
+        this.studentRepository = studentRepository;
+        this.subjectClassRepository = subjectClassRepository;
+        this.studentSubjectClassRepository = studentSubjectClassRepository;
+        this.courseRepository = courseRepository;
+        this.semesterRepository = semesterRepository;
+        this.uitClient = uitClient;
+        this.encryptionUtils = encryptionUtils;
+        this.executor = executor;
+        this.scheduleMapper = scheduleMapper;
+    }
+
+    @Override
     @Transactional(rollbackFor = Exception.class)
     public List<ScheduleResponse> uploadSchedule(String mssv, UploadScheduleRequest request) {
         log.info("[Schedule Service] Processing sync upload for student: {}", mssv);
@@ -185,25 +209,50 @@ public class ScheduleServiceImpl implements ScheduleService {
         Student student = studentRepository.findById(mssv)
                 .orElseThrow(() -> new UserException(UserErrorCode.STUDENT_NOT_FOUND));
         String decryptedWstoken = encryptionUtils.decrypt(student.getEncryptedWstoken());
-        Map<String, List<CourseDetailResponse>> courseContents = uitClient.getCourseContents(decryptedWstoken);
-        List<CourseContentResponse> deadlines = extractDeadlinesForCourses(courseContents);
+        Map<String, List<CourseDetailResponse>> courseContents = getCourseContents(decryptedWstoken);
+        List<CourseContentResponse> deadlines = extractDeadlinesForCourses(courseContents, decryptedWstoken);
         return deadlines;
     }
 
+    private Map<String, List<CourseDetailResponse>> getCourseContents(String wstoken) {
+        SiteInfoResponse siteInfo = uitClient.fetchSiteInfo(wstoken);
+        Long userId = siteInfo.userid();
+        List<EnrolledCourseResponse> enrolledCourseResponses = uitClient.getUserCourses(wstoken, userId);
+        System.out.println("BUG HERE");
+        Map<String, String> coursesInSemester = getCourseSemesters(enrolledCourseResponses);
+
+        List<CompletableFuture<Map.Entry<String, List<CourseDetailResponse>>>> futures = new ArrayList<>();
+
+        for (Map.Entry<String, String> entry : coursesInSemester.entrySet()) {
+            String courseId = entry.getKey();
+            String courseName = entry.getValue();
+
+            futures.add(CompletableFuture.supplyAsync(() -> {
+                List<CourseDetailResponse> details = uitClient.getAllCourseDetail(wstoken, courseId);
+                return Map.entry(courseName, details);
+            }, executor));
+        }
+
+        return futures.stream().map(CompletableFuture::join)
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+    }
+
     private List<CourseContentResponse> extractDeadlinesForCourses(
-            Map<String, List<CourseDetailResponse>> courseContents) {
+            Map<String, List<CourseDetailResponse>> courseContents, String decryptedWstoken) {
         List<CompletableFuture<CourseContentResponse>> futures = new ArrayList<>();
         for (Map.Entry<String, List<CourseDetailResponse>> entry : courseContents.entrySet()) {
             String courseName = entry.getKey();
             List<CourseDetailResponse> details = entry.getValue();
             if (hasNoDeadline(details))
                 continue;
-            futures.add(CompletableFuture.supplyAsync(() -> extractDeadlinesForCourse(courseName, details)));
+            futures.add(CompletableFuture
+                    .supplyAsync(() -> extractDeadlinesForCourse(courseName, details, decryptedWstoken)));
         }
         return futures.stream().map(CompletableFuture::join).toList();
     }
 
-    private CourseContentResponse extractDeadlinesForCourse(String courseName, List<CourseDetailResponse> details) {
+    private CourseContentResponse extractDeadlinesForCourse(String courseName, List<CourseDetailResponse> details,
+            String decryptedWstoken) {
         List<CourseContentResponse.exercise> exercises = new ArrayList<>();
 
         for (CourseDetailResponse detail : details) {
@@ -221,7 +270,8 @@ public class ScheduleServiceImpl implements ScheduleService {
 
                 if (dueTimestamp != null) {
                     exercises.add(new CourseContentResponse.exercise(module.name(), toLocalDateTime(dueTimestamp),
-                            module.url()));
+                            module.url(),
+                            determineDeadlineStatus(toLocalDateTime(dueTimestamp), decryptedWstoken, module.id())));
                 }
             }
         }
@@ -262,4 +312,49 @@ public class ScheduleServiceImpl implements ScheduleService {
         return LocalDateTime.ofInstant(Instant.ofEpochSecond(epochSeconds), ZoneId.systemDefault());
     }
 
+    private Map<String, String> getCourseSemesters(List<EnrolledCourseResponse> courses) {
+        Map<String, String> coursesInSemester = new HashMap<>();
+        for (EnrolledCourseResponse course : courses) {
+            if (verifySemester(course.startDate())) {
+                coursesInSemester.put(course.id(), course.shortName());
+            }
+        }
+        return coursesInSemester;
+    }
+
+    private boolean verifySemester(String startDate) {
+        long courseTs = Long.parseLong(startDate);
+        long nowTs = Instant.now().getEpochSecond();
+
+        var courseDate = Instant.ofEpochSecond(courseTs).atZone(ZoneId.systemDefault());
+
+        var nowDate = Instant.ofEpochSecond(nowTs).atZone(ZoneId.systemDefault());
+
+        int courseYear = courseDate.getYear();
+        int nowYear = nowDate.getYear();
+
+        int courseMonth = courseDate.getMonthValue();
+        int nowMonth = nowDate.getMonthValue();
+
+        int courseSemester = (courseMonth <= 6) ? 1 : 2;
+        int currentSemester = (nowMonth <= 6) ? 1 : 2;
+
+        return courseYear == nowYear && courseSemester == currentSemester;
+    }
+
+    private DeadlineStatus determineDeadlineStatus(LocalDateTime dueDate, String wstoken, String assignmentId) {
+        AssignmentDetailResponse assignmentDetail = uitClient.getCourseAssignments(wstoken, assignmentId);
+        LocalDateTime now = LocalDateTime.now();
+        if (assignmentDetail.lastAttempt().submission().status().equalsIgnoreCase("submitted")) {
+            return DeadlineStatus.DONE;
+        }
+        if (dueDate.isBefore(now)) {
+            return DeadlineStatus.OVERDUE;
+        }
+        if (dueDate.isBefore(now.plusHours(24))) {
+            return DeadlineStatus.NEARDEADLINE;
+        }
+        return DeadlineStatus.UPCOMING;
+
+    }
 }

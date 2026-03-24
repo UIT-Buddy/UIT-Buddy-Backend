@@ -12,11 +12,13 @@ import org.springframework.web.multipart.MultipartFile;
 public interface UserService {
     UserResponse getMyProfile(String mssv);
 
+    UserResponse getOtherUserProfile(String targetMssv, String currentUserMssv);
+
     UserResponse updateProfile(String mssv, UpdateUserRequest request);
 
     String uploadAvatar(String mssv, MultipartFile file);
 
-    Page<FoundUserResponse> searchStudentByKeyword(String keyword, Pageable pageable);
+    Page<FoundUserResponse> searchStudentByKeyword(String keyword, String currentUserMssv, Pageable pageable);
 
     void deleteStudentAccount(String mssv);
 

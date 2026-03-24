@@ -10,7 +10,7 @@ import com.uit.buddy.dto.response.notification.NotificationResponse;
 import com.uit.buddy.entity.notification.Notification;
 import com.uit.buddy.entity.user.Student;
 import com.uit.buddy.entity.user.UserSetting;
-import com.uit.buddy.enums.NotificationType;
+import com.uit.buddy.enums.NotificationTemplate;
 import com.uit.buddy.event.social.CommentLikedEvent;
 import com.uit.buddy.event.social.PostCommentedEvent;
 import com.uit.buddy.event.social.PostLikedEvent;
@@ -89,7 +89,8 @@ class NotificationServiceImplTest {
     void shouldCreatePostLikeNotificationWhenEnabled() {
         PostLikedEvent event = new PostLikedEvent(actorMssv, "Actor Name", receiverMssv, postId, "Test content");
 
-        when(notificationRepository.findByMssvAndTypeAndDataId(receiverMssv, "POST_LIKE", postId.toString()))
+        when(notificationRepository.findByMssvAndTypeAndDataId(receiverMssv, NotificationTemplate.POST_LIKE,
+                postId.toString()))
                 .thenReturn(null);
         when(studentRepository.getReferenceById(receiverMssv)).thenReturn(receiver);
         when(userSettingRepository.findById(receiverMssv)).thenReturn(Optional.of(userSetting));
@@ -107,7 +108,8 @@ class NotificationServiceImplTest {
         PostLikedEvent event = new PostLikedEvent(actorMssv, "Actor Name", receiverMssv, postId, "Test content");
         userSetting.setEnableNotification(false);
 
-        when(notificationRepository.findByMssvAndTypeAndDataId(receiverMssv, "POST_LIKE", postId.toString()))
+        when(notificationRepository.findByMssvAndTypeAndDataId(receiverMssv, NotificationTemplate.POST_LIKE,
+                postId.toString()))
                 .thenReturn(null);
         when(studentRepository.getReferenceById(receiverMssv)).thenReturn(receiver);
         when(userSettingRepository.findById(receiverMssv)).thenReturn(Optional.of(userSetting));
@@ -122,7 +124,8 @@ class NotificationServiceImplTest {
     void shouldDefaultToEnabledWhenUserSettingNotFound() {
         PostLikedEvent event = new PostLikedEvent(actorMssv, "Actor Name", receiverMssv, postId, "Test content");
 
-        when(notificationRepository.findByMssvAndTypeAndDataId(receiverMssv, "POST_LIKE", postId.toString()))
+        when(notificationRepository.findByMssvAndTypeAndDataId(receiverMssv, NotificationTemplate.POST_LIKE,
+                postId.toString()))
                 .thenReturn(null);
         when(studentRepository.getReferenceById(receiverMssv)).thenReturn(receiver);
         when(userSettingRepository.findById(receiverMssv)).thenReturn(Optional.empty());
@@ -142,7 +145,8 @@ class NotificationServiceImplTest {
         existingNotification.setContent("Old Actor đã thích bài viết của bạn");
         existingNotification.setDataId(postId.toString());
 
-        when(notificationRepository.findByMssvAndTypeAndDataId(receiverMssv, "POST_LIKE", postId.toString()))
+        when(notificationRepository.findByMssvAndTypeAndDataId(receiverMssv, NotificationTemplate.POST_LIKE,
+                postId.toString()))
                 .thenReturn(existingNotification);
         when(userSettingRepository.findById(receiverMssv)).thenReturn(Optional.of(userSetting));
         when(deviceTokenRepository.findAllTokensByMssv(receiverMssv)).thenReturn(List.of("token1"));
@@ -174,7 +178,8 @@ class NotificationServiceImplTest {
     void shouldCreatePostShareNotification() {
         PostSharedEvent event = new PostSharedEvent(actorMssv, "Actor Name", receiverMssv, postId, UUID.randomUUID());
 
-        when(notificationRepository.findByMssvAndTypeAndDataId(receiverMssv, "POST_SHARE", postId.toString()))
+        when(notificationRepository.findByMssvAndTypeAndDataId(receiverMssv, NotificationTemplate.POST_SHARE,
+                postId.toString()))
                 .thenReturn(null);
         when(studentRepository.getReferenceById(receiverMssv)).thenReturn(receiver);
         when(userSettingRepository.findById(receiverMssv)).thenReturn(Optional.of(userSetting));
@@ -191,7 +196,8 @@ class NotificationServiceImplTest {
     void shouldCreateCommentLikeNotification() {
         CommentLikedEvent event = new CommentLikedEvent(actorMssv, "Actor Name", receiverMssv, commentId, postId);
 
-        when(notificationRepository.findByMssvAndTypeAndDataId(receiverMssv, "COMMENT_LIKE", commentId.toString()))
+        when(notificationRepository.findByMssvAndTypeAndDataId(receiverMssv, NotificationTemplate.COMMENT_LIKE,
+                commentId.toString()))
                 .thenReturn(null);
         when(studentRepository.getReferenceById(receiverMssv)).thenReturn(receiver);
         when(userSettingRepository.findById(receiverMssv)).thenReturn(Optional.of(userSetting));
@@ -284,7 +290,7 @@ class NotificationServiceImplTest {
 
     private Notification createMockNotification() {
         Notification notification = Notification.builder().student(receiver).title("Test").content("Test content")
-                .type(NotificationType.SOCIAL).isRead(false).build();
+                .type(NotificationTemplate.POST_LIKE).isRead(false).build();
         ReflectionTestUtils.setField(notification, "id", UUID.randomUUID());
         return notification;
     }

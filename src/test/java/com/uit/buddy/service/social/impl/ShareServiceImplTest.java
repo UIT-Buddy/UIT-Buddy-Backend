@@ -80,7 +80,7 @@ class ShareServiceImplTest {
 
     @Test
     void shouldSharePostToProfileSuccessfully() {
-        SharePostRequest request = new SharePostRequest("Sharing this post");
+        SharePostRequest request = new SharePostRequest("Sharing this post", null, null);
 
         when(postRepository.findById(postId)).thenReturn(Optional.of(post));
         when(studentRepository.findById(mssv)).thenReturn(Optional.of(student));
@@ -103,7 +103,7 @@ class ShareServiceImplTest {
 
     @Test
     void shouldSharePostToMessageSuccessfully() {
-        SharePostRequest request = new SharePostRequest("Sharing via message");
+        SharePostRequest request = new SharePostRequest("Sharing via message", "receiver123", "user");
 
         when(postRepository.findById(postId)).thenReturn(Optional.of(post));
         when(studentRepository.findById(mssv)).thenReturn(Optional.of(student));
@@ -121,7 +121,7 @@ class ShareServiceImplTest {
 
     @Test
     void shouldNotIncrementShareCountWhenAlreadyShared() {
-        SharePostRequest request = new SharePostRequest("Sharing again");
+        SharePostRequest request = new SharePostRequest("Sharing again", null, null);
 
         when(postRepository.findById(postId)).thenReturn(Optional.of(post));
         when(studentRepository.findById(mssv)).thenReturn(Optional.of(student));
@@ -147,7 +147,7 @@ class ShareServiceImplTest {
         ReflectionTestUtils.setField(ownPost, "id", postId);
         ReflectionTestUtils.setField(ownPost, "mssv", mssv); // Same as actor
 
-        SharePostRequest request = new SharePostRequest("Sharing my own post");
+        SharePostRequest request = new SharePostRequest("Sharing my own post", null, null);
 
         when(postRepository.findById(postId)).thenReturn(Optional.of(ownPost));
         when(studentRepository.findById(mssv)).thenReturn(Optional.of(student));
@@ -168,7 +168,7 @@ class ShareServiceImplTest {
 
     @Test
     void shouldThrowExceptionWhenPostNotFound() {
-        SharePostRequest request = new SharePostRequest("Sharing");
+        SharePostRequest request = new SharePostRequest("Sharing", null, null);
         when(postRepository.findById(postId)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> shareService.sharePost(postId, mssv, ShareType.PROFILE, request))
@@ -177,7 +177,7 @@ class ShareServiceImplTest {
 
     @Test
     void shouldThrowExceptionWhenStudentNotFound() {
-        SharePostRequest request = new SharePostRequest("Sharing");
+        SharePostRequest request = new SharePostRequest("Sharing", null, null);
         when(postRepository.findById(postId)).thenReturn(Optional.of(post));
         when(studentRepository.findById(mssv)).thenReturn(Optional.empty());
 

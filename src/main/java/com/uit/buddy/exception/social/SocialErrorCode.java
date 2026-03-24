@@ -17,7 +17,10 @@ public enum SocialErrorCode {
             HttpStatus.BAD_REQUEST),
     FRIEND_REQUEST_NOT_FOUND("SOCIAL_008", "Friend request not found", HttpStatus.BAD_REQUEST),
     FRIEND_REQUEST_ALREADY_RESPONDED("SOCIAL_009", "You have responded this request already", HttpStatus.BAD_REQUEST),
-    NOT_FRIENDS("SOCIAL_010", "Not be friends to unfriend", HttpStatus.BAD_REQUEST);
+    NOT_FRIENDS("SOCIAL_010", "Not be friends to unfriend", HttpStatus.BAD_REQUEST),
+    INVALID_REQUEST("SOCIAL_011", "Invalid request", HttpStatus.BAD_REQUEST),
+    STUDENT_NOT_FOUND("SOCIAL_011", "You do not have this friend to send", HttpStatus.NOT_FOUND),
+    INVALID_RECEIVE_TYPE("SOCIAL_012", "Invalid receive type, must be 'user' or 'group'", HttpStatus.BAD_REQUEST);
 
     private final String code;
     private final String message;
