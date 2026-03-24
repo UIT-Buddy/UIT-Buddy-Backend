@@ -1,8 +1,5 @@
 package com.uit.buddy.util;
 
-import com.uit.buddy.constant.IcsConstants;
-import com.uit.buddy.exception.schedule.ScheduleErrorCode;
-import com.uit.buddy.exception.schedule.ScheduleException;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -16,9 +13,15 @@ import java.util.List;
 import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import org.springframework.stereotype.Component;
+
+import com.uit.buddy.constant.IcsConstants;
+import com.uit.buddy.exception.schedule.ScheduleErrorCode;
+import com.uit.buddy.exception.schedule.ScheduleException;
+
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Component;
 
 @Component
 @Slf4j
@@ -123,7 +126,7 @@ public class IcsParser {
             LocalDateTime dt = parseDateTime(value);
             event.setStartDate(dt.toLocalDate());
             event.setStartTime(dt.toLocalTime());
-            event.setDayOfWeek(dt.getDayOfWeek().getValue() + 1); // Convert to 1=Monday, 7=Sunday
+            event.setDayOfWeek(dt.getDayOfWeek().getValue() + 1); 
         }
         case IcsConstants.DTEND -> event.setEndTime(parseDateTime(value).toLocalTime());
         case IcsConstants.RRULE -> parseRRule(value, event);
@@ -200,7 +203,13 @@ public class IcsParser {
     private void matchAndSet(Pattern pattern, String input, Consumer<String> action) {
         Matcher m = pattern.matcher(input);
         if (m.find() && m.groupCount() >= 1) {
-            action.accept(m.group(1).trim());
+            for (int i = 1; i <= m.groupCount(); i++) {
+                String value = m.group(i);
+                if (value != null && !value.isBlank()) {
+                    action.accept(value.trim());
+                    break;
+                }
+            }
         }
     }
 

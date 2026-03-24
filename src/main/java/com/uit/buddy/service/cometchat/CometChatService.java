@@ -6,4 +6,6 @@ public interface CometChatService {
     void removeFriendship(String mssv1, String mssv2);
 
     void syncUserAvatar(String uid, String fullName, String avatarUrl);
+
+    void registerPushToken(String platform, String providerId, String fcmToken, String authToken, String timezone);
 }

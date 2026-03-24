@@ -1,5 +1,17 @@
 package com.uit.buddy.service.auth.impl;
 
+import java.util.List;
+import java.util.UUID;
+
+import com.uit.buddy.service.cometchat.CometChatService;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.mail.MailException;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.client.RestClientException;
+
 import com.uit.buddy.client.CometChatClient;
 import com.uit.buddy.client.UitClient;
 import com.uit.buddy.constant.AppConstants;
@@ -38,17 +50,9 @@ import com.uit.buddy.service.email.EmailService;
 import com.uit.buddy.service.encryption.WsTokenEncryptionService;
 import com.uit.buddy.service.fcm.FcmService;
 import com.uit.buddy.util.OtpUtils;
-import java.util.List;
-import java.util.UUID;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.mail.MailException;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.client.RestClientException;
 
 @Service
 @RequiredArgsConstructor
@@ -71,6 +75,7 @@ public class AuthServiceImpl implements AuthService {
     private final FcmService fcmService;
     private final OtpUtils otpUtils;
     private final CloudinaryService cloudinaryService;
+    private final CometChatService cometChatService;
 
     @Value("${app.otp.length}")
     private int otpLength;
@@ -83,6 +88,15 @@ public class AuthServiceImpl implements AuthService {
 
     @Value("${app.pending-account.expiration-seconds}")
     private long pendingAccountExpirationSeconds;
+
+    @Value("${app.cometchat.app-platform}")
+    private String cometChatPlatform;
+
+    @Value("${app.cometchat.app-provider-id}")
+    private String cometChatProviderId;
+
+    @Value("${app.cometchat.app-timezone}")
+    private String cometChatTimezone;
 
     @Override
     @Transactional
@@ -182,6 +196,8 @@ public class AuthServiceImpl implements AuthService {
             log.info("Successfully created student with UserSetting for MSSV: {}", request.mssv());
             if (request.fcmToken() != null && !request.fcmToken().isBlank()) {
                 fcmService.syncDeviceToken(request.mssv(), request.fcmToken());
+                cometChatService.registerPushToken(cometChatPlatform, cometChatProviderId, request.fcmToken(),
+                        cometAuthToken, cometChatTimezone);
             }
             log.info("Successfully created student: {} with homeClassCode: {}", request.mssv(), homeClassCode);
         } catch (Exception e) {
@@ -214,8 +230,7 @@ public class AuthServiceImpl implements AuthService {
 
         StudentResponse studentResponse = studentMapper.toStudentResponse(student);
 
-        return new AuthResponse(accessToken, refreshToken, studentResponse, student.getCometAuthToken(),
-                student.getAvatarUrl());
+        return new AuthResponse(accessToken, refreshToken, studentResponse, student.getCometAuthToken());
     }
 
     @Override
@@ -251,8 +266,7 @@ public class AuthServiceImpl implements AuthService {
 
         StudentResponse studentResponse = studentMapper.toStudentResponse(student);
 
-        return new AuthResponse(accessToken, refreshToken, studentResponse, student.getCometAuthToken(),
-                student.getAvatarUrl());
+        return new AuthResponse(accessToken, refreshToken, studentResponse, student.getCometAuthToken());
     }
 
     @Override
@@ -346,8 +360,7 @@ public class AuthServiceImpl implements AuthService {
 
         StudentResponse studentResponse = studentMapper.toStudentResponse(student);
 
-        return new AuthResponse(newAccessToken, refreshToken, studentResponse, student.getCometAuthToken(),
-                student.getAvatarUrl());
+        return new AuthResponse(newAccessToken, refreshToken, studentResponse, student.getCometAuthToken());
     }
 
     @Override
