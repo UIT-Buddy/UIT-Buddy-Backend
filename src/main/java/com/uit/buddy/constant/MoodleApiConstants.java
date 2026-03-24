@@ -10,12 +10,15 @@ public final class MoodleApiConstants {
     public static final String FUNCTION_GET_SITE_INFO = "core_webservice_get_site_info";
     public static final String FUNCTION_GET_USERS_COURSES = "core_enrol_get_users_courses";
     public static final String FUNCTION_GET_COURSE_CONTENTS = "core_course_get_contents";
+    public static final String FUNCTION_GET_ASSIGNMENT_SUBMISSIONS = "mod_assign_get_submission_status";
+
     // Parameter keys
     public static final String PARAM_WSTOKEN = "wstoken";
     public static final String PARAM_WSFUNCTION = "wsfunction";
     public static final String PARAM_MOODLEWSRESTFORMAT = "moodlewsrestformat";
     public static final String PARAM_USERID = "userid";
     public static final String PARAM_COURSEID = "courseid";
+    public static final String PARAM_ASSIGNMENTID = "assignid";
 
     // Response Error Keys
     public static final String KEY_EXCEPTION = "exception";
