@@ -89,4 +89,17 @@ public interface PostRepository extends CrudRepository<Post, UUID> {
     @Modifying
     @Query("UPDATE Post p SET p.commentCount = p.commentCount - 1 WHERE p.id = :postId AND p.commentCount > 0")
     void decrementCommentCount(@Param("postId") UUID postId);
+
+    @Query(value = "SELECT " + SELECT_BASE + """
+            FROM posts p
+            JOIN students s ON p.mssv = s.mssv
+            WHERE p.mssv = :targetMssv
+                AND (CAST(:cursorTime AS timestamp) IS NULL
+                    OR p.created_at < CAST(:cursorTime AS timestamp)
+                    OR (p.created_at = CAST(:cursorTime AS timestamp) AND p.id < :cursorId))
+            ORDER BY p.created_at DESC, p.id DESC
+            LIMIT :limit
+            """, nativeQuery = true)
+    List<PostFeedProjection> findUserPosts(@Param("targetMssv") String targetMssv, @Param("mssv") String currentMssv,
+            @Param("cursorTime") LocalDateTime cursorTime, @Param("cursorId") UUID cursorId, @Param("limit") int limit);
 }

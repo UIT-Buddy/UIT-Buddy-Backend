@@ -5,8 +5,11 @@ import com.uit.buddy.client.AbstractBaseClient;
 import com.uit.buddy.client.CometChatClient;
 import com.uit.buddy.constant.CometChatApiConstants;
 import com.uit.buddy.dto.request.client.CometChatPushTokenRequest;
+import com.uit.buddy.dto.request.client.CometChatSendMessageRequest;
 import com.uit.buddy.dto.request.client.CometChatUserRequest;
 import com.uit.buddy.dto.response.client.CometChatAuthTokenResponse;
+import com.uit.buddy.dto.response.client.CometChatConversationResponse;
+import com.uit.buddy.dto.response.client.CometChatGroupResponse;
 import com.uit.buddy.dto.response.client.CometChatUserResponse;
 import java.util.List;
 import java.util.Map;
@@ -75,6 +78,25 @@ public class CometChatClientImpl extends AbstractBaseClient implements CometChat
         post(CometChatApiConstants.REGISTER_PUSH_TOKEN_ENDPOINT, request, Object.class, createHeaders());
     }
 
+    @Override
+    public void sendMessage(CometChatSendMessageRequest request, String onBehalfOf) {
+        HttpHeaders headers = createHeaders();
+        headers.set("onBehalfOf", onBehalfOf);
+        post(CometChatApiConstants.SEND_MESSAGE_ENDPOINT, request, Object.class, headers);
+    }
+
+    @Override
+    public CometChatGroupResponse getUserGroups(String uid) {
+        String endpoint = String.format(CometChatApiConstants.GET_USER_GROUPS_ENDPOINT, uid);
+        return get(endpoint, CometChatGroupResponse.class, null, createHeaders());
+    }
+
+    @Override
+    public CometChatConversationResponse getConversations(String uid) {
+        String endpoint = String.format(CometChatApiConstants.GET_CONVERSATIONS_ENDPOINT, uid);
+        return get(endpoint, CometChatConversationResponse.class, null, createHeaders());
+    }
+
     private HttpHeaders createHeaders() {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
@@ -82,4 +104,5 @@ public class CometChatClientImpl extends AbstractBaseClient implements CometChat
         headers.set(CometChatApiConstants.APP_ID_HEADER, appId);
         return headers;
     }
+
 }

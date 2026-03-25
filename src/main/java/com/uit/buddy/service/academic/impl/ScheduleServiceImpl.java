@@ -8,6 +8,7 @@ import com.uit.buddy.dto.response.client.EnrolledCourseResponse;
 import com.uit.buddy.dto.response.client.SiteInfoResponse;
 import com.uit.buddy.dto.response.schedule.CourseContentResponse;
 import com.uit.buddy.dto.response.schedule.DeadlineResponse;
+import com.uit.buddy.dto.response.schedule.ScheduleResponse;
 import com.uit.buddy.entity.academic.Course;
 import com.uit.buddy.entity.academic.Semester;
 import com.uit.buddy.entity.academic.StudentSubjectClass;
@@ -21,6 +22,7 @@ import com.uit.buddy.exception.system.SystemErrorCode;
 import com.uit.buddy.exception.system.SystemException;
 import com.uit.buddy.exception.user.UserErrorCode;
 import com.uit.buddy.exception.user.UserException;
+import com.uit.buddy.mapper.schedule.ScheduleMapper;
 import com.uit.buddy.repository.academic.CourseRepository;
 import com.uit.buddy.repository.academic.SemesterRepository;
 import com.uit.buddy.repository.academic.StudentSubjectClassRepository;
@@ -62,11 +64,13 @@ public class ScheduleServiceImpl implements ScheduleService {
     private final UitClient uitClient;
     private final EncryptionUtils encryptionUtils;
     private final Executor executor;
+    private final ScheduleMapper scheduleMapper;
 
     public ScheduleServiceImpl(IcsParser icsParser, StudentRepository studentRepository,
             SubjectClassRepository subjectClassRepository, StudentSubjectClassRepository studentSubjectClassRepository,
             CourseRepository courseRepository, SemesterRepository semesterRepository, UitClient uitClient,
-            EncryptionUtils encryptionUtils, @Qualifier("uploadExecutor") Executor executor) {
+            EncryptionUtils encryptionUtils, @Qualifier("uploadExecutor") Executor executor,
+            ScheduleMapper scheduleMapper) {
         this.icsParser = icsParser;
         this.studentRepository = studentRepository;
         this.subjectClassRepository = subjectClassRepository;
@@ -76,10 +80,12 @@ public class ScheduleServiceImpl implements ScheduleService {
         this.uitClient = uitClient;
         this.encryptionUtils = encryptionUtils;
         this.executor = executor;
+        this.scheduleMapper = scheduleMapper;
     }
 
+    @Override
     @Transactional(rollbackFor = Exception.class)
-    public void uploadSchedule(String mssv, UploadScheduleRequest request) {
+    public List<ScheduleResponse> uploadSchedule(String mssv, UploadScheduleRequest request) {
         log.info("[Schedule Service] Processing sync upload for student: {}", mssv);
 
         validateIcsFile(request.icsFile());
@@ -94,9 +100,11 @@ public class ScheduleServiceImpl implements ScheduleService {
                 throw new ScheduleException(ScheduleErrorCode.INVALID_OWNER);
             }
 
-            saveScheduleData(student, result.getEvents());
+            List<ScheduleResponse> schedules = saveScheduleData(student, result.getEvents());
 
             log.info("[Schedule Service] Schedule upload successful for student: {}", mssv);
+
+            return schedules;
 
         } catch (ScheduleException e) {
             throw e;
@@ -113,7 +121,7 @@ public class ScheduleServiceImpl implements ScheduleService {
         return new DeadlineResponse(numberOfDeadlines, courseContents);
     }
 
-    private void saveScheduleData(Student student, List<IcsEvent> events) {
+    private List<ScheduleResponse> saveScheduleData(Student student, List<IcsEvent> events) {
         Semester semester = getActiveSemester();
 
         Set<String> existingMappingCodes = studentSubjectClassRepository
@@ -125,8 +133,6 @@ public class ScheduleServiceImpl implements ScheduleService {
                 newEventsForStudent.put(event.getClassCode(), event);
             }
         }
-        if (newEventsForStudent.isEmpty())
-            return;
 
         List<SubjectClass> existingGlobalClasses = subjectClassRepository
                 .findAllByClassCodeInAndSemester(newEventsForStudent.keySet(), semester);
@@ -157,6 +163,8 @@ public class ScheduleServiceImpl implements ScheduleService {
         studentSubjectClassRepository.saveAll(finalMappings);
         log.info("[Schedule Service] Successfully synced {} classes for student {}", finalMappings.size(),
                 student.getMssv());
+
+        return classMap.values().stream().map(scheduleMapper::toScheduleResponse).toList();
     }
 
     private SubjectClass buildSubjectClassEntity(IcsEvent event, Semester semester, Map<String, Course> courseCache) {
