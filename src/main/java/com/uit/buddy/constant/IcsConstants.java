@@ -17,7 +17,7 @@ public final class IcsConstants {
     public static final Pattern LESSON_PATTERN = Pattern.compile("Tiết\\s*([0-9]+)");
     public static final Pattern NOTE_PATTERN = Pattern.compile("Ghi chú:\\s*([^,]+)");
     public static final Pattern STUDENT_ID_PATTERN = Pattern.compile("(\\d{8})");
-        public static final Pattern UNTIL_PATTERN = Pattern.compile("UNTIL=\\d{8}T\\d{6}Z?");
+    public static final Pattern UNTIL_PATTERN = Pattern.compile("UNTIL=\\d{8}T\\d{6}Z?");
     public static final Pattern FREQ_PATTERN = Pattern.compile("FREQ=([A-Z]+)");
     public static final Pattern INTERVAL_PATTERN = Pattern.compile("INTERVAL=(\\d+)");
 

@@ -1,5 +1,8 @@
 package com.uit.buddy.util;
 
+import com.uit.buddy.constant.IcsConstants;
+import com.uit.buddy.exception.schedule.ScheduleErrorCode;
+import com.uit.buddy.exception.schedule.ScheduleException;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -13,20 +16,13 @@ import java.util.List;
 import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import org.springframework.stereotype.Component;
-
-import com.uit.buddy.constant.IcsConstants;
-import com.uit.buddy.exception.schedule.ScheduleErrorCode;
-import com.uit.buddy.exception.schedule.ScheduleException;
-
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Component;
 
 @Component
 @Slf4j
 public class IcsParser {
-
 
     @Data
     public static class IcsEvent {
@@ -128,7 +124,6 @@ public class IcsParser {
             }
             event.setStartTime(dt.toLocalTime());
             event.setDayOfWeek(dt.getDayOfWeek().getValue() + 1);
-            log.info("[ICS Parser] Parsed DTSTART: {} -> startDate={}", value, event.getStartDate());
         }
         case IcsConstants.DTEND -> event.setEndTime(parseDateTime(value).toLocalTime());
         case IcsConstants.RRULE -> parseRRule(value, event);
@@ -138,14 +133,9 @@ public class IcsParser {
     private void parseDescriptionStrict(String description, IcsEvent event) {
         String cleanDesc = description.replace("\\,", ",").replace("\\;", ";").replace("\u00a0", " ")
                 .replaceAll("\\s+", " ").trim();
-        final String normalizedDesc = cleanDesc
-            .replaceAll("\\s+,", ",")
-            .replaceAll(",\\s*,", ",")
-            .replaceAll("\\s*--", " --")
-            .replaceAll("\\s+", " ")
-            .trim();
+        final String normalizedDesc = cleanDesc.replaceAll("\\s+,", ",").replaceAll(",\\s*,", ",")
+                .replaceAll("\\s*--", " --").replaceAll("\\s+", " ").trim();
 
-        // Prefer the course name in parentheses to avoid matching the class code first.
         Matcher courseNameMatcher = Pattern.compile("\\(([^)]+)\\)").matcher(normalizedDesc);
         if (courseNameMatcher.find()) {
             event.setCourseName(courseNameMatcher.group(1).trim());
@@ -236,7 +226,6 @@ public class IcsParser {
             String untilToken = untilM.group();
             String untilValue = untilToken.substring(untilToken.indexOf('=') + 1);
             event.setEndDate(parseDateTime(untilValue).toLocalDate());
-            log.info("[ICS Parser] Parsed UNTIL date: {}", event.getEndDate());
         }
     }
 

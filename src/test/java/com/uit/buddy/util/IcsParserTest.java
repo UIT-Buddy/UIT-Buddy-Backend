@@ -1,19 +1,18 @@
 package com.uit.buddy.util;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
+import com.uit.buddy.exception.schedule.ScheduleException;
+import com.uit.buddy.util.IcsParser.IcsEvent;
+import com.uit.buddy.util.IcsParser.ParseResult;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.time.LocalDate;
 import java.time.LocalTime;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import org.junit.jupiter.api.Test;
-
-import com.uit.buddy.exception.schedule.ScheduleException;
-import com.uit.buddy.util.IcsParser.IcsEvent;
-import com.uit.buddy.util.IcsParser.ParseResult;
 
 class IcsParserTest {
 
