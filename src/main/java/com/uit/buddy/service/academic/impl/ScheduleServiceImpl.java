@@ -34,6 +34,7 @@ import com.uit.buddy.util.EncryptionUtils;
 import com.uit.buddy.util.IcsParser;
 import com.uit.buddy.util.IcsParser.IcsEvent;
 import com.uit.buddy.util.IcsParser.ParseResult;
+import java.io.IOException;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -67,7 +68,6 @@ public class ScheduleServiceImpl implements ScheduleService {
     private final SemesterRepository semesterRepository;
     private final UitClient uitClient;
     private final EncryptionUtils encryptionUtils;
-    private final ScheduleMapper scheduleMapper;
     private final Executor executor;
     private final ScheduleMapper scheduleMapper;
 
@@ -90,7 +90,7 @@ public class ScheduleServiceImpl implements ScheduleService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public List<ScheduleResponse> uploadSchedule(String mssv, UploadScheduleRequest request) {
+    public void uploadSchedule(String mssv, UploadScheduleRequest request) {
         log.info("[Schedule Service] Processing sync upload for student: {}", mssv);
 
         validateIcsFile(request.icsFile());
@@ -105,16 +105,14 @@ public class ScheduleServiceImpl implements ScheduleService {
                 throw new ScheduleException(ScheduleErrorCode.INVALID_OWNER);
             }
 
-            List<ScheduleResponse> schedules = saveScheduleData(student, result.getEvents());
+            saveScheduleData(student, result.getEvents());
 
             log.info("[Schedule Service] Schedule upload successful for student: {}", mssv);
 
-            return schedules;
-
         } catch (ScheduleException e) {
             throw e;
-        } catch (Exception e) {
-            log.error("[Schedule Service] Critical error during sync upload for student {}: ", mssv, e);
+        } catch (IOException e) {
+            log.error("[Schedule Service] IO error during sync upload for student {}: ", mssv, e);
             throw new SystemException(SystemErrorCode.INTERNAL_ERROR);
         }
     }
@@ -201,11 +199,12 @@ public class ScheduleServiceImpl implements ScheduleService {
                     log.error("[Schedule Service] Course not found in database: {}", code);
                     return new ScheduleException(ScheduleErrorCode.COURSE_NOT_FOUND);
                 }));
+        int interval = event.getInterval() != null ? event.getInterval().intValue() : 1;
         return SubjectClass.builder().classCode(event.getClassCode()).course(course).semester(semester)
                 .teacherName(event.getTeacherName()).dayOfWeek(event.getDayOfWeek()).startLesson(event.getStartLesson())
                 .endLesson(event.getEndLesson()).startTime(event.getStartTime()).endTime(event.getEndTime())
                 .startDate(event.getStartDate()).endDate(event.getEndDate()).roomCode(event.getRoomCode())
-                .interval(event.getInterval() != null ? event.getInterval() : 1).build();
+                .interval(interval).build();
     }
 
     private boolean applyEventDataToSubjectClass(SubjectClass subjectClass, IcsEvent event) {
@@ -248,7 +247,7 @@ public class ScheduleServiceImpl implements ScheduleService {
             changed = true;
         }
 
-        Integer interval = event.getInterval() != null ? event.getInterval() : 1;
+        int interval = event.getInterval() != null ? event.getInterval().intValue() : 1;
         if (!java.util.Objects.equals(subjectClass.getInterval(), interval)) {
             subjectClass.setInterval(interval);
             changed = true;

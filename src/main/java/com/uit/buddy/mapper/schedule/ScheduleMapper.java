@@ -1,7 +1,9 @@
 package com.uit.buddy.mapper.schedule;
 
 import com.uit.buddy.dto.response.schedule.CourseCalendarResponse.Course;
+import com.uit.buddy.dto.response.schedule.ScheduleResponse;
 import com.uit.buddy.entity.academic.StudentSubjectClass;
+import com.uit.buddy.entity.academic.SubjectClass;
 import java.time.LocalTime;
 import java.util.List;
 import org.mapstruct.Mapper;
@@ -23,6 +25,9 @@ public interface ScheduleMapper {
     Course toCourse(StudentSubjectClass studentClass);
 
     List<Course> toListCourse(List<StudentSubjectClass> studentClasses);
+
+    @Mapping(target = "courseName", source = "course.courseName")
+    ScheduleResponse toScheduleResponse(SubjectClass subjectClass);
 
     default String mapStringToLocalTime(LocalTime value) {
         return value == null ? null : value.toString();
