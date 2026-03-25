@@ -7,6 +7,7 @@ import com.uit.buddy.dto.response.user.UserResponse;
 import com.uit.buddy.dto.response.user.UserSettingResponse;
 import com.uit.buddy.entity.user.Student;
 import com.uit.buddy.entity.user.UserSetting;
+import com.uit.buddy.enums.FriendStatus;
 import com.uit.buddy.exception.user.UserErrorCode;
 import com.uit.buddy.exception.user.UserException;
 import com.uit.buddy.mapper.user.UserMapper;
@@ -46,7 +47,7 @@ public class UserServiceImpl implements UserService {
         Student student = studentRepository.findById(mssv)
                 .orElseThrow(() -> new UserException(UserErrorCode.STUDENT_NOT_FOUND));
 
-        return userMapper.toUserResponse(student, false);
+        return userMapper.toUserResponse(student, FriendStatus.NONE);
     }
 
     @Override
@@ -58,9 +59,9 @@ public class UserServiceImpl implements UserService {
         Student student = studentRepository.findById(targetMssv)
                 .orElseThrow(() -> new UserException(UserErrorCode.STUDENT_NOT_FOUND));
 
-        boolean isFriend = friendService.areFriends(currentUserMssv, targetMssv);
+        FriendStatus friendStatus = friendService.getFriendStatus(currentUserMssv, targetMssv);
 
-        return userMapper.toUserResponse(student, isFriend);
+        return userMapper.toUserResponse(student, friendStatus);
     }
 
     @Override
@@ -79,7 +80,7 @@ public class UserServiceImpl implements UserService {
         Student updatedStudent = studentRepository.save(student);
         log.info("[User Service] Successfully updated profile for MSSV: {}", mssv);
 
-        return userMapper.toUserResponse(updatedStudent, false);
+        return userMapper.toUserResponse(updatedStudent, FriendStatus.NONE);
     }
 
     @Override
@@ -111,8 +112,8 @@ public class UserServiceImpl implements UserService {
         log.info("[UserService]: fetching user with keyword and filter");
 
         return page.map(student -> {
-            boolean isFriend = friendService.areFriends(currentUserMssv, student.getMssv());
-            return userMapper.toFoundUserResponse(student, isFriend);
+            FriendStatus friendStatus = friendService.getFriendStatus(currentUserMssv, student.getMssv());
+            return userMapper.toFoundUserResponse(student, friendStatus);
         });
     }
 
