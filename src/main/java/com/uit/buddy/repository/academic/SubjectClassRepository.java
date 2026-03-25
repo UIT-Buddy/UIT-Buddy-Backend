@@ -11,4 +11,5 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface SubjectClassRepository extends JpaRepository<SubjectClass, UUID> {
     List<SubjectClass> findAllByClassCodeInAndSemester(Collection<String> classCodes, Semester semester);
+
 }
