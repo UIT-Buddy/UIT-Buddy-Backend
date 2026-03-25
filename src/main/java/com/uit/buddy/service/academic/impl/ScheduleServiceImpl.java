@@ -9,6 +9,7 @@ import com.uit.buddy.dto.response.client.SiteInfoResponse;
 import com.uit.buddy.dto.response.schedule.CourseCalendarResponse;
 import com.uit.buddy.dto.response.schedule.CourseContentResponse;
 import com.uit.buddy.dto.response.schedule.DeadlineResponse;
+import com.uit.buddy.dto.response.schedule.ScheduleResponse;
 import com.uit.buddy.entity.academic.Course;
 import com.uit.buddy.entity.academic.Semester;
 import com.uit.buddy.entity.academic.StudentSubjectClass;
@@ -68,6 +69,7 @@ public class ScheduleServiceImpl implements ScheduleService {
     private final EncryptionUtils encryptionUtils;
     private final ScheduleMapper scheduleMapper;
     private final Executor executor;
+    private final ScheduleMapper scheduleMapper;
 
     public ScheduleServiceImpl(IcsParser icsParser, StudentRepository studentRepository,
             SubjectClassRepository subjectClassRepository, StudentSubjectClassRepository studentSubjectClassRepository,
@@ -86,9 +88,9 @@ public class ScheduleServiceImpl implements ScheduleService {
         this.scheduleMapper = scheduleMapper;
     }
 
-    @Transactional(rollbackFor = Exception.class)
     @Override
-    public void uploadSchedule(String mssv, UploadScheduleRequest request) {
+    @Transactional(rollbackFor = Exception.class)
+    public List<ScheduleResponse> uploadSchedule(String mssv, UploadScheduleRequest request) {
         log.info("[Schedule Service] Processing sync upload for student: {}", mssv);
 
         validateIcsFile(request.icsFile());
@@ -103,9 +105,11 @@ public class ScheduleServiceImpl implements ScheduleService {
                 throw new ScheduleException(ScheduleErrorCode.INVALID_OWNER);
             }
 
-            saveScheduleData(student, result.getEvents());
+            List<ScheduleResponse> schedules = saveScheduleData(student, result.getEvents());
 
             log.info("[Schedule Service] Schedule upload successful for student: {}", mssv);
+
+            return schedules;
 
         } catch (ScheduleException e) {
             throw e;
@@ -135,7 +139,7 @@ public class ScheduleServiceImpl implements ScheduleService {
         return new DeadlineResponse(totalDeadlines, pagedCourseContents);
     }
 
-    private void saveScheduleData(Student student, List<IcsEvent> events) {
+    private List<ScheduleResponse> saveScheduleData(Student student, List<IcsEvent> events) {
         Semester semester = getActiveSemester();
 
         Set<String> existingMappingCodes = studentSubjectClassRepository
@@ -147,8 +151,6 @@ public class ScheduleServiceImpl implements ScheduleService {
                 newEventsForStudent.put(event.getClassCode(), event);
             }
         }
-        if (newEventsForStudent.isEmpty())
-            return;
 
         List<SubjectClass> existingGlobalClasses = subjectClassRepository
                 .findAllByClassCodeInAndSemester(newEventsForStudent.keySet(), semester);
@@ -187,6 +189,8 @@ public class ScheduleServiceImpl implements ScheduleService {
         studentSubjectClassRepository.saveAll(finalMappings);
         log.info("[Schedule Service] Successfully synced {} classes for student {}", finalMappings.size(),
                 student.getMssv());
+
+        return classMap.values().stream().map(scheduleMapper::toScheduleResponse).toList();
     }
 
     private SubjectClass buildSubjectClassEntity(IcsEvent event, Semester semester, Map<String, Course> courseCache) {

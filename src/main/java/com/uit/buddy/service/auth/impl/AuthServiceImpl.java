@@ -254,6 +254,8 @@ public class AuthServiceImpl implements AuthService {
 
         if (request.fcmToken() != null && !request.fcmToken().isBlank()) {
             fcmService.syncDeviceToken(request.mssv(), request.fcmToken());
+            cometChatService.registerPushToken(cometChatPlatform, cometChatProviderId, request.fcmToken(),
+                    student.getCometAuthToken(), cometChatTimezone);
         }
 
         boolean rememberMe = request.rememberMe() != null && request.rememberMe();

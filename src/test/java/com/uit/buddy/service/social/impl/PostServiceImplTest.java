@@ -300,4 +300,71 @@ class PostServiceImplTest {
         assertThat(result.getContent()).hasSize(1);
         verify(postRepository).findAllPosts(eq(mssv), any());
     }
+
+    @Test
+    void shouldGetUserPostsSuccessfully() {
+        String targetMssv = "22100002";
+        PostFeedResponse response = new PostFeedResponse(postId, "Test Title", "Test Content", Collections.emptyList(),
+                new AuthorInfo(targetMssv, "Target Student", "avatar.jpg", "21KTPM1"), 0L, 0L, 0L, false,
+                LocalDateTime.now());
+
+        when(studentRepository.existsById(targetMssv)).thenReturn(true);
+        when(postRepository.findUserPosts(eq(targetMssv), eq(mssv), any(), any(), eq(11)))
+                .thenReturn(List.of(projection));
+        when(postMapper.toPostFeedResponse(projection)).thenReturn(response);
+
+        List<PostFeedResponse> result = postService.getUserPosts(targetMssv, mssv, null, 10);
+
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).author().mssv()).isEqualTo(targetMssv);
+        verify(studentRepository).existsById(targetMssv);
+        verify(postRepository).findUserPosts(eq(targetMssv), eq(mssv), any(), any(), eq(11));
+    }
+
+    @Test
+    void shouldGetUserPostsWithCursor() {
+        String targetMssv = "22100002";
+        String cursor = com.uit.buddy.util.CursorUtils.encode(LocalDateTime.now(), postId);
+        PostFeedResponse response = new PostFeedResponse(postId, "Test Title", "Test Content", Collections.emptyList(),
+                new AuthorInfo(targetMssv, "Target Student", "avatar.jpg", "21KTPM1"), 0L, 0L, 0L, false,
+                LocalDateTime.now());
+
+        when(studentRepository.existsById(targetMssv)).thenReturn(true);
+        when(postRepository.findUserPosts(eq(targetMssv), eq(mssv), any(), any(), eq(11)))
+                .thenReturn(List.of(projection));
+        when(postMapper.toPostFeedResponse(projection)).thenReturn(response);
+
+        List<PostFeedResponse> result = postService.getUserPosts(targetMssv, mssv, cursor, 10);
+
+        assertThat(result).hasSize(1);
+        verify(postRepository).findUserPosts(eq(targetMssv), eq(mssv), any(), any(), eq(11));
+    }
+
+    @Test
+    void shouldThrowExceptionWhenGettingPostsForNonExistentUser() {
+        String targetMssv = "99999999";
+        when(studentRepository.existsById(targetMssv)).thenReturn(false);
+
+        assertThatThrownBy(() -> postService.getUserPosts(targetMssv, mssv, null, 10))
+                .isInstanceOf(UserException.class);
+
+        verify(studentRepository).existsById(targetMssv);
+        verify(postRepository, never()).findUserPosts(any(), any(), any(), any(), anyInt());
+    }
+
+    @Test
+    void shouldGetMyPostsSuccessfully() {
+        PostFeedResponse response = new PostFeedResponse(postId, "My Post", "My Content", Collections.emptyList(),
+                new AuthorInfo(mssv, "Test Student", "avatar.jpg", "21KTPM1"), 0L, 0L, 0L, false, LocalDateTime.now());
+
+        when(studentRepository.existsById(mssv)).thenReturn(true);
+        when(postRepository.findUserPosts(eq(mssv), eq(mssv), any(), any(), eq(11))).thenReturn(List.of(projection));
+        when(postMapper.toPostFeedResponse(projection)).thenReturn(response);
+
+        List<PostFeedResponse> result = postService.getUserPosts(mssv, mssv, null, 10);
+
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).author().mssv()).isEqualTo(mssv);
+        verify(postRepository).findUserPosts(eq(mssv), eq(mssv), any(), any(), eq(11));
+    }
 }

@@ -6,7 +6,7 @@ import com.uit.buddy.dto.response.schedule.DeadlineResponse;
 import org.springframework.data.domain.Pageable;
 
 public interface ScheduleService {
-    void uploadSchedule(String mssv, UploadScheduleRequest request);
+    List<ScheduleResponse> uploadSchedule(String mssv, UploadScheduleRequest request);
 
     DeadlineResponse fetchDeadlinesFromMoodle(String mssv, Integer month, Integer year, Pageable pageable);
 

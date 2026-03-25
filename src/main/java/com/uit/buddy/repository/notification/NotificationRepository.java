@@ -1,6 +1,7 @@
 package com.uit.buddy.repository.notification;
 
 import com.uit.buddy.entity.notification.Notification;
+import com.uit.buddy.enums.NotificationTemplate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -34,6 +35,6 @@ public interface NotificationRepository extends JpaRepository<Notification, UUID
     void markAllAsRead(@Param("mssv") String mssv);
 
     @Query("SELECT n FROM Notification n WHERE n.student.mssv = :mssv AND n.type = :type AND n.dataId = :dataId")
-    Notification findByMssvAndTypeAndDataId(@Param("mssv") String mssv, @Param("type") String type,
+    Notification findByMssvAndTypeAndDataId(@Param("mssv") String mssv, @Param("type") NotificationTemplate type,
             @Param("dataId") String dataId);
 }
