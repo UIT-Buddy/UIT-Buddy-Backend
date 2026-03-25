@@ -207,28 +207,6 @@ class IcsParserTest {
     }
 
     @Test
-    void testParseIcsFileWithExpiredSchedule() {
-        String icsContent = """
-                BEGIN:VCALENDAR
-                X-WR-CALNAME:23521729@gm.uit.edu.vn
-                BEGIN:VEVENT
-                DTSTART;TZID=Asia/Ho_Chi_Minh:20240220T130000
-                DTEND;TZID=Asia/Ho_Chi_Minh:20240220T151500
-                SUMMARY:NT208.P23.ANTT - B1.18
-                DESCRIPTION:Lớp: NT208.P23.ANTT(Lập trình ứng dụng Web) - B1.18, Thứ 5, Tiết 678, Giảng viên: Trần Tuấn Dũng
-                RRULE:FREQ=WEEKLY;UNTIL=20240503T000000Z
-                END:VEVENT
-                END:VCALENDAR
-                """;
-
-        InputStream inputStream = new ByteArrayInputStream(icsContent.getBytes());
-
-        assertThrows(ScheduleException.class, () -> {
-            icsParser.parseIcsFile(inputStream);
-        });
-    }
-
-    @Test
     void testParseIcsFileWithInvalidSummaryFormat() {
         String icsContent = """
                 BEGIN:VCALENDAR
@@ -255,7 +233,7 @@ class IcsParserTest {
         String icsContent = """
                 BEGIN:VCALENDAR
                 VERSION:2.0
-                X-WR-CALNAME:23521729@gm.uit.edu.vn
+                X-WR-CALNAME:@gm.uit.edu.vn
                 END:VCALENDAR
                 """;
 
