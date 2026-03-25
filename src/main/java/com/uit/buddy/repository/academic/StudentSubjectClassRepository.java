@@ -30,4 +30,7 @@ public interface StudentSubjectClassRepository extends CrudRepository<StudentSub
     @Transactional
     @Query("DELETE FROM StudentSubjectClass ssc WHERE ssc.student.mssv = :mssv")
     void deleteAllByMssv(@Param("mssv") String mssv);
+
+    @Query("SELECT ssc FROM StudentSubjectClass ssc WHERE ssc.subjectClass.classCode = :classCode AND ssc.student.mssv = :mssv")
+    StudentSubjectClass findSubjectByClassCode(@Param("mssv") String mssv, @Param("classCode") String classCode);
 }

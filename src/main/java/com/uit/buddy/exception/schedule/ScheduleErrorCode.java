@@ -17,7 +17,8 @@ public enum ScheduleErrorCode {
     INVALID_MONTH("SCH007", "Invalid month value, must be between 1 and 12", HttpStatus.BAD_REQUEST),
     INVALID_FILTER_WITH_DEADLINES("SCH008", "Year is required", HttpStatus.BAD_REQUEST),
     INVALID_FILTER_WITH_CALENDAR("SCH009", "Semester and year are required", HttpStatus.BAD_REQUEST),
-    ICS_FILE_NOT_FOUND("SCH009", "User have not uploaded .ics schedule file", HttpStatus.BAD_REQUEST);
+    ICS_FILE_NOT_FOUND("SCH009", "User have not uploaded .ics schedule file", HttpStatus.BAD_REQUEST),
+    ICS_UPLOADED("SCH010", "User upload a duplicated .ics file", HttpStatus.BAD_REQUEST);
 
     private final String code;
     private final String message;
