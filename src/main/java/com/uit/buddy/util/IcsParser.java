@@ -56,11 +56,10 @@ public class IcsParser {
         LocalDate fileLatestEndDate = LocalDate.MIN;
         String extractedStudentId = null;
 
-        for (int i = 0; i < lines.length; i++) {
-            String line = lines[i].trim();
+        for (String line1 : lines) {
+            String line = line1.trim();
             if (line.isEmpty())
                 continue;
-
             if (line.startsWith(IcsConstants.X_WR_CALNAME)) {
                 extractedStudentId = extractStudentIdFromEmail(line.substring(IcsConstants.X_WR_CALNAME.length()));
                 if (extractedStudentId == null) {
@@ -69,7 +68,6 @@ public class IcsParser {
                 }
                 continue;
             }
-
             if (line.equals(IcsConstants.BEGIN_VEVENT)) {
                 currentEvent = new IcsEvent();
             } else if (line.equals(IcsConstants.END_VEVENT) && currentEvent != null) {
@@ -121,9 +119,11 @@ public class IcsParser {
         case IcsConstants.DESCRIPTION -> parseDescriptionStrict(value, event);
         case IcsConstants.DTSTART -> {
             LocalDateTime dt = parseDateTime(value);
-            event.setStartDate(dt.toLocalDate());
+            if (event.getStartDate() == null) {
+                event.setStartDate(dt.toLocalDate());
+            }
             event.setStartTime(dt.toLocalTime());
-            event.setDayOfWeek(dt.getDayOfWeek().getValue() + 1); // Convert to 1=Monday, 7=Sunday
+            event.setDayOfWeek(dt.getDayOfWeek().getValue() + 1);
         }
         case IcsConstants.DTEND -> event.setEndTime(parseDateTime(value).toLocalTime());
         case IcsConstants.RRULE -> parseRRule(value, event);
@@ -133,18 +133,25 @@ public class IcsParser {
     private void parseDescriptionStrict(String description, IcsEvent event) {
         String cleanDesc = description.replace("\\,", ",").replace("\\;", ";").replace("\u00a0", " ")
                 .replaceAll("\\s+", " ").trim();
+        final String normalizedDesc = cleanDesc.replaceAll("\\s+,", ",").replaceAll(",\\s*,", ",")
+                .replaceAll("\\s*--", " --").replaceAll("\\s+", " ").trim();
 
-        matchAndSet(IcsConstants.COURSE_NAME_PATTERN, cleanDesc, event::setCourseName);
-        matchAndSet(IcsConstants.TEACHER_PATTERN, cleanDesc, event::setTeacherName);
+        Matcher courseNameMatcher = Pattern.compile("\\(([^)]+)\\)").matcher(normalizedDesc);
+        if (courseNameMatcher.find()) {
+            event.setCourseName(courseNameMatcher.group(1).trim());
+        } else {
+            matchAndSet(IcsConstants.COURSE_NAME_PATTERN, normalizedDesc, event::setCourseName);
+        }
+        matchAndSet(IcsConstants.TEACHER_PATTERN, normalizedDesc, event::setTeacherName);
 
-        Matcher lessonMatcher = IcsConstants.LESSON_PATTERN.matcher(cleanDesc);
+        Matcher lessonMatcher = IcsConstants.LESSON_PATTERN.matcher(normalizedDesc);
         if (lessonMatcher.find()) {
             parseLessonRange(lessonMatcher.group(1).trim(), event);
         }
 
         IcsConstants.SPORT_LOCATION_MAP.entrySet().stream()
                 .sorted((e1, e2) -> Integer.compare(e2.getKey().length(), e1.getKey().length()))
-                .filter(entry -> cleanDesc.toLowerCase().contains(entry.getKey().toLowerCase())).findFirst()
+                .filter(entry -> normalizedDesc.toLowerCase().contains(entry.getKey().toLowerCase())).findFirst()
                 .ifPresent(entry -> event.setRoomCode(entry.getValue()));
     }
 
@@ -200,17 +207,25 @@ public class IcsParser {
     private void matchAndSet(Pattern pattern, String input, Consumer<String> action) {
         Matcher m = pattern.matcher(input);
         if (m.find() && m.groupCount() >= 1) {
-            action.accept(m.group(1).trim());
+            for (int i = 1; i <= m.groupCount(); i++) {
+                String value = m.group(i);
+                if (value != null && !value.isBlank()) {
+                    action.accept(value.trim());
+                    break;
+                }
+            }
         }
     }
 
     private void parseRRule(String rrule, IcsEvent event) {
         matchAndSet(IcsConstants.FREQ_PATTERN, rrule, event::setFrequency);
         Matcher intM = IcsConstants.INTERVAL_PATTERN.matcher(rrule);
-        event.setInterval(intM.find() ? Integer.parseInt(intM.group(1)) : 1);
+        event.setInterval(intM.find() ? Integer.valueOf(intM.group(1)) : 1);
         Matcher untilM = IcsConstants.UNTIL_PATTERN.matcher(rrule);
-        if (untilM.find()) {
-            event.setEndDate(parseDateTime(untilM.group(1)).toLocalDate());
+        if (untilM.find() && event.getEndDate() == null) {
+            String untilToken = untilM.group();
+            String untilValue = untilToken.substring(untilToken.indexOf('=') + 1);
+            event.setEndDate(parseDateTime(untilValue).toLocalDate());
         }
     }
 
