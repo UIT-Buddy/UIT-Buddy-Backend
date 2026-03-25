@@ -2,6 +2,7 @@ package com.uit.buddy.controller.academic;
 
 import com.uit.buddy.controller.AbstractBaseController;
 import com.uit.buddy.dto.base.SingleResponse;
+import com.uit.buddy.dto.base.SuccessResponse;
 import com.uit.buddy.dto.request.academic.UploadScheduleRequest;
 import com.uit.buddy.dto.response.schedule.CourseCalendarResponse;
 import com.uit.buddy.dto.response.schedule.DeadlineResponse;
@@ -11,7 +12,6 @@ import com.uit.buddy.service.academic.ScheduleService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Pageable;
