@@ -87,10 +87,6 @@ public class IcsParser {
             throw new ScheduleException(ScheduleErrorCode.INVALID_FILE_FORMAT);
         }
 
-        if (fileLatestEndDate.isBefore(LocalDate.now())) {
-            throw new ScheduleException(ScheduleErrorCode.EXPIRED_SCHEDULE);
-        }
-
         ParseResult result = new ParseResult();
         result.setStudentId(extractedStudentId);
         result.setEvents(events);
