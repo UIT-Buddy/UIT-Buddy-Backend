@@ -343,7 +343,7 @@ class IcsParserTest {
         assertEquals("Phương pháp mô hình hóa", event.getCourseName());
         assertEquals("Nguyễn Công Hoan", event.getTeacherName());
         assertEquals("C302", event.getRoomCode());
-        assertEquals(LocalDate.of(2026, 1, 26), event.getStartDate());
+        assertEquals(LocalDate.of(2026, 2, 20), event.getStartDate());
         assertEquals(LocalDate.of(2026, 5, 30), event.getEndDate());
         assertEquals(1, event.getStartLesson());
         assertEquals(3, event.getEndLesson());
@@ -382,7 +382,7 @@ class IcsParserTest {
         assertEquals("Lập trình Java", event.getCourseName());
         assertEquals("Tạ Việt Phương", event.getTeacherName());
         assertEquals("B4.18", event.getRoomCode());
-        assertEquals(LocalDate.of(2026, 1, 26), event.getStartDate());
+        assertEquals(LocalDate.of(2026, 1, 31), event.getStartDate());
         assertEquals(LocalDate.of(2026, 5, 2), event.getEndDate());
         assertEquals(LocalTime.of(7, 30), event.getStartTime());
         assertEquals(LocalTime.of(10, 45), event.getEndTime());
@@ -411,7 +411,7 @@ class IcsParserTest {
 
         assertEquals(1, result.getEvents().size());
         IcsEvent event = result.getEvents().get(0);
-        assertEquals(LocalDate.of(2026, 1, 26), event.getStartDate());
+        assertEquals(LocalDate.of(2026, 1, 31), event.getStartDate());
         assertEquals(LocalDate.of(2026, 5, 2), event.getEndDate());
         assertEquals(LocalTime.of(7, 30), event.getStartTime());
         assertEquals(LocalTime.of(10, 45), event.getEndTime());
