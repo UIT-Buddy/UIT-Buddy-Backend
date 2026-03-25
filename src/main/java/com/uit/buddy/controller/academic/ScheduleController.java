@@ -14,6 +14,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -21,6 +22,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -50,11 +52,20 @@ public class ScheduleController extends AbstractBaseController {
     @GetMapping("/deadline")
     @Operation(summary = "Fetch deadlines from Moodle", description = "Fetch assignment deadlines from Moodle")
     public ResponseEntity<SingleResponse<DeadlineResponse>> fetchDeadlinesFromMoodle(
-            @AuthenticationPrincipal String mssv) {
+            @RequestParam(defaultValue = "1") int page, @RequestParam(defaultValue = "15") int limit,
+            @RequestParam(defaultValue = "desc") String sortType,
+            @RequestParam(defaultValue = "created_at") String sortBy,
+            @RequestParam(name = "month", required = false) Integer month,
+            @RequestParam(name = "year", required = false) Integer year, @AuthenticationPrincipal String mssv) {
         log.info("[Schedule Controller] Fetching deadlines from Moodle for student: {}", mssv);
-
-        DeadlineResponse deadlines = scheduleService.fetchDeadlinesFromMoodle(mssv);
-
+        if (month != null && (month < 1 || month > 12)) {
+            throw new ScheduleException(ScheduleErrorCode.INVALID_MONTH);
+        }
+        if (month != null && year == null) {
+            throw new ScheduleException(ScheduleErrorCode.INVALID_FILTER);
+        }
+        Pageable pageable = createPageable(page, limit, sortType, sortBy);
+        DeadlineResponse deadlines = scheduleService.fetchDeadlinesFromMoodle(mssv, month, year, pageable);
         return successSingle(deadlines, "Deadlines fetched successfully");
     }
 
