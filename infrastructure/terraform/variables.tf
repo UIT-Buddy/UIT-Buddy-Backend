@@ -70,12 +70,6 @@ variable "db_password" {
   sensitive   = true
 }
 
-variable "firebase_json" {
-  description = "Firebase service account JSON content (stored in Secrets Manager)"
-  type        = string
-  sensitive   = true
-}
-
 variable "github_runner_token" {
   description = "GitHub Actions self-hosted runner registration token"
   type        = string
