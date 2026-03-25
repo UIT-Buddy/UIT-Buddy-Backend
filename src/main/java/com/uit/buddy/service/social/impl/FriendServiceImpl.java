@@ -194,9 +194,16 @@ public class FriendServiceImpl implements FriendService {
         }
         Optional<FriendRequest> pendingRequest = friendRequestRepository.findPendingRequestBetween(currentUserMssv,
                 targetUserMssv);
+
         if (pendingRequest.isPresent()) {
-            return FriendStatus.PENDING;
+            FriendRequest request = pendingRequest.get();
+            if (request.getSenderMssv().equals(currentUserMssv)) {
+                return FriendStatus.PENDING;
+            } else {
+                return FriendStatus.REQUESTED;
+            }
         }
+
         return FriendStatus.NONE;
     }
 
