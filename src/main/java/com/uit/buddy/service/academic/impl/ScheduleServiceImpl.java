@@ -9,7 +9,6 @@ import com.uit.buddy.dto.response.client.SiteInfoResponse;
 import com.uit.buddy.dto.response.schedule.CourseCalendarResponse;
 import com.uit.buddy.dto.response.schedule.CourseContentResponse;
 import com.uit.buddy.dto.response.schedule.DeadlineResponse;
-import com.uit.buddy.dto.response.schedule.ScheduleResponse;
 import com.uit.buddy.entity.academic.Course;
 import com.uit.buddy.entity.academic.Semester;
 import com.uit.buddy.entity.academic.StudentSubjectClass;
@@ -90,7 +89,7 @@ public class ScheduleServiceImpl implements ScheduleService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void uploadSchedule(String mssv, UploadScheduleRequest request) {
+    public List<CourseCalendarResponse.Course> uploadSchedule(String mssv, UploadScheduleRequest request) {
         log.info("[Schedule Service] Processing sync upload for student: {}", mssv);
 
         validateIcsFile(request.icsFile());
@@ -105,9 +104,11 @@ public class ScheduleServiceImpl implements ScheduleService {
                 throw new ScheduleException(ScheduleErrorCode.INVALID_OWNER);
             }
 
-            saveScheduleData(student, result.getEvents());
+            List<CourseCalendarResponse.Course> courses = saveScheduleData(student, result.getEvents());
 
             log.info("[Schedule Service] Schedule upload successful for student: {}", mssv);
+
+            return courses;
 
         } catch (ScheduleException e) {
             throw e;
@@ -118,15 +119,24 @@ public class ScheduleServiceImpl implements ScheduleService {
     }
 
     @Override
-    public CourseCalendarResponse fetchCourseCalendar(String mssv) {
+    public CourseCalendarResponse fetchCourseCalendar(String mssv, String year, String semester) {
+        String semesterCode = "";
+        if (year == null || semester == null) {
+            Semester activeSemester = getActiveSemester();
+            year = activeSemester.getYearStart();
+            semester = activeSemester.getSemesterNumber().toString();
+            semesterCode += activeSemester.getSemesterCode();
+        } else {
+            semesterCode += String.format("%s.%s", year, semester);
+        }
+        System.out.println(semesterCode);
         List<StudentSubjectClass> studentClasses = studentSubjectClassRepository.findAllByStudentMssvAndSemester(mssv,
-                getActiveSemester().getSemesterCode());
+                semesterCode);
         if (studentClasses.isEmpty()) {
             throw new ScheduleException(ScheduleErrorCode.ICS_FILE_NOT_FOUND);
         }
-        System.out.println(studentClasses.get(1));
         List<CourseCalendarResponse.Course> courses = scheduleMapper.toListCourse(studentClasses);
-        return new CourseCalendarResponse(courses.size(), courses);
+        return new CourseCalendarResponse(courses.size(), semester, year, courses);
     }
 
     @Override
@@ -137,7 +147,7 @@ public class ScheduleServiceImpl implements ScheduleService {
         return new DeadlineResponse(totalDeadlines, pagedCourseContents);
     }
 
-    private List<ScheduleResponse> saveScheduleData(Student student, List<IcsEvent> events) {
+    private List<CourseCalendarResponse.Course> saveScheduleData(Student student, List<IcsEvent> events) {
         Semester semester = getActiveSemester();
 
         Set<String> existingMappingCodes = studentSubjectClassRepository
@@ -188,7 +198,7 @@ public class ScheduleServiceImpl implements ScheduleService {
         log.info("[Schedule Service] Successfully synced {} classes for student {}", finalMappings.size(),
                 student.getMssv());
 
-        return classMap.values().stream().map(scheduleMapper::toScheduleResponse).toList();
+        return finalMappings.stream().map(scheduleMapper::toCourse).toList();
     }
 
     private SubjectClass buildSubjectClassEntity(IcsEvent event, Semester semester, Map<String, Course> courseCache) {

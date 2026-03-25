@@ -2,7 +2,6 @@ package com.uit.buddy.controller.academic;
 
 import com.uit.buddy.controller.AbstractBaseController;
 import com.uit.buddy.dto.base.SingleResponse;
-import com.uit.buddy.dto.base.SuccessResponse;
 import com.uit.buddy.dto.request.academic.UploadScheduleRequest;
 import com.uit.buddy.dto.response.schedule.CourseCalendarResponse;
 import com.uit.buddy.dto.response.schedule.DeadlineResponse;
@@ -12,6 +11,7 @@ import com.uit.buddy.service.academic.ScheduleService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Pageable;
@@ -36,17 +36,17 @@ public class ScheduleController extends AbstractBaseController {
 
     @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @Operation(summary = "Upload ICS schedule file", description = "Upload student schedule from ICS file")
-    public ResponseEntity<SuccessResponse> uploadSchedule(@Valid @ModelAttribute UploadScheduleRequest request,
-            @AuthenticationPrincipal String mssv) {
+    public ResponseEntity<SingleResponse<List<CourseCalendarResponse.Course>>> uploadSchedule(
+            @Valid @ModelAttribute UploadScheduleRequest request, @AuthenticationPrincipal String mssv) {
 
         if (!request.isIcsFile()) {
             throw new ScheduleException(ScheduleErrorCode.INVALID_FILE_TYPE);
         }
         log.info("[Schedule Controller] Uploading schedule for student: {}", mssv);
 
-        scheduleService.uploadSchedule(mssv, request);
+        List<CourseCalendarResponse.Course> uploadedCourses = scheduleService.uploadSchedule(mssv, request);
 
-        return success("Schedule uploaded successfully");
+        return successSingle(uploadedCourses, "Schedule uploaded successfully");
     }
 
     @GetMapping("/deadline")
@@ -62,7 +62,7 @@ public class ScheduleController extends AbstractBaseController {
             throw new ScheduleException(ScheduleErrorCode.INVALID_MONTH);
         }
         if (month != null && year == null) {
-            throw new ScheduleException(ScheduleErrorCode.INVALID_FILTER);
+            throw new ScheduleException(ScheduleErrorCode.INVALID_FILTER_WITH_DEADLINES);
         }
         Pageable pageable = createPageable(page, limit, sortType, sortBy);
         DeadlineResponse deadlines = scheduleService.fetchDeadlinesFromMoodle(mssv, month, year, pageable);
@@ -72,10 +72,13 @@ public class ScheduleController extends AbstractBaseController {
     @GetMapping("/calendar")
     @Operation(summary = "Fetch course calendar", description = "Fetch course schedule for the student")
     public ResponseEntity<SingleResponse<CourseCalendarResponse>> fetchCourseCalendar(
-            @AuthenticationPrincipal String mssv) {
+            @RequestParam(name = "year", required = false) String year,
+            @RequestParam(name = "semester", required = false) String semester, @AuthenticationPrincipal String mssv) {
         log.info("[Schedule Controller] Fetching course calendar for student: {}", mssv);
-
-        CourseCalendarResponse calendar = scheduleService.fetchCourseCalendar(mssv);
+        if (semester != null && year == null || semester == null && year != null) {
+            throw new ScheduleException(ScheduleErrorCode.INVALID_FILTER_WITH_CALENDAR);
+        }
+        CourseCalendarResponse calendar = scheduleService.fetchCourseCalendar(mssv, year, semester);
 
         return successSingle(calendar, "Course calendar fetched successfully");
     }
