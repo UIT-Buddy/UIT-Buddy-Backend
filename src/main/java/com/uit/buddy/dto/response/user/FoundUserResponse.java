@@ -1,4 +1,6 @@
 package com.uit.buddy.dto.response.user;
 
-public record FoundUserResponse(String mssv, String fullName, String avatarUrl, Boolean isFriend) {
+import com.uit.buddy.enums.FriendStatus;
+
+public record FoundUserResponse(String mssv, String fullName, String avatarUrl, FriendStatus friendStatus) {
 }
