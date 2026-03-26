@@ -1,27 +1,5 @@
 package com.uit.buddy.service.academic.impl;
 
-import java.io.IOException;
-import java.time.Instant;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Executor;
-import java.util.stream.Collectors;
-
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.data.domain.Pageable;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.multipart.MultipartFile;
-
 import com.uit.buddy.client.UitClient;
 import com.uit.buddy.constant.IcsConstants;
 import com.uit.buddy.dto.request.academic.UploadScheduleRequest;
@@ -56,8 +34,27 @@ import com.uit.buddy.util.EncryptionUtils;
 import com.uit.buddy.util.IcsParser;
 import com.uit.buddy.util.IcsParser.IcsEvent;
 import com.uit.buddy.util.IcsParser.ParseResult;
-
+import java.io.IOException;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
+import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 @Service
 @Slf4j
@@ -107,10 +104,10 @@ public class ScheduleServiceImpl implements ScheduleService {
                 throw new ScheduleException(ScheduleErrorCode.INVALID_OWNER);
             }
 
-                    List<StudentSubjectClass> savedMappings = saveScheduleData(student, result.getEvents());
-                    List<CourseContentResponse> allDeadlines = fetchCourseDeadlinesFromMoodle(mssv, null, null);
-                    List<CourseCalendarResponse.Course> courses = scheduleMapper.toListCourseWithDeadlines(savedMappings,
-                        allDeadlines);
+            List<StudentSubjectClass> savedMappings = saveScheduleData(student, result.getEvents());
+            List<CourseContentResponse> allDeadlines = fetchCourseDeadlinesFromMoodle(mssv, null, null);
+            List<CourseCalendarResponse.Course> courses = scheduleMapper.toListCourseWithDeadlines(savedMappings,
+                    allDeadlines);
 
             log.info("[Schedule Service] Schedule upload successful for student: {}", mssv);
 
@@ -221,12 +218,13 @@ public class ScheduleServiceImpl implements ScheduleService {
                     return new ScheduleException(ScheduleErrorCode.COURSE_NOT_FOUND);
                 }));
         Integer interval = event.getInterval() != null ? event.getInterval() : 1;
-        String classType = Boolean.TRUE.equals(event.getIsBlendedLearning()) ? IcsConstants.BLENDED_LEARNING : IcsConstants.WEEKLY;
+        String classType = Boolean.TRUE.equals(event.getIsBlendedLearning()) ? IcsConstants.BLENDED_LEARNING
+                : IcsConstants.WEEKLY;
         return SubjectClass.builder().classCode(event.getClassCode()).course(course).semester(semester)
                 .teacherName(event.getTeacherName()).dayOfWeek(event.getDayOfWeek()).startLesson(event.getStartLesson())
                 .endLesson(event.getEndLesson()).startTime(event.getStartTime()).endTime(event.getEndTime())
                 .startDate(event.getStartDate()).endDate(event.getEndDate()).roomCode(event.getRoomCode())
-            .interval(interval).classType(classType).build();
+                .interval(interval).classType(classType).build();
     }
 
     private boolean applyEventDataToSubjectClass(SubjectClass subjectClass, IcsEvent event) {
