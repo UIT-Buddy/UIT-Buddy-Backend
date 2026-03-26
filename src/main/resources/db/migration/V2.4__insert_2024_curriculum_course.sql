@@ -153,9 +153,7 @@ INSERT INTO curriculum_courses (id, curriculum_code, course_code, category_code,
 (gen_random_uuid(), 'CNTT_2024', 'IE501', 'TOTTN', 6, 6, 0, TRUE, NULL),
 (gen_random_uuid(), 'CNTT_2024', 'IE502', 'TOTTN', 10, 10, 0, TRUE, NULL),
 (gen_random_uuid(), 'CNTT_2024', 'IE505', 'TOTTN', 10, 10, 0, TRUE, NULL),
-(gen_random_uuid(), 'CNTT_2024', 'NT212', 'TOTTN', 3, 2, 1, TRUE, NULL);
-
-
+(gen_random_uuid(), 'CNTT_2024', 'NT212', 'TOTTN', 3, 2, 1, TRUE, NULL),
 (gen_random_uuid(), 'CNTT_LT_2024', 'CS2134', 'DC', 4, 3, 1, TRUE, NULL),
 (gen_random_uuid(), 'CNTT_LT_2024', 'CU001', 'DC', 2, 2, 0, TRUE, NULL),
 (gen_random_uuid(), 'CNTT_LT_2024', 'EN001', 'DC', 4, 4, 0, TRUE, 'ENBT'),
@@ -248,9 +246,7 @@ INSERT INTO curriculum_courses (id, curriculum_code, course_code, category_code,
 (gen_random_uuid(), 'CNTT_LT_2024', 'IE501', 'TOTTN', 6, 6, 0, TRUE, NULL),
 (gen_random_uuid(), 'CNTT_LT_2024', 'IE502', 'TOTTN', 10, 10, 0, TRUE, NULL),
 (gen_random_uuid(), 'CNTT_LT_2024', 'IE505', 'TOTTN', 10, 10, 0, TRUE, NULL),
-(gen_random_uuid(), 'CNTT_LT_2024', 'NT212', 'TOTTN', 3, 2, 1, TRUE, NULL);
-
-
+(gen_random_uuid(), 'CNTT_LT_2024', 'NT212', 'TOTTN', 3, 2, 1, TRUE, NULL),
 (gen_random_uuid(), 'CNTT_VB_2024', 'CS2134', 'DC', 4, 3, 1, TRUE, NULL),
 (gen_random_uuid(), 'CNTT_VB_2024', 'CU001', 'DC', 2, 2, 0, TRUE, NULL),
 (gen_random_uuid(), 'CNTT_VB_2024', 'EN001', 'DC', 4, 4, 0, TRUE, 'ENBT'),
@@ -795,9 +791,7 @@ INSERT INTO curriculum_courses (id, curriculum_code, course_code, category_code,
 (gen_random_uuid(), 'KTMT_2024', 'CE505', 'TOTTN', 10, 10, 0, TRUE, NULL),
 (gen_random_uuid(), 'KTMT_2024', 'CE507', 'TOTTN', 10, 10, 0, TRUE, NULL),
 (gen_random_uuid(), 'KTMT_2024', 'CE508', 'TOTTN', 6, 0, 6, TRUE, NULL),
-(gen_random_uuid(), 'KTMT_2024', 'CE510', 'TOTTN', 4, 3, 1, TRUE, NULL);
-
-
+(gen_random_uuid(), 'KTMT_2024', 'CE510', 'TOTTN', 4, 3, 1, TRUE, NULL),
 (gen_random_uuid(), 'KTPM_2024', 'EN001', 'DC', 4, 4, 0, TRUE, 'ENBT'),
 (gen_random_uuid(), 'KTPM_2024', 'EN002', 'DC', 4, 4, 0, TRUE, 'EN001'),
 (gen_random_uuid(), 'KTPM_2024', 'EN003', 'DC', 4, 4, 0, TRUE, 'EN002'),

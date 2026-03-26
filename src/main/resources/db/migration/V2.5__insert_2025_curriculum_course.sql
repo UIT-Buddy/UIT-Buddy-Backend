@@ -153,9 +153,7 @@ INSERT INTO curriculum_courses (id, curriculum_code, course_code, category_code,
 (gen_random_uuid(), 'CNTT_2025', 'IE501', 'TOTTN', 6, 6, 0, TRUE, NULL),
 (gen_random_uuid(), 'CNTT_2025', 'IE502', 'TOTTN', 10, 10, 0, TRUE, NULL),
 (gen_random_uuid(), 'CNTT_2025', 'IE505', 'TOTTN', 10, 10, 0, TRUE, NULL),
-(gen_random_uuid(), 'CNTT_2025', 'NT212', 'TOTTN', 3, 2, 1, TRUE, NULL);
-
-
+(gen_random_uuid(), 'CNTT_2025', 'NT212', 'TOTTN', 3, 2, 1, TRUE, NULL),
 (gen_random_uuid(), 'CNTT_LT_2025', 'CS2134', 'DC', 4, 3, 1, TRUE, NULL),
 (gen_random_uuid(), 'CNTT_LT_2025', 'CU001', 'DC', 2, 2, 0, TRUE, NULL),
 (gen_random_uuid(), 'CNTT_LT_2025', 'EN001', 'DC', 4, 4, 0, TRUE, 'ENBT'),
@@ -248,9 +246,7 @@ INSERT INTO curriculum_courses (id, curriculum_code, course_code, category_code,
 (gen_random_uuid(), 'CNTT_LT_2025', 'IE501', 'TOTTN', 6, 6, 0, TRUE, NULL),
 (gen_random_uuid(), 'CNTT_LT_2025', 'IE502', 'TOTTN', 10, 10, 0, TRUE, NULL),
 (gen_random_uuid(), 'CNTT_LT_2025', 'IE505', 'TOTTN', 10, 10, 0, TRUE, NULL),
-(gen_random_uuid(), 'CNTT_LT_2025', 'NT212', 'TOTTN', 3, 2, 1, TRUE, NULL);
-
-
+(gen_random_uuid(), 'CNTT_LT_2025', 'NT212', 'TOTTN', 3, 2, 1, TRUE, NULL),
 (gen_random_uuid(), 'CNTT_VB_2025', 'CS2134', 'DC', 4, 3, 1, TRUE, NULL),
 (gen_random_uuid(), 'CNTT_VB_2025', 'CU001', 'DC', 2, 2, 0, TRUE, NULL),
 (gen_random_uuid(), 'CNTT_VB_2025', 'EN001', 'DC', 4, 4, 0, TRUE, 'ENBT'),
@@ -1229,7 +1225,7 @@ INSERT INTO curriculum_courses (id, curriculum_code, course_code, category_code,
 (gen_random_uuid(), 'KTHHTMT_NC_2025', 'CE124', 'CSN', 4, 3, 1, TRUE, NULL),
 (gen_random_uuid(), 'KTHHTMT_NC_2025', 'IT004', 'TC', 4, 3, 1, FALSE, NULL),
 (gen_random_uuid(), 'KTHHTMT_NC_2025', 'IT007', 'TC', 4, 3, 1, FALSE, NULL),
-(gen_random_uuid(), 'KTHHTMT_NC_2025', 'MA004', 'TC', 4, 4, 0, FALSE, NULL),
+(gen_random_uuid(), 'KTHHTMT_NC_2025', 'MA004', 'TC', 4, 4, 0, FALSE, NULL);
 
 INSERT INTO curriculum_courses (id, curriculum_code, course_code, category_code, credits, theory_credits, lab_credits, is_mandatory, prerequisite_course_code) VALUES
 (gen_random_uuid(), 'TTDPT_2025', 'SS003', 'DC', 2, 2, 0, TRUE, NULL),
