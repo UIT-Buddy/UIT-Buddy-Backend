@@ -25,9 +25,17 @@ resource "aws_security_group" "ec2_sg" {
   }
 
   ingress {
-    description = "HTTPS from Internet"
+    description = "Request bind to backend"
     from_port   = 8080
     to_port     = 8080
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    description = "Request bind to pgAdmin"
+    from_port   = 5050
+    to_port     = 5050
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
