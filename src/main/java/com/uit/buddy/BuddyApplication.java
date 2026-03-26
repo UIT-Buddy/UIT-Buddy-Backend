@@ -9,7 +9,6 @@ import org.springframework.scheduling.annotation.EnableAsync;
 @EnableAsync
 @EnableRetry
 public class BuddyApplication {
-
     static void main(String[] args) {
         SpringApplication.run(BuddyApplication.class, args);
     }

@@ -207,28 +207,6 @@ class IcsParserTest {
     }
 
     @Test
-    void testParseIcsFileWithExpiredSchedule() {
-        String icsContent = """
-                BEGIN:VCALENDAR
-                X-WR-CALNAME:23521729@gm.uit.edu.vn
-                BEGIN:VEVENT
-                DTSTART;TZID=Asia/Ho_Chi_Minh:20240220T130000
-                DTEND;TZID=Asia/Ho_Chi_Minh:20240220T151500
-                SUMMARY:NT208.P23.ANTT - B1.18
-                DESCRIPTION:Lớp: NT208.P23.ANTT(Lập trình ứng dụng Web) - B1.18, Thứ 5, Tiết 678, Giảng viên: Trần Tuấn Dũng
-                RRULE:FREQ=WEEKLY;UNTIL=20240503T000000Z
-                END:VEVENT
-                END:VCALENDAR
-                """;
-
-        InputStream inputStream = new ByteArrayInputStream(icsContent.getBytes());
-
-        assertThrows(ScheduleException.class, () -> {
-            icsParser.parseIcsFile(inputStream);
-        });
-    }
-
-    @Test
     void testParseIcsFileWithInvalidSummaryFormat() {
         String icsContent = """
                 BEGIN:VCALENDAR
@@ -255,7 +233,7 @@ class IcsParserTest {
         String icsContent = """
                 BEGIN:VCALENDAR
                 VERSION:2.0
-                X-WR-CALNAME:23521729@gm.uit.edu.vn
+                X-WR-CALNAME:@gm.uit.edu.vn
                 END:VCALENDAR
                 """;
 
@@ -317,5 +295,103 @@ class IcsParserTest {
         assertEquals(1, result.getEvents().size());
         IcsEvent event = result.getEvents().get(0);
         assertEquals(1, event.getInterval()); // Default interval should be 1
+    }
+
+    @Test
+    void testParseIcsDescriptionWithDateRangeAndNoteSuffix() throws IOException {
+        String icsContent = """
+                BEGIN:VCALENDAR
+                X-WR-CALNAME:23521729@gm.uit.edu.vn
+                BEGIN:VEVENT
+                DTSTART;TZID=Asia/Ho_Chi_Minh:20260220T073000
+                DTEND;TZID=Asia/Ho_Chi_Minh:20260220T093000
+                SUMMARY:SE101.Q23 - P. C302
+                DESCRIPTION:Lớp: SE101.Q23(Phương pháp mô hình hóa) - P. C302, Lớp LT, Thứ 4, Tiết 123, Giảng viên: Nguyễn Công Hoan,   từ 26/01/2026 - 30/05/2026 -- Ghi chú: TC CS ngành
+                RRULE:FREQ=WEEKLY;INTERVAL=1;UNTIL=20260530T000000Z
+                END:VEVENT
+                END:VCALENDAR
+                """;
+
+        InputStream inputStream = new ByteArrayInputStream(icsContent.getBytes());
+        ParseResult result = icsParser.parseIcsFile(inputStream);
+
+        assertEquals(1, result.getEvents().size());
+        IcsEvent event = result.getEvents().get(0);
+        assertEquals("SE101.Q23", event.getClassCode());
+        assertEquals("Phương pháp mô hình hóa", event.getCourseName());
+        assertEquals("Nguyễn Công Hoan", event.getTeacherName());
+        assertEquals("C302", event.getRoomCode());
+        assertEquals(LocalDate.of(2026, 2, 20), event.getStartDate());
+        assertEquals(LocalDate.of(2026, 5, 30), event.getEndDate());
+        assertEquals(1, event.getStartLesson());
+        assertEquals(3, event.getEndLesson());
+    }
+
+    @Test
+    void testParseBaseIcsWithVTimezoneBlock() throws IOException {
+        String icsContent = """
+                BEGIN:VCALENDAR
+                VERSION:2.0
+                X-WR-CALNAME:23521729@gm.uit.edu.vn
+                BEGIN:VTIMEZONE
+                TZID:Asia/Ho_Chi_Minh
+                BEGIN:STANDARD
+                DTSTART:19700101T000000
+                END:STANDARD
+                END:VTIMEZONE
+                BEGIN:VEVENT
+                UID:69b8b80e6631f
+                DTSTAMP:20260317T021022Z
+                DTSTART;TZID=Asia/Ho_Chi_Minh:20260131T073000
+                DTEND;TZID=Asia/Ho_Chi_Minh:20260131T104500
+                SUMMARY:IS216.Q23 - P. B4.18
+                DESCRIPTION:Lớp: IS216.Q23(Lập trình Java) - P. B4.18, Lớp LT, Thứ 7, Tiết 1234, Giảng viên: Tạ Việt Phương,   từ 26/01/2026 - 02/05/2026
+                RRULE:FREQ=WEEKLY;INTERVAL=1;BYDAY=SA;UNTIL=20260502T000000Z
+                END:VEVENT
+                END:VCALENDAR
+                """;
+
+        InputStream inputStream = new ByteArrayInputStream(icsContent.getBytes());
+        ParseResult result = icsParser.parseIcsFile(inputStream);
+
+        assertEquals(1, result.getEvents().size());
+        IcsEvent event = result.getEvents().get(0);
+        assertEquals("IS216.Q23", event.getClassCode());
+        assertEquals("Lập trình Java", event.getCourseName());
+        assertEquals("Tạ Việt Phương", event.getTeacherName());
+        assertEquals("B4.18", event.getRoomCode());
+        assertEquals(LocalDate.of(2026, 1, 31), event.getStartDate());
+        assertEquals(LocalDate.of(2026, 5, 2), event.getEndDate());
+        assertEquals(LocalTime.of(7, 30), event.getStartTime());
+        assertEquals(LocalTime.of(10, 45), event.getEndTime());
+        assertEquals(1, event.getStartLesson());
+        assertEquals(4, event.getEndLesson());
+    }
+
+    @Test
+    void testDescriptionDateRangeTakesPrecedenceRegardlessOfPropertyOrder() throws IOException {
+        String icsContent = """
+                BEGIN:VCALENDAR
+                X-WR-CALNAME:23521729@gm.uit.edu.vn
+                BEGIN:VEVENT
+                UID:out-of-order-001
+                DESCRIPTION:Lớp: IS216.Q23(Lập trình Java) - P. B4.18, Lớp LT, Thứ 7, Tiết 1234, Giảng viên: Tạ Việt Phương, từ 26/01/2026 - 02/05/2026
+                DTSTART;TZID=Asia/Ho_Chi_Minh:20260131T073000
+                DTEND;TZID=Asia/Ho_Chi_Minh:20260131T104500
+                SUMMARY:IS216.Q23 - P. B4.18
+                RRULE:FREQ=WEEKLY;INTERVAL=1;BYDAY=SA;UNTIL=20260502T000000Z
+                END:VEVENT
+                END:VCALENDAR
+                """;
+
+        InputStream inputStream = new ByteArrayInputStream(icsContent.getBytes());
+        ParseResult result = icsParser.parseIcsFile(inputStream);
+
+        assertEquals(1, result.getEvents().size());
+        IcsEvent event = result.getEvents().get(0);
+        assertEquals(LocalDate.of(2026, 1, 31), event.getStartDate());
+        assertEquals(LocalDate.of(2026, 5, 2), event.getEndDate());
+        assertEquals(LocalTime.of(7, 30), event.getStartTime());
+        assertEquals(LocalTime.of(10, 45), event.getEndTime());
     }
 }

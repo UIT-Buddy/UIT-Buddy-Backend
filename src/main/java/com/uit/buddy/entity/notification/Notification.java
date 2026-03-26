@@ -2,7 +2,7 @@ package com.uit.buddy.entity.notification;
 
 import com.uit.buddy.entity.AbstractBaseEntity;
 import com.uit.buddy.entity.user.Student;
-import com.uit.buddy.enums.NotificationType;
+import com.uit.buddy.enums.NotificationTemplate;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -28,7 +28,7 @@ public class Notification extends AbstractBaseEntity {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "type", nullable = false, length = 50)
-    private NotificationType type;
+    private NotificationTemplate type;
 
     @Column(name = "data_id", length = 100)
     private String dataId;

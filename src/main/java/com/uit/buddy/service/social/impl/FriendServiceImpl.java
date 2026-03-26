@@ -10,6 +10,7 @@ import com.uit.buddy.entity.social.Friendship;
 import com.uit.buddy.entity.user.Student;
 import com.uit.buddy.enums.FriendRequestStatus;
 import com.uit.buddy.enums.FriendResponseAction;
+import com.uit.buddy.enums.FriendStatus;
 import com.uit.buddy.event.social.FriendRequestAcceptedEvent;
 import com.uit.buddy.event.social.FriendRequestReceivedEvent;
 import com.uit.buddy.exception.social.SocialErrorCode;
@@ -184,6 +185,19 @@ public class FriendServiceImpl implements FriendService {
     public boolean areFriends(String mssv1, String mssv2) {
         String[] sortedMssvs = sortMssvs(mssv1, mssv2);
         return friendshipRepository.existsByUser1MssvAndUser2Mssv(sortedMssvs[0], sortedMssvs[1]);
+    }
+
+    @Override
+    public FriendStatus getFriendStatus(String currentUserMssv, String targetUserMssv) {
+        if (areFriends(currentUserMssv, targetUserMssv)) {
+            return FriendStatus.FRIENDS;
+        }
+        Optional<FriendRequest> pendingRequest = friendRequestRepository.findPendingRequestBetween(currentUserMssv,
+                targetUserMssv);
+        if (pendingRequest.isPresent()) {
+            return FriendStatus.PENDING;
+        }
+        return FriendStatus.NONE;
     }
 
     private void createFriendship(String mssv1, String mssv2) {

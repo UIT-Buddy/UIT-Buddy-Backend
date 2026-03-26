@@ -71,7 +71,7 @@ app:
     app-region: ${COMETCHAT_REGION:us}
     app-timezone: ${COMETCHAT_TIMEZONE:Asia/Ho_Chi_Minh}
     app-provider-id: ${COMETCHAT_PROVIDER_ID:uit-buddy}
-    app-platform: ${COMETCHAT_PLATFORM}
+    app-platform: ${COMETCHAT_PLATFORM:android}
 
   jwt:
     secret: ${JWT_SECRET}
