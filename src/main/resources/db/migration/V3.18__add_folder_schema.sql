@@ -1,7 +1,7 @@
 CREATE TABLE folders(
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     mssv VARCHAR(12) NOT NULL,
-    parent_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    parent_id UUID,
     folder_name VARCHAR(255) NOT NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -18,3 +18,5 @@ CREATE TABLE share_folder (
     deleted_at TIMESTAMP
 );
 
+ALTER TABLE student_class
+ADD COLUMN credits INT;

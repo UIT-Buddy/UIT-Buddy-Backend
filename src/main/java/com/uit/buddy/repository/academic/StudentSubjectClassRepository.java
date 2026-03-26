@@ -33,4 +33,5 @@ public interface StudentSubjectClassRepository extends CrudRepository<StudentSub
 
     @Query("SELECT ssc FROM StudentSubjectClass ssc WHERE ssc.subjectClass.classCode = :classCode AND ssc.student.mssv = :mssv")
     StudentSubjectClass findSubjectByClassCode(@Param("mssv") String mssv, @Param("classCode") String classCode);
+
 }

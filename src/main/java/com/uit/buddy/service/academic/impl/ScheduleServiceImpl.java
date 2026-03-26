@@ -25,6 +25,7 @@ import com.uit.buddy.exception.user.UserErrorCode;
 import com.uit.buddy.exception.user.UserException;
 import com.uit.buddy.mapper.schedule.ScheduleMapper;
 import com.uit.buddy.repository.academic.CourseRepository;
+import com.uit.buddy.repository.academic.CurriculumCourseRepository;
 import com.uit.buddy.repository.academic.SemesterRepository;
 import com.uit.buddy.repository.academic.StudentSubjectClassRepository;
 import com.uit.buddy.repository.academic.SubjectClassRepository;
@@ -48,6 +49,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -65,22 +68,25 @@ public class ScheduleServiceImpl implements ScheduleService {
     private final SubjectClassRepository subjectClassRepository;
     private final StudentSubjectClassRepository studentSubjectClassRepository;
     private final CourseRepository courseRepository;
+    private final CurriculumCourseRepository curriculumCourseRepository;
     private final SemesterRepository semesterRepository;
     private final UitClient uitClient;
     private final EncryptionUtils encryptionUtils;
     private final Executor executor;
     private final ScheduleMapper scheduleMapper;
+    private static final Pattern YEAR_PATTERN = Pattern.compile("(\\d{4})");
 
     public ScheduleServiceImpl(IcsParser icsParser, StudentRepository studentRepository,
             SubjectClassRepository subjectClassRepository, StudentSubjectClassRepository studentSubjectClassRepository,
-            CourseRepository courseRepository, SemesterRepository semesterRepository, UitClient uitClient,
-            EncryptionUtils encryptionUtils, @Qualifier("uploadExecutor") Executor executor,
-            ScheduleMapper scheduleMapper) {
+            CourseRepository courseRepository, CurriculumCourseRepository curriculumCourseRepository,
+            SemesterRepository semesterRepository, UitClient uitClient, EncryptionUtils encryptionUtils,
+            @Qualifier("uploadExecutor") Executor executor, ScheduleMapper scheduleMapper) {
         this.icsParser = icsParser;
         this.studentRepository = studentRepository;
         this.subjectClassRepository = subjectClassRepository;
         this.studentSubjectClassRepository = studentSubjectClassRepository;
         this.courseRepository = courseRepository;
+        this.curriculumCourseRepository = curriculumCourseRepository;
         this.semesterRepository = semesterRepository;
         this.uitClient = uitClient;
         this.encryptionUtils = encryptionUtils;
@@ -108,6 +114,7 @@ public class ScheduleServiceImpl implements ScheduleService {
             List<CourseContentResponse> allDeadlines = fetchCourseDeadlinesFromMoodle(mssv, null, null);
             List<CourseCalendarResponse.Course> courses = scheduleMapper.toListCourseWithDeadlines(savedMappings,
                     allDeadlines);
+            courses = sortCourseDeadlineByDueDateDesc(courses);
 
             log.info("[Schedule Service] Schedule upload successful for student: {}", mssv);
 
@@ -140,6 +147,7 @@ public class ScheduleServiceImpl implements ScheduleService {
         List<CourseContentResponse> allDeadlines = fetchCourseDeadlinesFromMoodle(mssv, null, null);
         List<CourseCalendarResponse.Course> courses = scheduleMapper.toListCourseWithDeadlines(studentClasses,
                 allDeadlines);
+        courses = sortCourseDeadlineByDueDateDesc(courses);
         return new CourseCalendarResponse(courses.size(), semester, year, courses);
     }
 
@@ -202,6 +210,7 @@ public class ScheduleServiceImpl implements ScheduleService {
                 .map(event -> StudentSubjectClass.builder().student(student)
                         .subjectClass(classMap.get(event.getClassCode())).status(classStatus).build())
                 .toList();
+        setCreditsForSubjectClass(student, finalMappings);
         studentSubjectClassRepository.saveAll(finalMappings);
         log.info("[Schedule Service] Successfully synced {} classes for student {}", finalMappings.size(),
                 student.getMssv());
@@ -273,7 +282,8 @@ public class ScheduleServiceImpl implements ScheduleService {
             changed = true;
         }
 
-        String classType = Boolean.TRUE.equals(event.getIsBlendedLearning()) ? "BLENDED_LEARNING" : "WEEKLY";
+        String classType = Boolean.TRUE.equals(event.getIsBlendedLearning()) ? IcsConstants.BLENDED_LEARNING
+                : IcsConstants.WEEKLY;
         if (!java.util.Objects.equals(subjectClass.getClassType(), classType)) {
             subjectClass.setClassType(classType);
             changed = true;
@@ -386,7 +396,10 @@ public class ScheduleServiceImpl implements ScheduleService {
             }
         }
 
-        return new CourseContentResponse(courseName, exercises);
+        List<CourseContentResponse.exercise> sortedExercises = exercises.stream()
+                .sorted(Comparator.comparing(CourseContentResponse.exercise::dueDate).reversed()).toList();
+
+        return new CourseContentResponse(courseName, sortedExercises);
     }
 
     private boolean isMatchedByFilter(LocalDateTime dueDate, Integer month, Integer year) {
@@ -507,4 +520,103 @@ public class ScheduleServiceImpl implements ScheduleService {
         return refinedDuplicatedCourse;
     }
 
+    private void setCreditsForSubjectClass(Student student, List<StudentSubjectClass> classesToUpdate) {
+        String majorCode = resolveMajorCode(student);
+        Integer academicStartYear = resolveAcademicStartYear(student);
+
+        for (StudentSubjectClass studentClass : classesToUpdate) {
+            SubjectClass subjectClass = studentClass.getSubjectClass();
+            if (subjectClass == null) {
+                studentClass.setCredits(0);
+                continue;
+            }
+
+            String courseCode = subjectClass.getCourseCode();
+            if ((courseCode == null || courseCode.isBlank()) && subjectClass.getCourse() != null) {
+                courseCode = subjectClass.getCourse().getCourseCode();
+            }
+
+            if (courseCode == null || courseCode.isBlank()) {
+                studentClass.setCredits(0);
+                continue;
+            }
+
+            if (majorCode == null || majorCode.isBlank() || academicStartYear == null) {
+                studentClass.setCredits(0);
+                continue;
+            }
+
+            Integer credits;
+            if (isLabClassCode(subjectClass.getClassCode())) {
+                credits = curriculumCourseRepository.findCreditsForLabClass(courseCode, majorCode, academicStartYear);
+            } else {
+                credits = curriculumCourseRepository.findCreditsForClass(courseCode, majorCode, academicStartYear);
+            }
+            studentClass.setCredits(credits != null ? credits : 0);
+        }
+    }
+
+    private boolean isLabClassCode(String classCode) {
+        if (classCode == null || classCode.isBlank()) {
+            return false;
+        }
+
+        int dotCount = 0;
+        for (int i = 0; i < classCode.length(); i++) {
+            if (classCode.charAt(i) == '.') {
+                dotCount++;
+            }
+        }
+        return dotCount >= 2;
+    }
+
+    private String resolveMajorCode(Student student) {
+        if (student.getHomeClass() != null && student.getHomeClass().getMajorCode() != null
+                && !student.getHomeClass().getMajorCode().isBlank()) {
+            return student.getHomeClass().getMajorCode();
+        }
+
+        String homeClassCode = student.getHomeClassCode();
+        if (homeClassCode != null && homeClassCode.length() >= 4) {
+            return homeClassCode.substring(0, 4);
+        }
+
+        return null;
+    }
+
+    private Integer resolveAcademicStartYear(Student student) {
+        if (student.getHomeClass() != null && student.getHomeClass().getAcademicYear() != null) {
+            Matcher matcher = YEAR_PATTERN.matcher(student.getHomeClass().getAcademicYear());
+            if (matcher.find()) {
+                return Integer.parseInt(matcher.group(1));
+            }
+        }
+
+        String mssv = student.getMssv();
+        if (mssv != null && mssv.length() >= 2 && mssv.substring(0, 2).chars().allMatch(Character::isDigit)) {
+            return 2000 + Integer.parseInt(mssv.substring(0, 2));
+        }
+
+        return null;
+    }
+
+    private List<CourseCalendarResponse.Course> sortCourseDeadlineByDueDateDesc(
+            List<CourseCalendarResponse.Course> courses) {
+        return courses.stream().map(course -> {
+            if (course.deadline() == null || course.deadline().exercises() == null) {
+                return course;
+            }
+
+            List<CourseContentResponse.exercise> sortedExercises = course.deadline().exercises().stream()
+                    .sorted(Comparator.comparing(CourseContentResponse.exercise::dueDate).reversed()).toList();
+
+            CourseContentResponse sortedDeadline = new CourseContentResponse(course.deadline().courseName(),
+                    sortedExercises);
+
+            return new CourseCalendarResponse.Course(course.courseCode(), course.classId(), course.courseName(),
+                    course.lecturer(), course.dayOfWeek(), course.startTime(), course.labOfClassId(),
+                    course.isBlendedLearning(), course.endTime(), course.startPeriod(), course.endPeriod(),
+                    course.roomCode(), course.startDate(), course.endDate(), course.credits(), sortedDeadline);
+        }).toList();
+    }
 }

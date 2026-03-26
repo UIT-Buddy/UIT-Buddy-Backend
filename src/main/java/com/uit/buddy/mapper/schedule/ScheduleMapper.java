@@ -27,7 +27,7 @@ public interface ScheduleMapper {
     @Mapping(target = "startDate", source = "subjectClass.startDate")
     @Mapping(target = "endDate", source = "subjectClass.endDate")
     @Mapping(target = "lecturer", source = "subjectClass.teacherName")
-    @Mapping(target = "credits", constant = "0")
+    @Mapping(target = "credits", expression = "java(studentClass.getCredits())")
     @Mapping(target = "deadline", ignore = true)
     Course toCourse(StudentSubjectClass studentClass);
 
