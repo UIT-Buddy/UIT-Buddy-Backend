@@ -43,4 +43,6 @@ public final class IcsConstants {
     public static final String DTSTART = "DTSTART";
     public static final String DTEND = "DTEND";
     public static final String RRULE = "RRULE";
+    public static final String BLENDED_LEARNING = "BLENDED_LEARNING";
+    public static final String WEEKLY = "WEEKLY";
 }

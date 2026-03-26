@@ -37,4 +37,6 @@ public class StudentSubjectClass extends AbstractBaseEntity {
     @Column(name = "status", length = 20)
     private StudentClassStatus status;
 
+    @Column(name = "credits")
+    private Integer credits;
 }
