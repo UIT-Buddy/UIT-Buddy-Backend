@@ -1,6 +1,6 @@
 package com.uit.buddy.dto.response.notification;
 
-import com.uit.buddy.enums.NotificationType;
+import com.uit.buddy.enums.NotificationTemplate;
 import java.time.LocalDateTime;
 import java.util.UUID;
 import lombok.AllArgsConstructor;
@@ -16,7 +16,7 @@ public class NotificationResponse {
     private UUID id;
     private String title;
     private String content;
-    private NotificationType type;
+    private NotificationTemplate type;
     private String dataId;
     private Boolean isRead;
     private LocalDateTime createdAt;

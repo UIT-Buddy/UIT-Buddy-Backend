@@ -2,6 +2,7 @@ package com.uit.buddy.entity.academic;
 
 import com.uit.buddy.entity.AbstractBaseEntity;
 import jakarta.persistence.*;
+import java.time.LocalDate;
 import java.time.LocalTime;
 import lombok.*;
 
@@ -51,6 +52,12 @@ public class SubjectClass extends AbstractBaseEntity {
 
     @Column(name = "end_time")
     private LocalTime endTime;
+
+    @Column(name = "start_date")
+    private LocalDate startDate;
+
+    @Column(name = "end_date")
+    private LocalDate endDate;
 
     @Column(name = "room_code", length = 20)
     private String roomCode;

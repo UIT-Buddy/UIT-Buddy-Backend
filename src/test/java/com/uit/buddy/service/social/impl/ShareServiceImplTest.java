@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.doNothing;
 
 import com.uit.buddy.dto.request.social.SharePostRequest;
 import com.uit.buddy.dto.response.social.UserShareResponse;
@@ -11,6 +12,7 @@ import com.uit.buddy.dto.response.social.UserSummary;
 import com.uit.buddy.entity.social.Post;
 import com.uit.buddy.entity.social.Share;
 import com.uit.buddy.entity.user.Student;
+import com.uit.buddy.enums.PostType;
 import com.uit.buddy.enums.ShareType;
 import com.uit.buddy.event.social.PostSharedEvent;
 import com.uit.buddy.exception.social.SocialException;
@@ -49,6 +51,8 @@ class ShareServiceImplTest {
     private ApplicationEventPublisher eventPublisher;
     @Mock
     private ShareMapper shareMapper;
+    @Mock
+    private com.uit.buddy.client.CometChatClient cometChatClient;
 
     @InjectMocks
     private ShareServiceImpl shareService;
@@ -80,7 +84,7 @@ class ShareServiceImplTest {
 
     @Test
     void shouldSharePostToProfileSuccessfully() {
-        SharePostRequest request = new SharePostRequest("Sharing this post");
+        SharePostRequest request = new SharePostRequest("Sharing this post", null, null);
 
         when(postRepository.findById(postId)).thenReturn(Optional.of(post));
         when(studentRepository.findById(mssv)).thenReturn(Optional.of(student));
@@ -103,12 +107,18 @@ class ShareServiceImplTest {
 
     @Test
     void shouldSharePostToMessageSuccessfully() {
-        SharePostRequest request = new SharePostRequest("Sharing via message");
+        SharePostRequest request = new SharePostRequest("Sharing via message", "receiver123", "user");
+
+        Student receiver = new Student();
+        receiver.setMssv("receiver123");
+        receiver.setFullName("Receiver Student");
 
         when(postRepository.findById(postId)).thenReturn(Optional.of(post));
         when(studentRepository.findById(mssv)).thenReturn(Optional.of(student));
+        when(studentRepository.findById("receiver123")).thenReturn(Optional.of(receiver));
         when(shareRepository.existsByPostIdAndMssv(postId, mssv)).thenReturn(false);
         when(shareRepository.save(any(Share.class))).thenReturn(new Share());
+        doNothing().when(cometChatClient).sendMessage(any(), eq(mssv));
 
         boolean result = shareService.sharePost(postId, mssv, ShareType.MESSAGE, request);
 
@@ -117,11 +127,12 @@ class ShareServiceImplTest {
         verify(postRepository, never()).save(any(Post.class)); // No shared post created for MESSAGE
         verify(postRepository).incrementShareCount(postId);
         verify(eventPublisher).publishEvent(any(PostSharedEvent.class));
+        verify(cometChatClient).sendMessage(any(), eq(mssv));
     }
 
     @Test
     void shouldNotIncrementShareCountWhenAlreadyShared() {
-        SharePostRequest request = new SharePostRequest("Sharing again");
+        SharePostRequest request = new SharePostRequest("Sharing again", null, null);
 
         when(postRepository.findById(postId)).thenReturn(Optional.of(post));
         when(studentRepository.findById(mssv)).thenReturn(Optional.of(student));
@@ -147,7 +158,7 @@ class ShareServiceImplTest {
         ReflectionTestUtils.setField(ownPost, "id", postId);
         ReflectionTestUtils.setField(ownPost, "mssv", mssv); // Same as actor
 
-        SharePostRequest request = new SharePostRequest("Sharing my own post");
+        SharePostRequest request = new SharePostRequest("Sharing my own post", null, null);
 
         when(postRepository.findById(postId)).thenReturn(Optional.of(ownPost));
         when(studentRepository.findById(mssv)).thenReturn(Optional.of(student));
@@ -168,7 +179,7 @@ class ShareServiceImplTest {
 
     @Test
     void shouldThrowExceptionWhenPostNotFound() {
-        SharePostRequest request = new SharePostRequest("Sharing");
+        SharePostRequest request = new SharePostRequest("Sharing", null, null);
         when(postRepository.findById(postId)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> shareService.sharePost(postId, mssv, ShareType.PROFILE, request))
@@ -177,7 +188,7 @@ class ShareServiceImplTest {
 
     @Test
     void shouldThrowExceptionWhenStudentNotFound() {
-        SharePostRequest request = new SharePostRequest("Sharing");
+        SharePostRequest request = new SharePostRequest("Sharing", null, null);
         when(postRepository.findById(postId)).thenReturn(Optional.of(post));
         when(studentRepository.findById(mssv)).thenReturn(Optional.empty());
 
@@ -243,5 +254,186 @@ class ShareServiceImplTest {
 
         assertThat(result).hasSize(1);
         verify(shareRepository).findSharesWithCursor(eq(postId), any(), any(), eq(11));
+    }
+
+    @Test
+    void shouldSharePostToMessageWithReceiverAndType() {
+        SharePostRequest request = new SharePostRequest("Check this out!", "receiver123", "user");
+
+        Student receiver = new Student();
+        receiver.setMssv("receiver123");
+        receiver.setFullName("Receiver Student");
+
+        when(postRepository.findById(postId)).thenReturn(Optional.of(post));
+        when(studentRepository.findById(mssv)).thenReturn(Optional.of(student));
+        when(studentRepository.findById("receiver123")).thenReturn(Optional.of(receiver));
+        when(shareRepository.existsByPostIdAndMssv(postId, mssv)).thenReturn(false);
+        when(shareRepository.save(any(Share.class))).thenReturn(new Share());
+        doNothing().when(cometChatClient).sendMessage(any(), eq(mssv));
+
+        boolean result = shareService.sharePost(postId, mssv, ShareType.MESSAGE, request);
+
+        assertThat(result).isTrue();
+        verify(shareRepository).save(argThat(share -> share.getType() == ShareType.MESSAGE));
+        verify(postRepository, never()).save(any(Post.class)); // MESSAGE type doesn't create shared post
+        verify(postRepository).incrementShareCount(postId);
+        verify(eventPublisher).publishEvent(any(PostSharedEvent.class));
+        verify(cometChatClient).sendMessage(any(), eq(mssv));
+    }
+
+    @Test
+    void shouldSharePostToProfileWithCaption() {
+        SharePostRequest request = new SharePostRequest("Great post!", null, null);
+
+        when(postRepository.findById(postId)).thenReturn(Optional.of(post));
+        when(studentRepository.findById(mssv)).thenReturn(Optional.of(student));
+        when(shareRepository.existsByPostIdAndMssv(postId, mssv)).thenReturn(false);
+        when(shareRepository.save(any(Share.class))).thenReturn(new Share());
+
+        // Mock postRepository.save to return a post with ID
+        Post savedPost = Post.builder().title("").content("Great post!").author(student).build();
+        ReflectionTestUtils.setField(savedPost, "id", UUID.randomUUID());
+        when(postRepository.save(any(Post.class))).thenReturn(savedPost);
+
+        boolean result = shareService.sharePost(postId, mssv, ShareType.PROFILE, request);
+
+        assertThat(result).isTrue();
+        verify(shareRepository).save(argThat(share -> share.getType() == ShareType.PROFILE));
+        verify(postRepository).save(any(Post.class)); // PROFILE type creates shared post
+        verify(postRepository).incrementShareCount(postId);
+        verify(eventPublisher).publishEvent(any(PostSharedEvent.class));
+    }
+
+    @Test
+    void shouldSharePostToMessageWithGroupReceiver() {
+        SharePostRequest request = new SharePostRequest("Sharing to group", "group456", "group");
+
+        when(postRepository.findById(postId)).thenReturn(Optional.of(post));
+        when(studentRepository.findById(mssv)).thenReturn(Optional.of(student));
+        when(shareRepository.existsByPostIdAndMssv(postId, mssv)).thenReturn(false);
+        when(shareRepository.save(any(Share.class))).thenReturn(new Share());
+        doNothing().when(cometChatClient).sendMessage(any(), eq(mssv));
+
+        boolean result = shareService.sharePost(postId, mssv, ShareType.MESSAGE, request);
+
+        assertThat(result).isTrue();
+        verify(shareRepository).save(argThat(share -> share.getType() == ShareType.MESSAGE));
+        verify(postRepository).incrementShareCount(postId);
+        verify(cometChatClient).sendMessage(any(), eq(mssv));
+    }
+
+    @Test
+    void shouldThrowExceptionWhenSharingToMessageWithoutReceiver() {
+        SharePostRequest request = new SharePostRequest("Missing receiver", null, null);
+
+        when(postRepository.findById(postId)).thenReturn(Optional.of(post));
+        when(studentRepository.findById(mssv)).thenReturn(Optional.of(student));
+
+        // This should throw exception because MESSAGE type requires receiverId
+        assertThatThrownBy(() -> shareService.sharePost(postId, mssv, ShareType.MESSAGE, request))
+                .isInstanceOf(SocialException.class);
+    }
+
+    @Test
+    void shouldTraceToRootOriginalPostWhenSharingSharedPost() {
+        // Setup: A creates original post, B shares it, C shares B's shared post
+        Student studentA = new Student();
+        studentA.setMssv("22100001");
+        studentA.setFullName("Student A");
+
+        Student studentB = new Student();
+        studentB.setMssv("22100002");
+        studentB.setFullName("Student B");
+
+        Student studentC = new Student();
+        studentC.setMssv("22100003");
+        studentC.setFullName("Student C");
+
+        // Original post by A
+        UUID originalPostId = UUID.randomUUID();
+        Post originalPost = Post.builder().title("Original Post").content("Original Content").author(studentA).build();
+        ReflectionTestUtils.setField(originalPost, "id", originalPostId);
+        ReflectionTestUtils.setField(originalPost, "mssv", "22100001");
+
+        // B's shared post (points to A's post)
+        UUID sharedPostByBId = UUID.randomUUID();
+        Post sharedPostByB = Post.builder().title("").content("B's caption").author(studentB).originalPost(originalPost)
+                .type(PostType.SHARE).build();
+        ReflectionTestUtils.setField(sharedPostByB, "id", sharedPostByBId);
+        ReflectionTestUtils.setField(sharedPostByB, "mssv", "22100002");
+
+        SharePostRequest request = new SharePostRequest("C's caption", null, null);
+
+        // C tries to share B's shared post
+        when(postRepository.findById(sharedPostByBId)).thenReturn(Optional.of(sharedPostByB));
+        when(studentRepository.findById("22100003")).thenReturn(Optional.of(studentC));
+        when(shareRepository.existsByPostIdAndMssv(originalPostId, "22100003")).thenReturn(false);
+        when(shareRepository.save(any(Share.class))).thenReturn(new Share());
+
+        Post savedPost = Post.builder().title("").content("C's caption").author(studentC).build();
+        ReflectionTestUtils.setField(savedPost, "id", UUID.randomUUID());
+        when(postRepository.save(any(Post.class))).thenReturn(savedPost);
+
+        boolean result = shareService.sharePost(sharedPostByBId, "22100003", ShareType.PROFILE, request);
+
+        assertThat(result).isTrue();
+        // Verify share record points to original post A, not B's shared post
+        verify(shareRepository).save(argThat(share -> share.getPost().getId().equals(originalPostId)));
+        // Verify increment is called on original post A
+        verify(postRepository).incrementShareCount(originalPostId);
+        // Verify created shared post points to original post A
+        verify(postRepository)
+                .save(argThat(p -> p.getOriginalPost() != null && p.getOriginalPost().getId().equals(originalPostId)));
+        // Verify event is published with original post author
+        verify(eventPublisher).publishEvent(any(PostSharedEvent.class));
+    }
+
+    @Test
+    void shouldNotIncrementShareCountWhenUserAlreadySharedRootPost() {
+        // Setup: A creates original post, B shares it, C shares A's post, then C tries
+        // to share B's shared post
+        Student studentA = new Student();
+        studentA.setMssv("22100001");
+        studentA.setFullName("Student A");
+
+        Student studentB = new Student();
+        studentB.setMssv("22100002");
+        studentB.setFullName("Student B");
+
+        Student studentC = new Student();
+        studentC.setMssv("22100003");
+        studentC.setFullName("Student C");
+
+        UUID originalPostId = UUID.randomUUID();
+        Post originalPost = Post.builder().title("Original Post").content("Original Content").author(studentA).build();
+        ReflectionTestUtils.setField(originalPost, "id", originalPostId);
+        ReflectionTestUtils.setField(originalPost, "mssv", "22100001");
+
+        UUID sharedPostByBId = UUID.randomUUID();
+        Post sharedPostByB = Post.builder().title("").content("B's caption").author(studentB).originalPost(originalPost)
+                .type(PostType.SHARE).build();
+        ReflectionTestUtils.setField(sharedPostByB, "id", sharedPostByBId);
+        ReflectionTestUtils.setField(sharedPostByB, "mssv", "22100002");
+
+        SharePostRequest request = new SharePostRequest("C's second share", null, null);
+
+        when(postRepository.findById(sharedPostByBId)).thenReturn(Optional.of(sharedPostByB));
+        when(studentRepository.findById("22100003")).thenReturn(Optional.of(studentC));
+        // C already shared the root original post
+        when(shareRepository.existsByPostIdAndMssv(originalPostId, "22100003")).thenReturn(true);
+        when(shareRepository.save(any(Share.class))).thenReturn(new Share());
+
+        Post savedPost = Post.builder().title("").content("C's second share").author(studentC).build();
+        ReflectionTestUtils.setField(savedPost, "id", UUID.randomUUID());
+        when(postRepository.save(any(Post.class))).thenReturn(savedPost);
+
+        boolean result = shareService.sharePost(sharedPostByBId, "22100003", ShareType.PROFILE, request);
+
+        assertThat(result).isTrue();
+        verify(shareRepository).save(any(Share.class));
+        // Should NOT increment share count since C already shared the root post
+        verify(postRepository, never()).incrementShareCount(any());
+        // Should NOT publish event
+        verify(eventPublisher, never()).publishEvent(any());
     }
 }

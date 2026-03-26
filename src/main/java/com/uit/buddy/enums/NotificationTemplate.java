@@ -6,16 +6,16 @@ import lombok.RequiredArgsConstructor;
 @Getter
 @RequiredArgsConstructor
 public enum NotificationTemplate {
-    POST_LIKE("Tương tác mới", "%s đã thích bài viết của bạn.", "POST_LIKE"),
-    POST_COMMENT("Bình luận mới", "%s đã bình luận: %s", "POST_COMMENT"),
-    POST_SHARE("Chia sẻ mới", "%s đã chia sẻ bài viết của bạn.", "POST_SHARE"),
-    COMMENT_LIKE("Tương tác mới", "%s đã thích bình luận của bạn.", "COMMENT_LIKE"),
-    FRIEND_REQUEST_RECEIVED("Lời mời kết bạn", "%s đã gửi lời mời kết bạn", "FRIEND_REQUEST"),
-    FRIEND_REQUEST_ACCEPTED("Chấp nhận kết bạn", "%s đã chấp nhận lời mời kết bạn của bạn", "FRIEND_ACCEPTED");
+    // Social notifications
+    POST_LIKE("Tương tác mới", "%s đã thích bài viết của bạn."), POST_COMMENT("Bình luận mới", "%s đã bình luận: %s"),
+    POST_SHARE("Chia sẻ mới", "%s đã chia sẻ bài viết của bạn."),
+    COMMENT_LIKE("Tương tác mới", "%s đã thích bình luận của bạn."),
+    FRIEND_REQUEST_RECEIVED("Lời mời kết bạn", "%s đã gửi lời mời kết bạn"),
+    FRIEND_REQUEST_ACCEPTED("Chấp nhận kết bạn", "%s đã chấp nhận lời mời kết bạn của bạn"),
+    SYSTEM("Thông báo hệ thống", "%s"), ACADEMIC("Thông báo học tập", "%s"), REMINDER("Nhắc nhở", "%s");
 
     private final String title;
     private final String contentTemplate;
-    private final String type;
 
     public static final String COUNT_EXTRACT_REGEX = " và (\\d+) người khác";
     public static final String MSG_SINGLE = "%s đã %s bài viết của bạn";
