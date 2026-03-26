@@ -853,5 +853,5 @@
 (gen_random_uuid(), 'TMDT_2021', 'EC338', 'TC', 3, 3, 0, FALSE, NULL),
 (gen_random_uuid(), 'TMDT_2021', 'IS353', 'TC', 3, 3, 0, FALSE, NULL),
 (gen_random_uuid(), 'TMDT_2021', 'IS405', 'TC', 4, 3, 1, FALSE, NULL),
-(gen_random_uuid(), 'TMDT_2021', 'EC222', 'TOTTN', 2, 2, 0, TRUE, NULL);
+(gen_random_uuid(), 'TMDT_2021', 'EC222', 'TOTTN', 2, 2, 0, TRUE, NULL),
 (gen_random_uuid(), 'TMDT_2021', 'EC401', 'TOTTN', 10, 10, 0, TRUE, NULL);

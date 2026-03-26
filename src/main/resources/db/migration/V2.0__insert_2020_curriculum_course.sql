@@ -54,9 +54,10 @@
 (gen_random_uuid(), 'ATTT_2020', 'NT131', 'TOTTN', 4, 3, 1, TRUE, NULL),
 (gen_random_uuid(), 'ATTT_2020', 'NT205', 'TOTTN', 3, 2, 1, TRUE, NULL),
 (gen_random_uuid(), 'ATTT_2020', 'NT208', 'TOTTN', 3, 2, 1, TRUE, NULL),
-(gen_random_uuid(), 'ATTT_2020', 'NT215', 'TOTTN', 2, 2, 0, TRUE, NULL);
+(gen_random_uuid(), 'ATTT_2020', 'NT215', 'TOTTN', 2, 2, 0, TRUE, NULL),
 (gen_random_uuid(), 'ATTT_2020', 'NT505', 'TOTTN', 10, 10, 0, TRUE, NULL);
 
+INSERT INTO curriculum_courses (id, curriculum_code, course_code, category_code, credits, theory_credits, lab_credits, is_mandatory, prerequisite_course_code) VALUES
 (gen_random_uuid(), 'CNTT_2020', 'EN001', 'DC', 4, 4, 0, TRUE, 'ENBT'),
 (gen_random_uuid(), 'CNTT_2020', 'EN002', 'DC', 4, 4, 0, TRUE, 'EN001'),
 (gen_random_uuid(), 'CNTT_2020', 'EN003', 'DC', 4, 4, 0, TRUE, 'EN002'),
@@ -799,5 +800,5 @@
 (gen_random_uuid(), 'TMDT_2020', 'EC338', 'TC', 3, 3, 0, FALSE, NULL),
 (gen_random_uuid(), 'TMDT_2020', 'IS353', 'TC', 3, 3, 0, FALSE, NULL),
 (gen_random_uuid(), 'TMDT_2020', 'IS405', 'TC', 4, 3, 1, FALSE, NULL),
-(gen_random_uuid(), 'TMDT_2020', 'EC222', 'TOTTN', 2, 2, 0, TRUE, NULL);
+(gen_random_uuid(), 'TMDT_2020', 'EC222', 'TOTTN', 2, 2, 0, TRUE, NULL),
 (gen_random_uuid(), 'TMDT_2020', 'EC401', 'TOTTN', 10, 10, 0, TRUE, NULL);

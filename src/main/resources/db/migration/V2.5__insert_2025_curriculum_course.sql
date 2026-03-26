@@ -58,9 +58,10 @@
 (gen_random_uuid(), 'ATTT_2025', 'NT548', 'TOTTN', 4, 3, 1, FALSE, NULL),
 (gen_random_uuid(), 'ATTT_2025', 'NT215', 'TOTTN', 2, 2, 0, TRUE, NULL),
 (gen_random_uuid(), 'ATTT_2025', 'NT505', 'TOTTN', 10, 10, 0, TRUE, NULL),
-(gen_random_uuid(), 'ATTT_2025', 'NT506', 'TOTTN', 10, 10, 0, TRUE, NULL);
+(gen_random_uuid(), 'ATTT_2025', 'NT506', 'TOTTN', 10, 10, 0, TRUE, NULL),
 (gen_random_uuid(), 'ATTT_2025', 'NT508', 'TOTTN', 6, 6, 0, TRUE, NULL);
 
+INSERT INTO curriculum_courses (id, curriculum_code, course_code, category_code, credits, theory_credits, lab_credits, is_mandatory, prerequisite_course_code) VALUES
 (gen_random_uuid(), 'CNTT_2025', 'CS2134', 'DC', 4, 3, 1, TRUE, NULL),
 (gen_random_uuid(), 'CNTT_2025', 'CU001', 'DC', 2, 2, 0, TRUE, NULL),
 (gen_random_uuid(), 'CNTT_2025', 'EN001', 'DC', 4, 4, 0, TRUE, 'ENBT'),
@@ -151,7 +152,7 @@
 (gen_random_uuid(), 'CNTT_2025', 'IE400', 'TOTTN', 4, 4, 0, TRUE, NULL),
 (gen_random_uuid(), 'CNTT_2025', 'IE501', 'TOTTN', 6, 6, 0, TRUE, NULL),
 (gen_random_uuid(), 'CNTT_2025', 'IE502', 'TOTTN', 10, 10, 0, TRUE, NULL),
-(gen_random_uuid(), 'CNTT_2025', 'IE505', 'TOTTN', 10, 10, 0, TRUE, NULL);
+(gen_random_uuid(), 'CNTT_2025', 'IE505', 'TOTTN', 10, 10, 0, TRUE, NULL),
 (gen_random_uuid(), 'CNTT_2025', 'NT212', 'TOTTN', 3, 2, 1, TRUE, NULL);
 
 
@@ -246,7 +247,7 @@
 (gen_random_uuid(), 'CNTT_LT_2025', 'IE400', 'TOTTN', 4, 4, 0, TRUE, NULL),
 (gen_random_uuid(), 'CNTT_LT_2025', 'IE501', 'TOTTN', 6, 6, 0, TRUE, NULL),
 (gen_random_uuid(), 'CNTT_LT_2025', 'IE502', 'TOTTN', 10, 10, 0, TRUE, NULL),
-(gen_random_uuid(), 'CNTT_LT_2025', 'IE505', 'TOTTN', 10, 10, 0, TRUE, NULL);
+(gen_random_uuid(), 'CNTT_LT_2025', 'IE505', 'TOTTN', 10, 10, 0, TRUE, NULL),
 (gen_random_uuid(), 'CNTT_LT_2025', 'NT212', 'TOTTN', 3, 2, 1, TRUE, NULL);
 
 
@@ -341,9 +342,10 @@
 (gen_random_uuid(), 'CNTT_VB_2025', 'IE400', 'TOTTN', 4, 4, 0, TRUE, NULL),
 (gen_random_uuid(), 'CNTT_VB_2025', 'IE501', 'TOTTN', 6, 6, 0, TRUE, NULL),
 (gen_random_uuid(), 'CNTT_VB_2025', 'IE502', 'TOTTN', 10, 10, 0, TRUE, NULL),
-(gen_random_uuid(), 'CNTT_VB_2025', 'IE505', 'TOTTN', 10, 10, 0, TRUE, NULL);
+(gen_random_uuid(), 'CNTT_VB_2025', 'IE505', 'TOTTN', 10, 10, 0, TRUE, NULL),
 (gen_random_uuid(), 'CNTT_VB_2025', 'NT212', 'TOTTN', 3, 2, 1, TRUE, NULL);
 
+INSERT INTO curriculum_courses (id, curriculum_code, course_code, category_code, credits, theory_credits, lab_credits, is_mandatory, prerequisite_course_code) VALUES
 (gen_random_uuid(), 'CNTT_VN_2025', 'IE005', 'DC', 1, 1, 0, TRUE, NULL),
 (gen_random_uuid(), 'CNTT_VN_2025', 'IT001', 'DC', 4, 3, 1, TRUE, NULL),
 (gen_random_uuid(), 'CNTT_VN_2025', 'MA003', 'DC', 3, 3, 0, TRUE, NULL),
@@ -428,9 +430,10 @@
 (gen_random_uuid(), 'CNTT_VN_2025', 'IE400', 'TOTTN', 4, 4, 0, TRUE, NULL),
 (gen_random_uuid(), 'CNTT_VN_2025', 'IE501', 'TOTTN', 6, 6, 0, TRUE, NULL),
 (gen_random_uuid(), 'CNTT_VN_2025', 'IE502', 'TOTTN', 10, 10, 0, TRUE, NULL),
-(gen_random_uuid(), 'CNTT_VN_2025', 'IE505', 'TOTTN', 10, 10, 0, TRUE, NULL);
+(gen_random_uuid(), 'CNTT_VN_2025', 'IE505', 'TOTTN', 10, 10, 0, TRUE, NULL),
 (gen_random_uuid(), 'CNTT_VN_2025', 'NT212', 'TOTTN', 3, 2, 1, TRUE, NULL);
 
+INSERT INTO curriculum_courses (id, curriculum_code, course_code, category_code, credits, theory_credits, lab_credits, is_mandatory, prerequisite_course_code) VALUES
 (gen_random_uuid(), 'HTTT_2025', 'EN001', 'DC', 4, 4, 0, TRUE, 'ENBT'),
 (gen_random_uuid(), 'HTTT_2025', 'EN002', 'DC', 4, 4, 0, TRUE, 'EN001'),
 (gen_random_uuid(), 'HTTT_2025', 'EN003', 'DC', 4, 4, 0, TRUE, 'EN002'),
@@ -499,9 +502,10 @@
 (gen_random_uuid(), 'HTTT_2025', 'IS353', 'TOTTN', 3, 3, 0, TRUE, NULL),
 (gen_random_uuid(), 'HTTT_2025', 'IS355', 'TOTTN', 4, 3, 1, TRUE, NULL),
 (gen_random_uuid(), 'HTTT_2025', 'IS401', 'TOTTN', 10, 10, 0, TRUE, NULL),
-(gen_random_uuid(), 'HTTT_2025', 'IS402', 'TOTTN', 3, 3, 0, TRUE, NULL);
+(gen_random_uuid(), 'HTTT_2025', 'IS402', 'TOTTN', 3, 3, 0, TRUE, NULL),
 (gen_random_uuid(), 'HTTT_2025', 'IS406', 'TOTTN', 3, 3, 0, TRUE, NULL);
 
+INSERT INTO curriculum_courses (id, curriculum_code, course_code, category_code, credits, theory_credits, lab_credits, is_mandatory, prerequisite_course_code) VALUES
 (gen_random_uuid(), 'HTTT_TT_2025', 'SS007', 'DC', 3, 3, 0, TRUE, NULL),
 (gen_random_uuid(), 'HTTT_TT_2025', 'SS008', 'DC', 2, 2, 0, TRUE, NULL),
 (gen_random_uuid(), 'HTTT_TT_2025', 'SS009', 'DC', 2, 2, 0, TRUE, NULL),
@@ -552,9 +556,10 @@
 (gen_random_uuid(), 'HTTT_TT_2025', 'IS354', 'CN', 3, 3, 0, TRUE, NULL),
 (gen_random_uuid(), 'HTTT_TT_2025', 'IS355', 'CN', 4, 3, 1, TRUE, NULL),
 (gen_random_uuid(), 'HTTT_TT_2025', 'IS357', 'CN', 3, 3, 0, TRUE, NULL),
-(gen_random_uuid(), 'HTTT_TT_2025', 'CE501', 'TOTTN', 3, 0, 3, TRUE, NULL);
+(gen_random_uuid(), 'HTTT_TT_2025', 'CE501', 'TOTTN', 3, 0, 3, TRUE, NULL),
 (gen_random_uuid(), 'HTTT_TT_2025', 'AI505', 'TC', 10, 10, 0, FALSE, NULL);
 
+INSERT INTO curriculum_courses (id, curriculum_code, course_code, category_code, credits, theory_credits, lab_credits, is_mandatory, prerequisite_course_code) VALUES
 (gen_random_uuid(), 'KHDL_2025', 'DS005', 'CSN', 1, 1, 0, TRUE, NULL),
 (gen_random_uuid(), 'KHDL_2025', 'EN001', 'DC', 4, 4, 0, TRUE, 'ENBT'),
 (gen_random_uuid(), 'KHDL_2025', 'EN002', 'DC', 4, 4, 0, TRUE, 'EN001'),
@@ -645,9 +650,10 @@
 (gen_random_uuid(), 'KHDL_2025', 'DS309', 'TOTTN', 2, 2, 0, TRUE, NULL),
 (gen_random_uuid(), 'KHDL_2025', 'DS400', 'TOTTN', 4, 4, 0, TRUE, NULL),
 (gen_random_uuid(), 'KHDL_2025', 'DS501', 'TOTTN', 6, 6, 0, TRUE, NULL),
-(gen_random_uuid(), 'KHDL_2025', 'DS502', 'TOTTN', 10, 10, 0, TRUE, NULL);
+(gen_random_uuid(), 'KHDL_2025', 'DS502', 'TOTTN', 10, 10, 0, TRUE, NULL),
 (gen_random_uuid(), 'KHDL_2025', 'DS505', 'TOTTN', 10, 10, 0, TRUE, NULL);
 
+INSERT INTO curriculum_courses (id, curriculum_code, course_code, category_code, credits, theory_credits, lab_credits, is_mandatory, prerequisite_course_code) VALUES
 (gen_random_uuid(), 'KHMT_2025', 'EN001', 'DC', 4, 4, 0, TRUE, 'ENBT'),
 (gen_random_uuid(), 'KHMT_2025', 'EN002', 'DC', 4, 4, 0, TRUE, 'EN001'),
 (gen_random_uuid(), 'KHMT_2025', 'EN003', 'DC', 4, 4, 0, TRUE, 'EN002'),
@@ -727,9 +733,10 @@
 (gen_random_uuid(), 'KHMT_2025', 'CS505', 'TOTTN', 10, 10, 0, TRUE, NULL),
 (gen_random_uuid(), 'KHMT_2025', 'CS530', 'TOTTN', 3, 3, 0, TRUE, NULL),
 (gen_random_uuid(), 'KHMT_2025', 'CS551', 'TOTTN', 2, 2, 0, TRUE, NULL),
-(gen_random_uuid(), 'KHMT_2025', 'CS553', 'TOTTN', 6, 6, 0, TRUE, NULL);
+(gen_random_uuid(), 'KHMT_2025', 'CS553', 'TOTTN', 6, 6, 0, TRUE, NULL),
 (gen_random_uuid(), 'KHMT_2025', 'CS554', 'TOTTN', 10, 10, 0, TRUE, NULL);
 
+INSERT INTO curriculum_courses (id, curriculum_code, course_code, category_code, credits, theory_credits, lab_credits, is_mandatory, prerequisite_course_code) VALUES
 (gen_random_uuid(), 'KTMT_2025', 'CE005', 'DC', 1, 1, 0, TRUE, NULL),
 (gen_random_uuid(), 'KTMT_2025', 'CE103', 'DC', 4, 3, 1, TRUE, NULL),
 (gen_random_uuid(), 'KTMT_2025', 'CE118', 'DC', 4, 3, 1, TRUE, NULL),
@@ -787,9 +794,10 @@
 (gen_random_uuid(), 'KTMT_2025', 'CE502', 'TOTTN', 2, 2, 0, TRUE, NULL),
 (gen_random_uuid(), 'KTMT_2025', 'CE505', 'TOTTN', 10, 10, 0, TRUE, NULL),
 (gen_random_uuid(), 'KTMT_2025', 'CE507', 'TOTTN', 10, 10, 0, TRUE, NULL),
-(gen_random_uuid(), 'KTMT_2025', 'CE508', 'TOTTN', 6, 0, 6, TRUE, NULL);
+(gen_random_uuid(), 'KTMT_2025', 'CE508', 'TOTTN', 6, 0, 6, TRUE, NULL),
 (gen_random_uuid(), 'KTMT_2025', 'CE510', 'TOTTN', 4, 3, 1, TRUE, NULL);
 
+INSERT INTO curriculum_courses (id, curriculum_code, course_code, category_code, credits, theory_credits, lab_credits, is_mandatory, prerequisite_course_code) VALUES
 (gen_random_uuid(), 'KTPM_2025', 'MA006', 'DC', 4, 4, 0, TRUE, NULL),
 (gen_random_uuid(), 'KTPM_2025', 'MA003', 'DC', 3, 3, 0, TRUE, NULL),
 (gen_random_uuid(), 'KTPM_2025', 'MA004', 'DC', 4, 4, 0, TRUE, NULL),
@@ -806,7 +814,7 @@
 (gen_random_uuid(), 'KTPM_2025', 'SS003', 'DC', 2, 2, 0, TRUE, NULL),
 (gen_random_uuid(), 'KTPM_2025', 'ME001', 'DC', 0, 0, 0, TRUE, NULL),
 (gen_random_uuid(), 'KTPM_2025', 'PE231', 'DC', 0, 0, 0, TRUE, NULL),
-(gen_random_uuid(), 'KTPM_2025', 'PE232', 'DC', 0, 0, 0, TRUE, NULL);
+(gen_random_uuid(), 'KTPM_2025', 'PE232', 'DC', 0, 0, 0, TRUE, NULL),
 (gen_random_uuid(), 'KTPM_2025', 'SE005', 'CSN', 1, 1, 0, TRUE, NULL),
 (gen_random_uuid(), 'KTPM_2025', 'IT002', 'CSN', 4, 3, 1, TRUE, NULL),
 (gen_random_uuid(), 'KTPM_2025', 'IT003', 'CSN', 4, 3, 1, TRUE, NULL),
@@ -816,7 +824,7 @@
 (gen_random_uuid(), 'KTPM_2025', 'IT012', 'CSN', 4, 3, 1, TRUE, NULL),
 (gen_random_uuid(), 'KTPM_2025', 'IT008', 'CSN', 4, 3, 1, TRUE, NULL),
 (gen_random_uuid(), 'KTPM_2025', 'SE100', 'CSN', 4, 3, 1, TRUE, NULL),
-(gen_random_uuid(), 'KTPM_2025', 'SE104', 'CSN', 4, 3, 1, TRUE, NULL);
+(gen_random_uuid(), 'KTPM_2025', 'SE104', 'CSN', 4, 3, 1, TRUE, NULL),
 (gen_random_uuid(), 'KTPM_2025', 'SE359', 'CSN', 3, 2, 1, FALSE, NULL),
 (gen_random_uuid(), 'KTPM_2025', 'SE102', 'CSN', 3, 2, 1, FALSE, NULL),
 (gen_random_uuid(), 'KTPM_2025', 'SE115', 'CSN', 3, 2, 1, FALSE, NULL),
@@ -828,7 +836,7 @@
 (gen_random_uuid(), 'KTPM_2025', 'SE215', 'CSN', 4, 3, 1, FALSE, NULL),
 (gen_random_uuid(), 'KTPM_2025', 'SE113', 'CSN', 4, 3, 1, FALSE, NULL),
 (gen_random_uuid(), 'KTPM_2025', 'SE358', 'CSN', 4, 3, 1, FALSE, 'SE113'),
-(gen_random_uuid(), 'KTPM_2025', 'SE117', 'CSN', 4, 3, 1, FALSE, NULL);
+(gen_random_uuid(), 'KTPM_2025', 'SE117', 'CSN', 4, 3, 1, FALSE, NULL),
 (gen_random_uuid(), 'KTPM_2025', 'SE330', 'CN', 4, 3, 1, FALSE, NULL),
 (gen_random_uuid(), 'KTPM_2025', 'SE332', 'CN', 2, 2, 0, FALSE, NULL),
 (gen_random_uuid(), 'KTPM_2025', 'SE334', 'CN', 3, 2, 1, FALSE, NULL),
@@ -862,8 +870,8 @@
 (gen_random_uuid(), 'KTPM_2025', 'SE314', 'CN', 3, 2, 1, FALSE, NULL),
 (gen_random_uuid(), 'KTPM_2025', 'SE315', 'CN', 4, 3, 1, FALSE, NULL),
 (gen_random_uuid(), 'KTPM_2025', 'SE316', 'CN', 3, 2, 1, FALSE, NULL),
-(gen_random_uuid(), 'KTPM_2025', 'SE317', 'CN', 3, 2, 1, FALSE, NULL);
-(gen_random_uuid(), 'KTPM_2025', 'SS004', 'TC', 2, 2, 0, TRUE, NULL);
+(gen_random_uuid(), 'KTPM_2025', 'SE317', 'CN', 3, 2, 1, FALSE, NULL),
+(gen_random_uuid(), 'KTPM_2025', 'SS004', 'TC', 2, 2, 0, TRUE, NULL),
 (gen_random_uuid(), 'KTPM_2025', 'SE502', 'TOTTN', 2, 2, 0, TRUE, NULL),
 (gen_random_uuid(), 'KTPM_2025', 'SE503', 'TOTTN', 2, 2, 0, TRUE, NULL),
 (gen_random_uuid(), 'KTPM_2025', 'SE505', 'TOTTN', 10, 10, 0, FALSE, NULL),
@@ -873,9 +881,10 @@
 (gen_random_uuid(), 'KTPM_2025', 'SE406', 'TOTTN', 4, 4, 0, FALSE, NULL),
 (gen_random_uuid(), 'KTPM_2025', 'SE403', 'TOTTN', 4, 4, 0, FALSE, NULL),
 (gen_random_uuid(), 'KTPM_2025', 'SE407', 'TOTTN', 4, 4, 0, FALSE, NULL),
-(gen_random_uuid(), 'KTPM_2025', 'SE408', 'TOTTN', 4, 3, 1, FALSE, NULL);
+(gen_random_uuid(), 'KTPM_2025', 'SE408', 'TOTTN', 4, 3, 1, FALSE, NULL),
 (gen_random_uuid(), 'KTPM_2025', 'SE409', 'TOTTN', 4, 3, 1, FALSE, NULL);
 
+INSERT INTO curriculum_courses (id, curriculum_code, course_code, category_code, credits, theory_credits, lab_credits, is_mandatory, prerequisite_course_code) VALUES
 (gen_random_uuid(), 'MMTT_2025', 'EN001', 'DC', 4, 4, 0, TRUE, 'ENBT'),
 (gen_random_uuid(), 'MMTT_2025', 'EN002', 'DC', 4, 4, 0, TRUE, 'EN001'),
 (gen_random_uuid(), 'MMTT_2025', 'EN003', 'DC', 4, 4, 0, TRUE, 'EN002'),
@@ -942,9 +951,10 @@
 (gen_random_uuid(), 'MMTT_2025', 'NT215', 'TOTTN', 2, 2, 0, TRUE, NULL),
 (gen_random_uuid(), 'MMTT_2025', 'NT505', 'TOTTN', 10, 10, 0, TRUE, NULL),
 (gen_random_uuid(), 'MMTT_2025', 'NT506', 'TOTTN', 10, 10, 0, TRUE, NULL),
-(gen_random_uuid(), 'MMTT_2025', 'NT508', 'TOTTN', 6, 6, 0, TRUE, NULL);
+(gen_random_uuid(), 'MMTT_2025', 'NT508', 'TOTTN', 6, 6, 0, TRUE, NULL),
 (gen_random_uuid(), 'MMTT_2025', 'NT539', 'TOTTN', 4, 3, 1, TRUE, NULL);
 
+INSERT INTO curriculum_courses (id, curriculum_code, course_code, category_code, credits, theory_credits, lab_credits, is_mandatory, prerequisite_course_code) VALUES
 (gen_random_uuid(), 'TKVM_2025', 'CE005', 'DC', 1, 1, 0, TRUE, NULL),
 (gen_random_uuid(), 'TKVM_2025', 'CE006', 'DC', 1, 1, 0, TRUE, NULL),
 (gen_random_uuid(), 'TKVM_2025', 'CE103', 'DC', 4, 3, 1, TRUE, NULL),
@@ -1000,9 +1010,10 @@
 (gen_random_uuid(), 'TKVM_2025', 'CE434', 'TOTTN', 4, 3, 1, TRUE, NULL),
 (gen_random_uuid(), 'TKVM_2025', 'CE505', 'TOTTN', 10, 10, 0, TRUE, NULL),
 (gen_random_uuid(), 'TKVM_2025', 'CE507', 'TOTTN', 10, 10, 0, TRUE, NULL),
-(gen_random_uuid(), 'TKVM_2025', 'CE508', 'TOTTN', 6, 0, 6, TRUE, NULL);
+(gen_random_uuid(), 'TKVM_2025', 'CE508', 'TOTTN', 6, 0, 6, TRUE, NULL),
 (gen_random_uuid(), 'TKVM_2025', 'CE512', 'TOTTN', 4, 3, 1, TRUE, NULL);
 
+INSERT INTO curriculum_courses (id, curriculum_code, course_code, category_code, credits, theory_credits, lab_credits, is_mandatory, prerequisite_course_code) VALUES
 (gen_random_uuid(), 'TMDT_2025', 'EC001', 'DC', 4, 4, 0, TRUE, NULL),
 (gen_random_uuid(), 'TMDT_2025', 'EC005', 'DC', 1, 1, 0, TRUE, NULL),
 (gen_random_uuid(), 'TMDT_2025', 'EN001', 'DC', 4, 4, 0, TRUE, 'ENBT'),
@@ -1053,9 +1064,10 @@
 (gen_random_uuid(), 'TMDT_2025', 'EC222', 'TOTTN', 2, 2, 0, TRUE, NULL),
 (gen_random_uuid(), 'TMDT_2025', 'EC337', 'TOTTN', 3, 3, 0, TRUE, NULL),
 (gen_random_uuid(), 'TMDT_2025', 'EC401', 'TOTTN', 10, 10, 0, TRUE, NULL),
-(gen_random_uuid(), 'TMDT_2025', 'EC404', 'TOTTN', 6, 6, 0, TRUE, NULL);
+(gen_random_uuid(), 'TMDT_2025', 'EC404', 'TOTTN', 6, 6, 0, TRUE, NULL),
 (gen_random_uuid(), 'TMDT_2025', 'EC405', 'TOTTN', 10, 10, 0, TRUE, NULL);
 
+INSERT INTO curriculum_courses (id, curriculum_code, course_code, category_code, credits, theory_credits, lab_credits, is_mandatory, prerequisite_course_code) VALUES
 (gen_random_uuid(), 'TMDT_SN_2025', 'EC001', 'DC', 4, 4, 0, TRUE, NULL),
 (gen_random_uuid(), 'TMDT_SN_2025', 'EC005', 'DC', 1, 1, 0, TRUE, NULL),
 (gen_random_uuid(), 'TMDT_SN_2025', 'EN001', 'DC', 4, 4, 0, TRUE, 'ENBT'),
@@ -1106,9 +1118,10 @@
 (gen_random_uuid(), 'TMDT_SN_2025', 'EC338', 'TC', 3, 3, 0, FALSE, NULL),
 (gen_random_uuid(), 'TMDT_SN_2025', 'EC401', 'TC', 10, 10, 0, FALSE, NULL),
 (gen_random_uuid(), 'TMDT_SN_2025', 'EC222', 'TOTTN', 2, 2, 0, TRUE, NULL),
-(gen_random_uuid(), 'TMDT_SN_2025', 'EC404', 'TOTTN', 6, 6, 0, TRUE, NULL);
+(gen_random_uuid(), 'TMDT_SN_2025', 'EC404', 'TOTTN', 6, 6, 0, TRUE, NULL),
 (gen_random_uuid(), 'TMDT_SN_2025', 'EC405', 'TOTTN', 10, 10, 0, TRUE, NULL);
 
+INSERT INTO curriculum_courses (id, curriculum_code, course_code, category_code, credits, theory_credits, lab_credits, is_mandatory, prerequisite_course_code) VALUES
 (gen_random_uuid(), 'TTNT_2025', 'EN001', 'DC', 4, 4, 0, TRUE, 'ENBT'),
 (gen_random_uuid(), 'TTNT_2025', 'EN002', 'DC', 4, 4, 0, TRUE, 'EN001'),
 (gen_random_uuid(), 'TTNT_2025', 'EN003', 'DC', 4, 4, 0, TRUE, 'EN002'),
@@ -1195,9 +1208,10 @@
 (gen_random_uuid(), 'TTNT_2025', 'AI503', 'TOTTN', 6, 6, 0, TRUE, NULL),
 (gen_random_uuid(), 'TTNT_2025', 'AI504', 'TOTTN', 10, 10, 0, TRUE, NULL),
 (gen_random_uuid(), 'TTNT_2025', 'AI505', 'TOTTN', 10, 10, 0, TRUE, NULL),
-(gen_random_uuid(), 'TTNT_2025', 'CS409', 'TOTTN', 4, 3, 1, TRUE, NULL);
+(gen_random_uuid(), 'TTNT_2025', 'CS409', 'TOTTN', 4, 3, 1, TRUE, NULL),
 (gen_random_uuid(), 'TTNT_2025', 'CS551', 'TOTTN', 2, 2, 0, TRUE, NULL);
 
+INSERT INTO curriculum_courses (id, curriculum_code, course_code, category_code, credits, theory_credits, lab_credits, is_mandatory, prerequisite_course_code) VALUES
 (gen_random_uuid(), 'KTHHTMT_NC_2025', 'CE005', 'DC', 1, 1, 0, TRUE, NULL),
 (gen_random_uuid(), 'KTHHTMT_NC_2025', 'IT001', 'DC', 4, 3, 1, TRUE, NULL),
 (gen_random_uuid(), 'KTHHTMT_NC_2025', 'MA003', 'DC', 3, 3, 0, TRUE, NULL),
@@ -1213,19 +1227,9 @@
 (gen_random_uuid(), 'KTHHTMT_NC_2025', 'CE119', 'CSN', 1, 0, 1, TRUE, NULL),
 (gen_random_uuid(), 'KTHHTMT_NC_2025', 'CE121', 'CSN', 4, 3, 1, TRUE, NULL),
 (gen_random_uuid(), 'KTHHTMT_NC_2025', 'CE124', 'CSN', 4, 3, 1, TRUE, NULL),
-(gen_random_uuid(), 'KTHHTMT_NC_2025', 'COMP3500', 'TC', 0, 0, 0, FALSE, NULL),
-(gen_random_uuid(), 'KTHHTMT_NC_2025', 'ELEC2430', 'TC', 0, 0, 0, FALSE, NULL),
-(gen_random_uuid(), 'KTHHTMT_NC_2025', 'ELEC3240', 'TC', 0, 0, 0, FALSE, NULL),
-(gen_random_uuid(), 'KTHHTMT_NC_2025', 'ELEC3500', 'TC', 0, 0, 0, FALSE, NULL),
-(gen_random_uuid(), 'KTHHTMT_NC_2025', 'ELEC3540', 'TC', 0, 0, 0, FALSE, NULL),
-(gen_random_uuid(), 'KTHHTMT_NC_2025', 'ELEC3730', 'TC', 0, 0, 0, FALSE, NULL),
-(gen_random_uuid(), 'KTHHTMT_NC_2025', 'ENGG3000', 'TC', 0, 0, 0, FALSE, NULL),
-(gen_random_uuid(), 'KTHHTMT_NC_2025', 'ENGG3500', 'TC', 0, 0, 0, FALSE, NULL),
 (gen_random_uuid(), 'KTHHTMT_NC_2025', 'IT004', 'TC', 4, 3, 1, FALSE, NULL),
 (gen_random_uuid(), 'KTHHTMT_NC_2025', 'IT007', 'TC', 4, 3, 1, FALSE, NULL),
 (gen_random_uuid(), 'KTHHTMT_NC_2025', 'MA004', 'TC', 4, 4, 0, FALSE, NULL),
-(gen_random_uuid(), 'KTHHTMT_NC_2025', 'PHYS1220', 'TC', 0, 0, 0, FALSE, NULL);
-(gen_random_uuid(), 'KTHHTMT_NC_2025', 'SENG2250', 'TC', 0, 0, 0, FALSE, NULL);
 
 INSERT INTO curriculum_courses (id, curriculum_code, course_code, category_code, credits, theory_credits, lab_credits, is_mandatory, prerequisite_course_code) VALUES
 (gen_random_uuid(), 'TTDPT_2025', 'SS003', 'DC', 2, 2, 0, TRUE, NULL),
@@ -1233,21 +1237,21 @@ INSERT INTO curriculum_courses (id, curriculum_code, course_code, category_code,
 (gen_random_uuid(), 'TTDPT_2025', 'SS007', 'DC', 3, 3, 0, TRUE, NULL),
 (gen_random_uuid(), 'TTDPT_2025', 'SS008', 'DC', 2, 2, 0, TRUE, NULL),
 (gen_random_uuid(), 'TTDPT_2025', 'SS009', 'DC', 2, 2, 0, TRUE, NULL),
-(gen_random_uuid(), 'TTDPT_2025', 'SS010', 'DC', 2, 2, 0, TRUE, NULL);
+(gen_random_uuid(), 'TTDPT_2025', 'SS010', 'DC', 2, 2, 0, TRUE, NULL),
 (gen_random_uuid(), 'TTDPT_2025', 'ENG01', 'DC', 4, 4, 0, TRUE, NULL),
 (gen_random_uuid(), 'TTDPT_2025', 'ENG02', 'DC', 4, 4, 0, TRUE, 'ENG01'),
-(gen_random_uuid(), 'TTDPT_2025', 'ENG03', 'DC', 4, 4, 0, TRUE, 'ENG02');
+(gen_random_uuid(), 'TTDPT_2025', 'ENG03', 'DC', 4, 4, 0, TRUE, 'ENG02'),
 (gen_random_uuid(), 'TTDPT_2025', 'MA003', 'DC', 3, 3, 0, TRUE, NULL),
 (gen_random_uuid(), 'TTDPT_2025', 'MA005', 'DC', 3, 3, 0, TRUE, NULL),
-(gen_random_uuid(), 'TTDPT_2025', 'IT001', 'DC', 4, 3, 1, TRUE, NULL);
+(gen_random_uuid(), 'TTDPT_2025', 'IT001', 'DC', 4, 3, 1, TRUE, NULL),
 (gen_random_uuid(), 'TTDPT_2025', 'MM005', 'DC', 2, 2, 0, TRUE, NULL),
 (gen_random_uuid(), 'TTDPT_2025', 'MM006', 'DC', 2, 2, 0, TRUE, NULL),
 (gen_random_uuid(), 'TTDPT_2025', 'MM007', 'DC', 2, 2, 0, TRUE, NULL),
 (gen_random_uuid(), 'TTDPT_2025', 'MM008', 'DC', 2, 2, 0, TRUE, NULL),
-(gen_random_uuid(), 'TTDPT_2025', 'SS004', 'DC', 2, 2, 0, TRUE, NULL);
+(gen_random_uuid(), 'TTDPT_2025', 'SS004', 'DC', 2, 2, 0, TRUE, NULL),
 (gen_random_uuid(), 'TTDPT_2025', 'PE231', 'DC', 0, 0, 0, TRUE, NULL),
 (gen_random_uuid(), 'TTDPT_2025', 'PE232', 'DC', 0, 0, 0, TRUE, NULL),
-(gen_random_uuid(), 'TTDPT_2025', 'ME001', 'DC', 0, 0, 0, TRUE, NULL);
+(gen_random_uuid(), 'TTDPT_2025', 'ME001', 'DC', 0, 0, 0, TRUE, NULL),
 (gen_random_uuid(), 'TTDPT_2025', 'MM101', 'CSN', 1, 1, 0, TRUE, NULL),
 (gen_random_uuid(), 'TTDPT_2025', 'IT004', 'CSN', 4, 3, 1, TRUE, NULL),
 (gen_random_uuid(), 'TTDPT_2025', 'MM102', 'CSN', 3, 3, 0, TRUE, NULL),
@@ -1257,9 +1261,9 @@ INSERT INTO curriculum_courses (id, curriculum_code, course_code, category_code,
 (gen_random_uuid(), 'TTDPT_2025', 'MM105', 'CSN', 3, 2, 1, TRUE, NULL),
 (gen_random_uuid(), 'TTDPT_2025', 'MM106', 'CSN', 3, 2, 1, TRUE, 'IT001'),
 (gen_random_uuid(), 'TTDPT_2025', 'MM107', 'CSN', 3, 2, 1, TRUE, 'IT001'),
-(gen_random_uuid(), 'TTDPT_2025', 'MM108', 'CSN', 3, 2, 1, TRUE, NULL);
+(gen_random_uuid(), 'TTDPT_2025', 'MM108', 'CSN', 3, 2, 1, TRUE, NULL),
 (gen_random_uuid(), 'TTDPT_2025', 'IT002', 'CSN', 4, 3, 1, FALSE, 'IT001'),
-(gen_random_uuid(), 'TTDPT_2025', 'MM109', 'CSN', 4, 3, 1, FALSE, NULL);
+(gen_random_uuid(), 'TTDPT_2025', 'MM109', 'CSN', 4, 3, 1, FALSE, NULL),
 (gen_random_uuid(), 'TTDPT_2025', 'MM201', 'CN', 4, 3, 1, FALSE, NULL),
 (gen_random_uuid(), 'TTDPT_2025', 'MM202', 'CN', 4, 3, 1, FALSE, 'MM107'),
 (gen_random_uuid(), 'TTDPT_2025', 'MM203', 'CN', 4, 3, 1, FALSE, 'MM107'),
@@ -1268,7 +1272,7 @@ INSERT INTO curriculum_courses (id, curriculum_code, course_code, category_code,
 (gen_random_uuid(), 'TTDPT_2025', 'MM206', 'CN', 4, 3, 1, FALSE, 'MM107'),
 (gen_random_uuid(), 'TTDPT_2025', 'MM207', 'CN', 4, 3, 1, FALSE, 'MM107'),
 (gen_random_uuid(), 'TTDPT_2025', 'MM221', 'CN', 3, 3, 0, FALSE, NULL),
-(gen_random_uuid(), 'TTDPT_2025', 'MM222', 'CN', 4, 3, 1, FALSE, NULL);
+(gen_random_uuid(), 'TTDPT_2025', 'MM222', 'CN', 4, 3, 1, FALSE, NULL),
 (gen_random_uuid(), 'TTDPT_2025', 'IE106', 'CN', 4, 3, 1, FALSE, NULL),
 (gen_random_uuid(), 'TTDPT_2025', 'SE347', 'CN', 4, 3, 1, FALSE, NULL),
 (gen_random_uuid(), 'TTDPT_2025', 'MM208', 'CN', 4, 3, 1, FALSE, NULL),
@@ -1277,7 +1281,7 @@ INSERT INTO curriculum_courses (id, curriculum_code, course_code, category_code,
 (gen_random_uuid(), 'TTDPT_2025', 'MM211', 'CN', 4, 3, 1, FALSE, NULL),
 (gen_random_uuid(), 'TTDPT_2025', 'MM212', 'CN', 3, 2, 1, FALSE, NULL),
 (gen_random_uuid(), 'TTDPT_2025', 'MM213', 'CN', 4, 2, 2, FALSE, 'MM105'),
-(gen_random_uuid(), 'TTDPT_2025', 'SE102', 'CN', 3, 2, 1, FALSE, NULL);
+(gen_random_uuid(), 'TTDPT_2025', 'SE102', 'CN', 3, 2, 1, FALSE, NULL),
 (gen_random_uuid(), 'TTDPT_2025', 'MM003', 'CN', 4, 3, 1, FALSE, NULL),
 (gen_random_uuid(), 'TTDPT_2025', 'MM214', 'CN', 3, 3, 0, FALSE, NULL),
 (gen_random_uuid(), 'TTDPT_2025', 'MM215', 'CN', 3, 3, 0, FALSE, NULL),
@@ -1285,19 +1289,19 @@ INSERT INTO curriculum_courses (id, curriculum_code, course_code, category_code,
 (gen_random_uuid(), 'TTDPT_2025', 'MM217', 'CN', 3, 3, 0, FALSE, 'MM108'),
 (gen_random_uuid(), 'TTDPT_2025', 'MM218', 'CN', 3, 3, 0, FALSE, 'MM108'),
 (gen_random_uuid(), 'TTDPT_2025', 'MM219', 'CN', 4, 3, 1, FALSE, 'MM005'),
-(gen_random_uuid(), 'TTDPT_2025', 'MM220', 'CN', 4, 3, 1, FALSE, 'MM005');
+(gen_random_uuid(), 'TTDPT_2025', 'MM220', 'CN', 4, 3, 1, FALSE, 'MM005'),
 (gen_random_uuid(), 'TTDPT_2025', 'MM301', 'TC', 2, 0, 2, FALSE, NULL),
 (gen_random_uuid(), 'TTDPT_2025', 'MM302', 'TC', 2, 0, 2, FALSE, NULL),
 (gen_random_uuid(), 'TTDPT_2025', 'INI01', 'TC', 2, 0, 2, FALSE, NULL),
-(gen_random_uuid(), 'TTDPT_2025', 'MM304', 'TC', 2, 2, 0, FALSE, NULL);
+(gen_random_uuid(), 'TTDPT_2025', 'MM304', 'TC', 2, 2, 0, FALSE, NULL),
 (gen_random_uuid(), 'TTDPT_2025', 'MM205', 'TOTTN', 4, 3, 1, FALSE, 'MM107'),
 (gen_random_uuid(), 'TTDPT_2025', 'MM207', 'TOTTN', 4, 3, 1, FALSE, 'MM107'),
 (gen_random_uuid(), 'TTDPT_2025', 'MM210', 'TOTTN', 4, 3, 1, FALSE, 'MM105'),
 (gen_random_uuid(), 'TTDPT_2025', 'MM213', 'TOTTN', 4, 3, 1, FALSE, 'MM105'),
 (gen_random_uuid(), 'TTDPT_2025', 'MM219', 'TOTTN', 4, 3, 1, FALSE, 'MM005'),
-(gen_random_uuid(), 'TTDPT_2025', 'MM220', 'TOTTN', 4, 3, 1, FALSE, 'MM005');
+(gen_random_uuid(), 'TTDPT_2025', 'MM220', 'TOTTN', 4, 3, 1, FALSE, 'MM005'),
 (gen_random_uuid(), 'TTDPT_2025', 'MM504', 'TOTTN', 6, 0, 6, FALSE, NULL),
-(gen_random_uuid(), 'TTDPT_2025', 'MM506', 'TOTTN', 10, 0, 10, FALSE, NULL);
+(gen_random_uuid(), 'TTDPT_2025', 'MM506', 'TOTTN', 10, 0, 10, FALSE, NULL),
 (gen_random_uuid(), 'TTDPT_2025', 'MM505', 'TOTTN', 10, 0, 10, FALSE, NULL);
 
 
