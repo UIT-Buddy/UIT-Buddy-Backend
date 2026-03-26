@@ -7,6 +7,7 @@ import com.uit.buddy.dto.response.user.UserResponse;
 import com.uit.buddy.dto.response.user.UserSettingResponse;
 import com.uit.buddy.entity.user.Student;
 import com.uit.buddy.entity.user.UserSetting;
+import com.uit.buddy.enums.FriendStatus;
 import com.uit.buddy.exception.user.UserErrorCode;
 import com.uit.buddy.exception.user.UserException;
 import com.uit.buddy.mapper.user.UserMapper;
@@ -15,6 +16,7 @@ import com.uit.buddy.repository.user.StudentRepository;
 import com.uit.buddy.repository.user.UserSettingRepository;
 import com.uit.buddy.service.cloudinary.CloudinaryService;
 import com.uit.buddy.service.cometchat.CometChatService;
+import com.uit.buddy.service.social.FriendService;
 import com.uit.buddy.service.user.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -35,6 +37,7 @@ public class UserServiceImpl implements UserService {
     private final CometChatService cometChatService;
     private final UserSettingRepository userSettingRepository;
     private final UserSettingMapper userSettingMapper;
+    private final FriendService friendService;
 
     @Override
     @Transactional(readOnly = true)
@@ -44,7 +47,21 @@ public class UserServiceImpl implements UserService {
         Student student = studentRepository.findById(mssv)
                 .orElseThrow(() -> new UserException(UserErrorCode.STUDENT_NOT_FOUND));
 
-        return userMapper.toUserResponse(student);
+        return userMapper.toUserResponse(student, FriendStatus.NONE);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public UserResponse getOtherUserProfile(String targetMssv, String currentUserMssv) {
+        log.info("[User Service] Fetching profile for target MSSV: {} by current user: {}", targetMssv,
+                currentUserMssv);
+
+        Student student = studentRepository.findById(targetMssv)
+                .orElseThrow(() -> new UserException(UserErrorCode.STUDENT_NOT_FOUND));
+
+        FriendStatus friendStatus = friendService.getFriendStatus(currentUserMssv, targetMssv);
+
+        return userMapper.toUserResponse(student, friendStatus);
     }
 
     @Override
@@ -63,7 +80,7 @@ public class UserServiceImpl implements UserService {
         Student updatedStudent = studentRepository.save(student);
         log.info("[User Service] Successfully updated profile for MSSV: {}", mssv);
 
-        return userMapper.toUserResponse(updatedStudent);
+        return userMapper.toUserResponse(updatedStudent, FriendStatus.NONE);
     }
 
     @Override
@@ -90,10 +107,14 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public Page<FoundUserResponse> searchStudentByKeyword(String keyword, Pageable pageable) {
+    public Page<FoundUserResponse> searchStudentByKeyword(String keyword, String currentUserMssv, Pageable pageable) {
         Page<Student> page = studentRepository.searchStudentByKeyword(keyword, pageable);
         log.info("[UserService]: fetching user with keyword and filter");
-        return page.map(userMapper::toFoundUserResponse);
+
+        return page.map(student -> {
+            FriendStatus friendStatus = friendService.getFriendStatus(currentUserMssv, student.getMssv());
+            return userMapper.toFoundUserResponse(student, friendStatus);
+        });
     }
 
     @Override

@@ -14,6 +14,9 @@ public final class CometChatApiConstants {
     public static final String AUTH_TOKEN_ENDPOINT = "/users/%s/auth_tokens";
     public static final String UPDATE_USER_ENDPOINT = "/users/%s";
     public static final String REGISTER_PUSH_TOKEN_ENDPOINT = "/notifications/push/v1/tokens";
+    public static final String SEND_MESSAGE_ENDPOINT = "/messages";
+    public static final String GET_USER_GROUPS_ENDPOINT = "/users/%s/groups";
+    public static final String GET_CONVERSATIONS_ENDPOINT = "/users/%s/conversations";
 
     // Header Keys
     public static final String API_KEY_HEADER = "apiKey";

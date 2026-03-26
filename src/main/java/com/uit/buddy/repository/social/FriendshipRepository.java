@@ -26,4 +26,13 @@ public interface FriendshipRepository extends JpaRepository<Friendship, UUID> {
             + "OR (f.createdAt = :cursorTime AND f.id < :cursorId)) " + "ORDER BY f.createdAt DESC, f.id DESC")
     List<Friendship> findFriendsWithCursor(@Param("mssv") String mssv, @Param("cursorTime") LocalDateTime cursorTime,
             @Param("cursorId") UUID cursorId, @Param("limit") int limit);
+
+    @Query("""
+            SELECT f FROM Friendship f
+            LEFT JOIN FETCH f.user1
+            LEFT JOIN FETCH f.user2
+            WHERE (f.user1Mssv = :mssv OR f.user2Mssv = :mssv)
+            ORDER BY f.updatedAt DESC
+            """)
+    List<Friendship> findFriendsOrderByLastInteraction(@Param("mssv") String mssv);
 }
