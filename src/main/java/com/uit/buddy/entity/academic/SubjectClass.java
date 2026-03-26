@@ -1,6 +1,7 @@
 package com.uit.buddy.entity.academic;
 
 import com.uit.buddy.entity.AbstractBaseEntity;
+import com.uit.buddy.constant.IcsConstants;
 import jakarta.persistence.*;
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -26,7 +27,7 @@ public class SubjectClass extends AbstractBaseEntity {
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "course_code", referencedColumnName = "course_code", foreignKey = @ForeignKey(name = "fk_class_course"))
-    private Course course; //
+    private Course course;
 
     @Column(name = "semester_code", length = 20, insertable = false, updatable = false)
     private String semesterCode;
@@ -68,5 +69,5 @@ public class SubjectClass extends AbstractBaseEntity {
 
     @Column(name = "class_type", length = 20)
     @Builder.Default
-    private String classType = "WEEKLY";
+    private String classType = IcsConstants.WEEKLY;
 }
