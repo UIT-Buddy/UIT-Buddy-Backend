@@ -39,6 +39,7 @@ public class IcsParser {
         private Integer endLesson;
         private String frequency;
         private Integer interval;
+        private Boolean isBlendedLearning;
     }
 
     @Data
@@ -131,6 +132,8 @@ public class IcsParser {
                 .replaceAll("\\s+", " ").trim();
         final String normalizedDesc = cleanDesc.replaceAll("\\s+,", ",").replaceAll(",\\s*,", ",")
                 .replaceAll("\\s*--", " --").replaceAll("\\s+", " ").trim();
+
+        event.setIsBlendedLearning(normalizedDesc.toUpperCase().contains("BLENDED LEARNING"));
 
         Matcher courseNameMatcher = Pattern.compile("\\(([^)]+)\\)").matcher(normalizedDesc);
         if (courseNameMatcher.find()) {
