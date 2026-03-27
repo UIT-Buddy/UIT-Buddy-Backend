@@ -13,7 +13,7 @@ public interface FriendService {
 
     boolean toggleFriendRequest(String senderMssv, SendFriendRequestRequest request);
 
-    void respondToFriendRequest(String receiverMssv, UUID requestId, RespondFriendRequestRequest request);
+    void respondToFriendRequest(String senderMssv, String receiverMssv, RespondFriendRequestRequest request);
 
     void unfriend(String mssv, String friendMssv);
 
