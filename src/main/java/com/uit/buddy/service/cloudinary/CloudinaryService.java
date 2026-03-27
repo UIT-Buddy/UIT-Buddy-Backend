@@ -26,7 +26,5 @@ public interface CloudinaryService {
 
     List<PostMedia> uploadMultiMedia(List<MultipartFile> images, List<MultipartFile> videos);
 
-    String uploadDocumentFile(MultipartFile file, String publicId);
-
     List<DocumentUploadResult> uploadMultipleDocuments(List<MultipartFile> files);
 }

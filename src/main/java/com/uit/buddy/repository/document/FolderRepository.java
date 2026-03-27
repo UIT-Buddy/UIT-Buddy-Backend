@@ -16,4 +16,6 @@ public interface FolderRepository extends JpaRepository<Folder, UUID> {
     Optional<Folder> findFirstByMssvAndParentIsNullAndFolderName(String mssv, String folderName);
 
     Optional<Folder> findByIdAndMssv(UUID id, String mssv);
+
+    boolean existsByMssvAndParentIdAndFolderNameIgnoreCase(String mssv, UUID parentId, String folderName);
 }

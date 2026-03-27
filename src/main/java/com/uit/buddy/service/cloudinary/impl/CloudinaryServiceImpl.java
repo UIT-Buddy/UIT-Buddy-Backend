@@ -59,27 +59,6 @@ public class CloudinaryServiceImpl implements CloudinaryService {
     }
 
     @Override
-    public String uploadDocumentFile(MultipartFile file, String publicId) {
-        if (file == null || file.isEmpty()) {
-            throw new UserException(UserErrorCode.FILE_EMPTY);
-        }
-
-        try {
-            Map<String, Object> params = new HashMap<>();
-            params.put(CloudinaryConstants.PARAM_PUBLIC_ID, publicId);
-            params.put(CloudinaryConstants.PARAM_FOLDER, CloudinaryConstants.FOLDER_DOCUMENT_FILES);
-            params.put(CloudinaryConstants.PARAM_OVERWRITE, true);
-            params.put(CloudinaryConstants.PARAM_RESOURCE_TYPE, CloudinaryConstants.RESOURCE_TYPE_RAW);
-
-            Map<?, ?> result = cloudinary.uploader().upload(extractBytes(file), params);
-            return result.get(CloudinaryConstants.RESPONSE_SECURE_URL).toString();
-        } catch (Exception e) {
-            log.error("[Cloudinary] Upload document failed for {}: {}", publicId, e.getMessage());
-            throw new SystemException(SystemErrorCode.EXTERNAL_SERVICE_ERROR);
-        }
-    }
-
-    @Override
     public PostMedia uploadPostImage(MultipartFile file, String postId) {
         validateFile(file, FileType.IMAGE);
         Transformation<?> postTransform = new Transformation<>().width(properties.getPostImageWidth())

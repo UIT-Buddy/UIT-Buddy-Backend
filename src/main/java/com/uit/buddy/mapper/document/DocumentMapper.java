@@ -1,10 +1,12 @@
 package com.uit.buddy.mapper.document;
 
-import org.mapstruct.Mapping;
 import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
 import org.mapstruct.ReportingPolicy;
 
+import com.uit.buddy.constant.CloudinaryConstants;
 import com.uit.buddy.dto.response.document.DocumentFileResponse;
+import com.uit.buddy.dto.response.document.DocumentSearchResult;
 import com.uit.buddy.dto.response.document.ViewFolderDetailResponse.FileResponse;
 import com.uit.buddy.dto.response.document.ViewFolderDetailResponse.FolderResponse;
 import com.uit.buddy.entity.document.Document;
@@ -37,6 +39,13 @@ public interface DocumentMapper {
     @Mapping(target = "folderItemCount", expression = "java(folder.getChildren().size() + folder.getFiles().size())")
     FolderResponse toFolderResponse(Folder folder);
 
+    @Mapping(target = "fileName", source = "fileName")
+    @Mapping(target = "fileLocation", expression = "java(buildFileLocation(document))")
+    @Mapping(target = "parentFolderId", source = "folderId")
+    @Mapping(target = "documentId", source = "id")
+    @Mapping(target = "url", source = "fileUrl")
+    DocumentSearchResult toSearchResult(Document document);
+
     default float toDisplaySizeValue(Float sizeInMb) {
         float safeSizeInMb = sizeInMb == null ? 0f : sizeInMb;
         if (safeSizeInMb < 1f) {
@@ -56,5 +65,20 @@ public interface DocumentMapper {
 
     default float roundOneDecimal(float value) {
         return Math.round(value * 10f) / 10f;
+    }
+
+    default String buildFileLocation(Document document) {
+        Folder folder = document.getFolder();
+        if (folder == null) {
+            return CloudinaryConstants.ROOT_FOLDER_NAME;
+        }
+        return buildFolderPath(folder);
+    }
+
+    default String buildFolderPath(Folder folder) {
+        if (folder.getParent() == null) {
+            return folder.getFolderName();
+        }
+        return buildFolderPath(folder.getParent()) + "/" + folder.getFolderName();
     }
 }
