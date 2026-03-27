@@ -1,16 +1,5 @@
 package com.uit.buddy.service.cloudinary.impl;
 
-import com.cloudinary.Cloudinary;
-import com.cloudinary.Transformation;
-import com.uit.buddy.config.CloudinaryProperties;
-import com.uit.buddy.constant.CloudinaryConstants;
-import com.uit.buddy.entity.social.PostMedia;
-import com.uit.buddy.enums.FileType;
-import com.uit.buddy.exception.system.SystemErrorCode;
-import com.uit.buddy.exception.system.SystemException;
-import com.uit.buddy.exception.user.UserErrorCode;
-import com.uit.buddy.exception.user.UserException;
-import com.uit.buddy.service.cloudinary.CloudinaryService;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -21,10 +10,25 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
-import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+
+import com.cloudinary.Cloudinary;
+import com.cloudinary.Transformation;
+import com.uit.buddy.config.CloudinaryProperties;
+import com.uit.buddy.constant.CloudinaryConstants;
+import com.uit.buddy.dto.response.document.DocumentUploadResult;
+import com.uit.buddy.entity.social.PostMedia;
+import com.uit.buddy.enums.FileType;
+import com.uit.buddy.exception.system.SystemErrorCode;
+import com.uit.buddy.exception.system.SystemException;
+import com.uit.buddy.exception.user.UserErrorCode;
+import com.uit.buddy.exception.user.UserException;
+import com.uit.buddy.service.cloudinary.CloudinaryService;
+
+import lombok.extern.slf4j.Slf4j;
 
 @Service
 @Slf4j
@@ -52,6 +56,27 @@ public class CloudinaryServiceImpl implements CloudinaryService {
         validateFile(file, FileType.IMAGE);
         return executeAvatarUpload(extractBytes(file), mssv, CloudinaryConstants.FOLDER_AVATARS,
                 CloudinaryConstants.RESOURCE_TYPE_IMAGE, getAvatarTransform());
+    }
+
+    @Override
+    public String uploadDocumentFile(MultipartFile file, String publicId) {
+        if (file == null || file.isEmpty()) {
+            throw new UserException(UserErrorCode.FILE_EMPTY);
+        }
+
+        try {
+            Map<String, Object> params = new HashMap<>();
+            params.put(CloudinaryConstants.PARAM_PUBLIC_ID, publicId);
+            params.put(CloudinaryConstants.PARAM_FOLDER, CloudinaryConstants.FOLDER_DOCUMENT_FILES);
+            params.put(CloudinaryConstants.PARAM_OVERWRITE, true);
+            params.put(CloudinaryConstants.PARAM_RESOURCE_TYPE, CloudinaryConstants.RESOURCE_TYPE_RAW);
+
+            Map<?, ?> result = cloudinary.uploader().upload(extractBytes(file), params);
+            return result.get(CloudinaryConstants.RESPONSE_SECURE_URL).toString();
+        } catch (Exception e) {
+            log.error("[Cloudinary] Upload document failed for {}: {}", publicId, e.getMessage());
+            throw new SystemException(SystemErrorCode.EXTERNAL_SERVICE_ERROR);
+        }
     }
 
     @Override
@@ -230,7 +255,7 @@ public class CloudinaryServiceImpl implements CloudinaryService {
             return result.get(CloudinaryConstants.RESPONSE_SECURE_URL).toString();
         } catch (Exception e) {
             log.error("[Cloudinary] Upload avatar failed for {}: {}", publicId, e.getMessage());
-            throw new SystemException(SystemErrorCode.EXTERNAL_SERVICE_ERROR, "Cloud storage error");
+            throw new SystemException(SystemErrorCode.EXTERNAL_SERVICE_ERROR);
         }
     }
 
@@ -242,5 +267,46 @@ public class CloudinaryServiceImpl implements CloudinaryService {
         int lastDotIndex = url.lastIndexOf(".");
 
         return url.substring(folderIndex, lastDotIndex);
+    }
+
+    @Override
+    public List<DocumentUploadResult> uploadMultipleDocuments(List<MultipartFile> files) {
+        if (files == null || files.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        List<CompletableFuture<DocumentUploadResult>> futures = new ArrayList<>();
+
+        for (MultipartFile file : files) {
+            String fileId = UUID.randomUUID().toString();
+            String publicId = CloudinaryConstants.DOCUMENT_PUBLIC_ID_PREFIX
+                    + CloudinaryConstants.PATH_SEPARATOR + fileId;
+            futures.add(CompletableFuture.supplyAsync(() -> uploadDocument(file, publicId), executor));
+        }
+
+        return futures.stream().map(CompletableFuture::join).toList();
+    }
+
+    private DocumentUploadResult uploadDocument(MultipartFile file, String publicId) {
+        if (file == null || file.isEmpty()) {
+            throw new UserException(UserErrorCode.FILE_EMPTY);
+        }
+
+        try {
+            Map<String, Object> params = new HashMap<>();
+            params.put(CloudinaryConstants.PARAM_PUBLIC_ID, publicId);
+            params.put(CloudinaryConstants.PARAM_FOLDER, CloudinaryConstants.FOLDER_DOCUMENT_FILES);
+            params.put(CloudinaryConstants.PARAM_OVERWRITE, true);
+            params.put(CloudinaryConstants.PARAM_RESOURCE_TYPE, CloudinaryConstants.RESOURCE_TYPE_RAW);
+
+            Map<?, ?> result = cloudinary.uploader().upload(extractBytes(file), params);
+            String fileUrl = result.get(CloudinaryConstants.RESPONSE_SECURE_URL).toString();
+            float fileSize = (float) file.getSize() / (1024 * 1024); // Convert bytes to MB
+            FileType fileType = CloudinaryConstants.extractFileType(file.getOriginalFilename());
+            return new DocumentUploadResult(fileUrl, fileSize, fileType);
+        } catch (Exception e) {
+            log.error("[Cloudinary] Upload document failed for {}: {}", publicId, e.getMessage());
+            throw new SystemException(SystemErrorCode.EXTERNAL_SERVICE_ERROR);
+        }
     }
 }
