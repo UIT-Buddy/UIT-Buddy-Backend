@@ -1,5 +1,6 @@
 package com.uit.buddy.service.cloudinary;
 
+import com.uit.buddy.dto.response.document.DocumentUploadResult;
 import com.uit.buddy.entity.social.PostMedia;
 import com.uit.buddy.enums.FileType;
 import java.util.List;
@@ -22,4 +23,6 @@ public interface CloudinaryService {
     void validateFile(MultipartFile file, FileType fileType);
 
     List<PostMedia> uploadMultiMedia(List<MultipartFile> images, List<MultipartFile> videos);
+
+    List<DocumentUploadResult> uploadMultipleDocuments(List<MultipartFile> files);
 }

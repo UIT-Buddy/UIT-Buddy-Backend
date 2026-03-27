@@ -3,9 +3,9 @@ package com.uit.buddy.entity.document;
 import com.uit.buddy.entity.AbstractBaseEntity;
 import com.uit.buddy.entity.academic.SubjectClass;
 import com.uit.buddy.entity.user.Student;
-import com.uit.buddy.enums.AccessLevel;
-import com.uit.buddy.enums.DocumentPriority;
+import com.uit.buddy.enums.FileType;
 import jakarta.persistence.*;
+import java.util.UUID;
 import lombok.*;
 
 @Entity
@@ -25,24 +25,23 @@ public class Document extends AbstractBaseEntity {
     @JoinColumn(name = "mssv", referencedColumnName = "mssv", foreignKey = @ForeignKey(name = "fk_document_owner"))
     private Student owner;
 
-    @Column(name = "class_code", length = 30, insertable = false, updatable = false)
-    private String classCode;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "class_code", referencedColumnName = "class_code")
-    private SubjectClass subjectClass;
-
     @Column(name = "file_url", nullable = false, length = 512)
     private String fileUrl;
 
     @Column(name = "file_name", nullable = false, length = 255)
     private String fileName;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "access_level", length = 50)
-    private AccessLevel accessLevel;
+    @Column(name = "folder_id", insertable = false, updatable = false)
+    private UUID folderId;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "folder_id", referencedColumnName = "id", foreignKey = @ForeignKey(name = "fk_document_folder"))
+    private Folder folder;
+
+    @Column(name = "file_size")
+    private Float fileSize;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "priority", length = 20)
-    private DocumentPriority priority; //
+    @Column(name = "file_type", length = 20)
+    private FileType fileType;
 }
