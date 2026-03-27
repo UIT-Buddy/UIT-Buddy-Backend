@@ -65,7 +65,7 @@ public class FriendServiceImpl implements FriendService {
                 log.info("[Friend Service] Cancelled request: {} -> {}", senderMssv, receiverMssv);
                 return false;
             } else {
-                respondToFriendRequest(senderMssv, fr.getId(),
+                respondToFriendRequest(senderMssv, fr.getReceiverMssv(),
                         new RespondFriendRequestRequest(FriendResponseAction.ACCEPT));
                 return true;
             }
@@ -86,12 +86,10 @@ public class FriendServiceImpl implements FriendService {
     }
 
     @Override
-    public void respondToFriendRequest(String receiverMssv, UUID requestId, RespondFriendRequestRequest request) {
-        FriendRequest friendRequest = friendRequestRepository.findById(requestId)
+    public void respondToFriendRequest(String senderMssv, String receiverMssv, RespondFriendRequestRequest request) {
+        FriendRequest friendRequest = friendRequestRepository.findBySenderMssvAndReceiverMssv(senderMssv, receiverMssv)
                 .orElseThrow(() -> new SocialException(SocialErrorCode.FRIEND_REQUEST_NOT_FOUND));
-        if (!friendRequest.getReceiverMssv().equals(receiverMssv)) {
-            throw new SocialException(SocialErrorCode.UNAUTHORIZED);
-        }
+
         if (friendRequest.getStatus() != FriendRequestStatus.PENDING) {
             throw new SocialException(SocialErrorCode.FRIEND_REQUEST_ALREADY_RESPONDED);
         }
@@ -194,9 +192,16 @@ public class FriendServiceImpl implements FriendService {
         }
         Optional<FriendRequest> pendingRequest = friendRequestRepository.findPendingRequestBetween(currentUserMssv,
                 targetUserMssv);
+
         if (pendingRequest.isPresent()) {
-            return FriendStatus.PENDING;
+            FriendRequest request = pendingRequest.get();
+            if (request.getSenderMssv().equals(currentUserMssv)) {
+                return FriendStatus.PENDING;
+            } else {
+                return FriendStatus.REQUESTED;
+            }
         }
+
         return FriendStatus.NONE;
     }
 

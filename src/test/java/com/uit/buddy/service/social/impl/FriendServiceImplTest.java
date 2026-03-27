@@ -175,13 +175,14 @@ class FriendServiceImplTest {
     void shouldAcceptFriendRequestSuccessfully() {
         RespondFriendRequestRequest request = new RespondFriendRequestRequest(FriendResponseAction.ACCEPT);
 
-        when(friendRequestRepository.findById(requestId)).thenReturn(Optional.of(friendRequest));
+        when(friendRequestRepository.findBySenderMssvAndReceiverMssv(mssv1, mssv2))
+                .thenReturn(Optional.of(friendRequest));
         when(studentRepository.getReferenceById(mssv1)).thenReturn(student1);
         when(studentRepository.getReferenceById(mssv2)).thenReturn(student2);
         when(friendshipRepository.save(any(Friendship.class))).thenReturn(friendship);
         doNothing().when(cometChatService).createFriendship(mssv1, mssv2);
 
-        friendService.respondToFriendRequest(mssv2, requestId, request);
+        friendService.respondToFriendRequest(mssv1, mssv2, request);
 
         assertThat(friendRequest.getStatus()).isEqualTo(FriendRequestStatus.ACCEPTED);
         verify(friendshipRepository).save(any(Friendship.class));
@@ -194,9 +195,10 @@ class FriendServiceImplTest {
     void shouldRejectFriendRequestSuccessfully() {
         RespondFriendRequestRequest request = new RespondFriendRequestRequest(FriendResponseAction.REJECT);
 
-        when(friendRequestRepository.findById(requestId)).thenReturn(Optional.of(friendRequest));
+        when(friendRequestRepository.findBySenderMssvAndReceiverMssv(mssv1, mssv2))
+                .thenReturn(Optional.of(friendRequest));
 
-        friendService.respondToFriendRequest(mssv2, requestId, request);
+        friendService.respondToFriendRequest(mssv1, mssv2, request);
 
         assertThat(friendRequest.getStatus()).isEqualTo(FriendRequestStatus.REJECTED);
         verify(friendshipRepository, never()).save(any());
@@ -208,9 +210,9 @@ class FriendServiceImplTest {
     void shouldThrowExceptionWhenRespondingToNonExistentRequest() {
         RespondFriendRequestRequest request = new RespondFriendRequestRequest(FriendResponseAction.ACCEPT);
 
-        when(friendRequestRepository.findById(requestId)).thenReturn(Optional.empty());
+        when(friendRequestRepository.findBySenderMssvAndReceiverMssv(mssv1, mssv2)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> friendService.respondToFriendRequest(mssv2, requestId, request))
+        assertThatThrownBy(() -> friendService.respondToFriendRequest(mssv1, mssv2, request))
                 .isInstanceOf(SocialException.class);
     }
 
@@ -218,9 +220,9 @@ class FriendServiceImplTest {
     void shouldThrowExceptionWhenUnauthorizedToRespond() {
         RespondFriendRequestRequest request = new RespondFriendRequestRequest(FriendResponseAction.ACCEPT);
 
-        when(friendRequestRepository.findById(requestId)).thenReturn(Optional.of(friendRequest));
+        when(friendRequestRepository.findBySenderMssvAndReceiverMssv("22100999", mssv1)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> friendService.respondToFriendRequest("22100999", requestId, request))
+        assertThatThrownBy(() -> friendService.respondToFriendRequest("22100999", mssv1, request))
                 .isInstanceOf(SocialException.class);
     }
 
@@ -229,9 +231,10 @@ class FriendServiceImplTest {
         friendRequest.setStatus(FriendRequestStatus.ACCEPTED);
         RespondFriendRequestRequest request = new RespondFriendRequestRequest(FriendResponseAction.ACCEPT);
 
-        when(friendRequestRepository.findById(requestId)).thenReturn(Optional.of(friendRequest));
+        when(friendRequestRepository.findBySenderMssvAndReceiverMssv(mssv2, mssv1))
+                .thenReturn(Optional.of(friendRequest));
 
-        assertThatThrownBy(() -> friendService.respondToFriendRequest(mssv2, requestId, request))
+        assertThatThrownBy(() -> friendService.respondToFriendRequest(mssv2, mssv1, request))
                 .isInstanceOf(SocialException.class);
     }
 

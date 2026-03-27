@@ -7,13 +7,12 @@ import com.uit.buddy.dto.response.social.PendingFriendRequestResponse;
 import com.uit.buddy.dto.response.social.SentFriendRequestResponse;
 import com.uit.buddy.enums.FriendStatus;
 import java.util.List;
-import java.util.UUID;
 
 public interface FriendService {
 
     boolean toggleFriendRequest(String senderMssv, SendFriendRequestRequest request);
 
-    void respondToFriendRequest(String receiverMssv, UUID requestId, RespondFriendRequestRequest request);
+    void respondToFriendRequest(String senderMssv, String receiverMssv, RespondFriendRequestRequest request);
 
     void unfriend(String mssv, String friendMssv);
 

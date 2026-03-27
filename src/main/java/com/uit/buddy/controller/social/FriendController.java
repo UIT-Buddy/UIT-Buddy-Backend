@@ -14,7 +14,6 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.util.List;
-import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -40,13 +39,13 @@ public class FriendController extends AbstractBaseController {
         return success(message);
     }
 
-    @PutMapping("/requests/{requestId}")
-    @Operation(summary = "Respond to friend request", description = "Accept or reject a friend request")
-    public ResponseEntity<SuccessResponse> respondToFriendRequest(@PathVariable UUID requestId,
-            @Valid @RequestBody RespondFriendRequestRequest request, @AuthenticationPrincipal String mssv) {
-        log.info("[Friend Controller] Responding to friend request {} by {} with action: {}", requestId, mssv,
+    @PutMapping("/requests/{senderMssv}")
+    @Operation(summary = "Respond to friend request", description = "Accept or reject a friend request from a sender person to me")
+    public ResponseEntity<SuccessResponse> respondToFriendRequest(@PathVariable String senderMssv,
+            @Valid @RequestBody RespondFriendRequestRequest request, @AuthenticationPrincipal String receiverMssv) {
+        log.info("[Friend Controller] Responding to friend request {} by {} with action: {}", senderMssv, receiverMssv,
                 request.action());
-        friendService.respondToFriendRequest(mssv, requestId, request);
+        friendService.respondToFriendRequest(senderMssv, receiverMssv, request);
         return success("Friend request responded successfully");
     }
 
