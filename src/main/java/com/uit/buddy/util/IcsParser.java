@@ -189,7 +189,10 @@ public class IcsParser {
 
         if (!lessons.isEmpty()) {
             event.setStartLesson(lessons.get(0));
-            event.setEndLesson(lessons.get(lessons.size() - 1));
+            if (lessons.get(lessons.size() - 1) == 0)
+                event.setEndLesson(10);
+            else
+                event.setEndLesson(lessons.get(lessons.size() - 1));
         }
     }
 
