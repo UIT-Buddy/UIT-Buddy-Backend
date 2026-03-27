@@ -1,9 +1,5 @@
 package com.uit.buddy.mapper.document;
 
-import org.mapstruct.Mapper;
-import org.mapstruct.Mapping;
-import org.mapstruct.ReportingPolicy;
-
 import com.uit.buddy.constant.CloudinaryConstants;
 import com.uit.buddy.dto.response.document.DocumentFileResponse;
 import com.uit.buddy.dto.response.document.DocumentSearchResult;
@@ -13,6 +9,9 @@ import com.uit.buddy.entity.document.Document;
 import com.uit.buddy.entity.document.Folder;
 import com.uit.buddy.enums.FileSizeUnit;
 import com.uit.buddy.enums.FileType;
+import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
+import org.mapstruct.ReportingPolicy;
 
 @Mapper(componentModel = "spring", unmappedTargetPolicy = ReportingPolicy.IGNORE)
 public interface DocumentMapper {

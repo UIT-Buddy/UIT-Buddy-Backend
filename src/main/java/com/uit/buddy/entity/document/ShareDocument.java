@@ -4,9 +4,8 @@ import com.uit.buddy.entity.AbstractBaseEntity;
 import com.uit.buddy.entity.user.Student;
 import com.uit.buddy.enums.AccessRole;
 import jakarta.persistence.*;
-import lombok.*;
-
 import java.util.UUID;
+import lombok.*;
 
 @Entity
 @Table(name = "share_document", uniqueConstraints = {

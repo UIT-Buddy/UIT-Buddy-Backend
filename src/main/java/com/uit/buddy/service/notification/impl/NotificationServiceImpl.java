@@ -1,14 +1,5 @@
 package com.uit.buddy.service.notification.impl;
 
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.UUID;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import com.uit.buddy.dto.response.notification.NotificationResponse;
 import com.uit.buddy.entity.notification.Notification;
 import com.uit.buddy.enums.NotificationTemplate;
@@ -28,9 +19,15 @@ import com.uit.buddy.repository.user.UserSettingRepository;
 import com.uit.buddy.service.fcm.FcmService;
 import com.uit.buddy.service.notification.NotificationService;
 import com.uit.buddy.util.CursorUtils;
-
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.UUID;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor

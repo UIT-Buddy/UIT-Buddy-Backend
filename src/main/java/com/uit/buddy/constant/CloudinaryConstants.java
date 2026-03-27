@@ -1,10 +1,9 @@
 package com.uit.buddy.constant;
 
+import com.uit.buddy.enums.FileType;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
-
-import com.uit.buddy.enums.FileType;
 
 public final class CloudinaryConstants {
 
@@ -78,7 +77,7 @@ public final class CloudinaryConstants {
 
     // Folder default
     public static final String ROOT_FOLDER_NAME = "Storage";
-    
+
     public static FileType extractFileType(String fileName) {
         if (fileName == null || fileName.isBlank()) {
             return FileType.OTHER;

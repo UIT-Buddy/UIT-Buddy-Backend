@@ -1,20 +1,5 @@
 package com.uit.buddy.service.cloudinary.impl;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Executor;
-
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.stereotype.Service;
-import org.springframework.web.multipart.MultipartFile;
-
 import com.cloudinary.Cloudinary;
 import com.cloudinary.Transformation;
 import com.uit.buddy.config.CloudinaryProperties;
@@ -27,8 +12,20 @@ import com.uit.buddy.exception.system.SystemException;
 import com.uit.buddy.exception.user.UserErrorCode;
 import com.uit.buddy.exception.user.UserException;
 import com.uit.buddy.service.cloudinary.CloudinaryService;
-
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 @Service
 @Slf4j
@@ -258,8 +255,8 @@ public class CloudinaryServiceImpl implements CloudinaryService {
 
         for (MultipartFile file : files) {
             String fileId = UUID.randomUUID().toString();
-            String publicId = CloudinaryConstants.DOCUMENT_PUBLIC_ID_PREFIX
-                    + CloudinaryConstants.PATH_SEPARATOR + fileId;
+            String publicId = CloudinaryConstants.DOCUMENT_PUBLIC_ID_PREFIX + CloudinaryConstants.PATH_SEPARATOR
+                    + fileId;
             futures.add(CompletableFuture.supplyAsync(() -> uploadDocument(file, publicId), executor));
         }
 

@@ -1,10 +1,11 @@
 package com.uit.buddy.repository.social;
 
+import com.uit.buddy.entity.social.Post;
+import com.uit.buddy.repository.social.projection.PostFeedProjection;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
-
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.Modifying;
@@ -12,9 +13,6 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
-
-import com.uit.buddy.entity.social.Post;
-import com.uit.buddy.repository.social.projection.PostFeedProjection;
 
 @Repository
 public interface PostRepository extends CrudRepository<Post, UUID> {

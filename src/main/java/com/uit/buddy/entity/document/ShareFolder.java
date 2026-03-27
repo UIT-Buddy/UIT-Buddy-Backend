@@ -4,15 +4,14 @@ import com.uit.buddy.entity.AbstractBaseEntity;
 import com.uit.buddy.entity.user.Student;
 import com.uit.buddy.enums.AccessRole;
 import jakarta.persistence.*;
-import lombok.*;
-
 import java.util.UUID;
+import lombok.*;
 
 @Entity
 @Table(name = "share_folder", uniqueConstraints = {
         @UniqueConstraint(name = "uk_folder_recipient", columnNames = { "folder_id", "mssv" }) }, indexes = {
-        @Index(name = "idx_share_folder_id", columnList = "folder_id"),
-        @Index(name = "idx_share_recipient", columnList = "mssv") })
+                @Index(name = "idx_share_folder_id", columnList = "folder_id"),
+                @Index(name = "idx_share_recipient", columnList = "mssv") })
 @Getter
 @Setter
 @NoArgsConstructor

@@ -5,9 +5,8 @@ import com.uit.buddy.entity.academic.SubjectClass;
 import com.uit.buddy.entity.user.Student;
 import com.uit.buddy.enums.FileType;
 import jakarta.persistence.*;
-import lombok.*;
-
 import java.util.UUID;
+import lombok.*;
 
 @Entity
 @Table(name = "documents", indexes = { @Index(name = "idx_doc_owner", columnList = "mssv"),

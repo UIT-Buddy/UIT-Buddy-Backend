@@ -1,15 +1,5 @@
 package com.uit.buddy.service.document.impl;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
-
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.multipart.MultipartFile;
-
 import com.uit.buddy.constant.CloudinaryConstants;
 import com.uit.buddy.dto.request.document.CreateFileRequest;
 import com.uit.buddy.dto.request.document.CreateFolderRequest;
@@ -30,9 +20,16 @@ import com.uit.buddy.repository.document.FolderRepository;
 import com.uit.buddy.repository.user.StudentRepository;
 import com.uit.buddy.service.cloudinary.CloudinaryService;
 import com.uit.buddy.service.document.DocumentService;
-
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 @Service
 @RequiredArgsConstructor
@@ -48,21 +45,18 @@ public class DocumentServiceImpl implements DocumentService {
     @Override
     @Transactional
     public UUID createNewFolder(String mssv, CreateFolderRequest request) {
-        Folder parent = request.parentFolderId() != null
-                ? findOwnedFolder(mssv, request.parentFolderId())
+        Folder parent = request.parentFolderId() != null ? findOwnedFolder(mssv, request.parentFolderId())
                 : resolveTargetFolder(mssv, null);
         String folderName = request.folderName().trim();
 
-        boolean folderExists = folderRepository.existsByMssvAndParentIdAndFolderNameIgnoreCase(mssv, parent.getId(), folderName);
+        boolean folderExists = folderRepository.existsByMssvAndParentIdAndFolderNameIgnoreCase(mssv, parent.getId(),
+                folderName);
         if (folderExists) {
             throw new DocumentException(DocumentErrorCode.FOLDER_ALREADY_EXISTS);
         }
 
-        Folder folder = Folder.builder()
-                .owner(studentRepository.getReferenceById(mssv))
-                .folderName(folderName)
-                .parent(parent)
-                .build();
+        Folder folder = Folder.builder().owner(studentRepository.getReferenceById(mssv)).folderName(folderName)
+                .parent(parent).build();
 
         folderRepository.save(folder);
         log.info("[Document Service] Created folder {} for mssv {}", folder.getFolderName(), mssv);
@@ -78,8 +72,7 @@ public class DocumentServiceImpl implements DocumentService {
 
         Folder folder = resolveTargetFolder(mssv, request.folderId());
 
-        List<DocumentUploadResult> uploadResults = cloudinaryService
-                .uploadMultipleDocuments(request.files());
+        List<DocumentUploadResult> uploadResults = cloudinaryService.uploadMultipleDocuments(request.files());
 
         List<DocumentFileResponse> responses = new ArrayList<>();
         int fileIndex = 0;
@@ -91,18 +84,13 @@ public class DocumentServiceImpl implements DocumentService {
             String fileName = CloudinaryConstants.normalizeFileName(file.getOriginalFilename());
             DocumentUploadResult uploadResult = uploadResults.get(fileIndex);
 
-            Document document = Document.builder()
-                    .owner(studentRepository.getReferenceById(mssv))
-                    .folder(folder)
-                    .fileName(fileName)
-                    .fileUrl(uploadResult.fileUrl())
-                    .fileSize(uploadResult.fileSize())
-                    .fileType(uploadResult.fileType())
-                    .build();
+            Document document = Document.builder().owner(studentRepository.getReferenceById(mssv)).folder(folder)
+                    .fileName(fileName).fileUrl(uploadResult.fileUrl()).fileSize(uploadResult.fileSize())
+                    .fileType(uploadResult.fileType()).build();
 
             document = documentRepository.save(document);
 
-                responses.add(documentMapper.toDocumentFileResponse(document));
+            responses.add(documentMapper.toDocumentFileResponse(document));
             fileIndex++;
         }
         return responses;
@@ -117,20 +105,12 @@ public class DocumentServiceImpl implements DocumentService {
         List<Document> files = documentRepository.findByMssvAndFolderId(mssv, folder.getId());
 
         List<ViewFolderDetailResponse.FolderResponse> folderResponses = childFolders.stream()
-            .map(documentMapper::toFolderResponse)
-                .toList();
+                .map(documentMapper::toFolderResponse).toList();
 
-        List<FileResponse> fileResponses = files.stream()
-            .map(documentMapper::toFileResponse)
-                .toList();
+        List<FileResponse> fileResponses = files.stream().map(documentMapper::toFileResponse).toList();
 
-        return new ViewFolderDetailResponse(
-                folder.getId(),
-                folder.getFolderName(),
-                buildFolderPath(folder),
-                folder.getParent() != null ? folder.getParent().getId() : null,
-                folderResponses,
-                fileResponses);
+        return new ViewFolderDetailResponse(folder.getId(), folder.getFolderName(), buildFolderPath(folder),
+                folder.getParent() != null ? folder.getParent().getId() : null, folderResponses, fileResponses);
     }
 
     @Override
@@ -146,10 +126,9 @@ public class DocumentServiceImpl implements DocumentService {
     public Page<DocumentSearchResult> searchDocuments(String mssv, String keyword, Pageable pageable) {
         log.info("[Document Service] Searching documents for mssv {} with keyword '{}'", mssv, keyword);
         if (keyword == null || keyword.isBlank()) {
-            return documentRepository.findByMssv(mssv, pageable)
-                    .map(documentMapper::toSearchResult);
+            return documentRepository.findByMssv(mssv, pageable).map(documentMapper::toSearchResult);
         }
-        
+
         return documentRepository.findByMssvAndFileNameContainingIgnoreCase(mssv, keyword.trim(), pageable)
                 .map(documentMapper::toSearchResult);
     }
@@ -170,13 +149,10 @@ public class DocumentServiceImpl implements DocumentService {
         if (folderId != null) {
             return findOwnedFolder(mssv, folderId);
         }
-        
+
         return folderRepository.findFirstByMssvAndParentIsNullAndFolderName(mssv, CloudinaryConstants.ROOT_FOLDER_NAME)
-                .orElseGet(() -> folderRepository.save(Folder.builder()
-                        .owner(studentRepository.getReferenceById(mssv))
-                        .folderName(CloudinaryConstants.ROOT_FOLDER_NAME)
-                        .parent(null)
-                        .build()));
+                .orElseGet(() -> folderRepository.save(Folder.builder().owner(studentRepository.getReferenceById(mssv))
+                        .folderName(CloudinaryConstants.ROOT_FOLDER_NAME).parent(null).build()));
     }
 
 }

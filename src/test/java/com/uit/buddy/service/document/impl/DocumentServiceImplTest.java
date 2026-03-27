@@ -1,32 +1,14 @@
 package com.uit.buddy.service.document.impl;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import org.mockito.junit.jupiter.MockitoExtension;
-import org.mockito.junit.jupiter.MockitoSettings;
-import org.mockito.quality.Strictness;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.web.multipart.MultipartFile;
 
 import com.uit.buddy.constant.CloudinaryConstants;
 import com.uit.buddy.dto.request.document.CreateFileRequest;
@@ -49,6 +31,23 @@ import com.uit.buddy.repository.document.DocumentRepository;
 import com.uit.buddy.repository.document.FolderRepository;
 import com.uit.buddy.repository.user.StudentRepository;
 import com.uit.buddy.service.cloudinary.CloudinaryService;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.web.multipart.MultipartFile;
 
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
@@ -138,10 +137,8 @@ class DocumentServiceImplTest {
         when(folderRepository.existsByMssvAndParentIdAndFolderNameIgnoreCase(mssv, rootFolder.getId(), "Docs"))
                 .thenReturn(true);
 
-        assertThatThrownBy(() -> documentService.createNewFolder(mssv, request))
-                .isInstanceOf(DocumentException.class)
-                .extracting("code")
-                .isEqualTo(DocumentErrorCode.FOLDER_ALREADY_EXISTS.getCode());
+        assertThatThrownBy(() -> documentService.createNewFolder(mssv, request)).isInstanceOf(DocumentException.class)
+                .extracting("code").isEqualTo(DocumentErrorCode.FOLDER_ALREADY_EXISTS.getCode());
 
         verify(folderRepository, never()).save(any(Folder.class));
     }
@@ -150,10 +147,8 @@ class DocumentServiceImplTest {
     void createNewFile_zeroFiles_shouldThrowUserException() {
         CreateFileRequest request = new CreateFileRequest(new ArrayList<>(), UUID.randomUUID());
 
-        assertThatThrownBy(() -> documentService.createNewFile(mssv, request))
-                .isInstanceOf(UserException.class)
-                .extracting("code")
-                .isEqualTo(UserErrorCode.FILE_EMPTY.getCode());
+        assertThatThrownBy(() -> documentService.createNewFile(mssv, request)).isInstanceOf(UserException.class)
+                .extracting("code").isEqualTo(UserErrorCode.FILE_EMPTY.getCode());
     }
 
     @Test
@@ -168,8 +163,8 @@ class DocumentServiceImplTest {
 
         CreateFileRequest request = new CreateFileRequest(List.of(file), folderId);
         List<DocumentUploadResult> uploads = List.of(new DocumentUploadResult("https://one", 1.2f, FileType.WORD));
-        DocumentFileResponse mapped = new DocumentFileResponse(UUID.randomUUID(), "one.pdf", "https://one", folderId, 1.2f,
-                FileSizeUnit.MB, FileType.WORD);
+        DocumentFileResponse mapped = new DocumentFileResponse(UUID.randomUUID(), "one.pdf", "https://one", folderId,
+                1.2f, FileSizeUnit.MB, FileType.WORD);
 
         when(folderRepository.findByIdAndMssv(folderId, mssv)).thenReturn(Optional.of(folder));
         when(cloudinaryService.uploadMultipleDocuments(request.files())).thenReturn(uploads);
@@ -198,8 +193,7 @@ class DocumentServiceImplTest {
         when(file2.getOriginalFilename()).thenReturn("b.pdf");
 
         CreateFileRequest request = new CreateFileRequest(List.of(file1, file2), folderId);
-        List<DocumentUploadResult> uploads = List.of(
-                new DocumentUploadResult("https://a", 0.5f, FileType.WORD),
+        List<DocumentUploadResult> uploads = List.of(new DocumentUploadResult("https://a", 0.5f, FileType.WORD),
                 new DocumentUploadResult("https://b", 2.0f, FileType.PPT));
 
         when(folderRepository.findByIdAndMssv(folderId, mssv)).thenReturn(Optional.of(folder));
@@ -269,8 +263,8 @@ class DocumentServiceImplTest {
         });
         when(documentMapper.toFileResponse(any(Document.class))).thenAnswer(invocation -> {
             Document d = invocation.getArgument(0);
-            return new ViewFolderDetailResponse.FileResponse(d.getId(), d.getFileName(), "url", 1.0f,
-                    FileSizeUnit.MB, FileType.OTHER);
+            return new ViewFolderDetailResponse.FileResponse(d.getId(), d.getFileName(), "url", 1.0f, FileSizeUnit.MB,
+                    FileType.OTHER);
         });
 
         ViewFolderDetailResponse result = documentService.viewFolderDetail(mssv, folderId);
@@ -299,10 +293,8 @@ class DocumentServiceImplTest {
         UUID fileId = UUID.randomUUID();
         when(documentRepository.findByIdAndMssv(fileId, mssv)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> documentService.getDownloadUrl(mssv, fileId))
-                .isInstanceOf(DocumentException.class)
-                .extracting("code")
-                .isEqualTo(DocumentErrorCode.FILE_NOT_FOUND.getCode());
+        assertThatThrownBy(() -> documentService.getDownloadUrl(mssv, fileId)).isInstanceOf(DocumentException.class)
+                .extracting("code").isEqualTo(DocumentErrorCode.FILE_NOT_FOUND.getCode());
     }
 
     @Test
@@ -313,7 +305,8 @@ class DocumentServiceImplTest {
         document.setFileName("storage-note.pdf");
 
         Page<Document> page = new PageImpl<>(List.of(document));
-        DocumentSearchResult mapped = new DocumentSearchResult("storage-note.pdf", "Storage", null, document.getId(), "u");
+        DocumentSearchResult mapped = new DocumentSearchResult("storage-note.pdf", "Storage", null, document.getId(),
+                "u");
 
         when(documentRepository.findByMssv(mssv, pageable)).thenReturn(page);
         when(documentMapper.toSearchResult(any(Document.class))).thenReturn(mapped);
@@ -322,7 +315,8 @@ class DocumentServiceImplTest {
 
         assertThat(result.getContent()).hasSize(1);
         verify(documentRepository).findByMssv(mssv, pageable);
-        verify(documentRepository, never()).findByMssvAndFileNameContainingIgnoreCase(anyString(), anyString(), any(Pageable.class));
+        verify(documentRepository, never()).findByMssvAndFileNameContainingIgnoreCase(anyString(), anyString(),
+                any(Pageable.class));
     }
 
     @Test
@@ -333,7 +327,8 @@ class DocumentServiceImplTest {
         document.setFileName("algorithm.pdf");
 
         Page<Document> page = new PageImpl<>(List.of(document));
-        when(documentRepository.findByMssvAndFileNameContainingIgnoreCase(mssv, "algorithm", pageable)).thenReturn(page);
+        when(documentRepository.findByMssvAndFileNameContainingIgnoreCase(mssv, "algorithm", pageable))
+                .thenReturn(page);
         when(documentMapper.toSearchResult(any(Document.class)))
                 .thenReturn(new DocumentSearchResult("algorithm.pdf", "Storage", null, document.getId(), "u"));
 

@@ -3,13 +3,12 @@ package com.uit.buddy.entity.document;
 import com.uit.buddy.entity.AbstractBaseEntity;
 import com.uit.buddy.entity.user.Student;
 import jakarta.persistence.*;
-import lombok.*;
-
 import java.util.ArrayList;
 import java.util.List;
+import lombok.*;
 
 @Entity
-@Table(name = "folders", indexes = { @Index(name = "idx_doc_owner", columnList = "mssv")})
+@Table(name = "folders", indexes = { @Index(name = "idx_doc_owner", columnList = "mssv") })
 @Getter
 @Setter
 @NoArgsConstructor
@@ -35,6 +34,5 @@ public class Folder extends AbstractBaseEntity {
 
     @OneToMany(mappedBy = "folder", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Document> files = new ArrayList<>();
-
 
 }
