@@ -7,7 +7,6 @@ import com.uit.buddy.dto.response.social.PendingFriendRequestResponse;
 import com.uit.buddy.dto.response.social.SentFriendRequestResponse;
 import com.uit.buddy.enums.FriendStatus;
 import java.util.List;
-import java.util.UUID;
 
 public interface FriendService {
 

@@ -40,5 +40,4 @@ public interface FriendRequestRepository extends JpaRepository<FriendRequest, UU
                         @Param("cursorTime") LocalDateTime cursorTime, @Param("cursorId") UUID cursorId,
                         @Param("limit") int limit);
 
-      
 }
