@@ -39,13 +39,13 @@ public class FriendController extends AbstractBaseController {
         return success(message);
     }
 
-    @PutMapping("/requests/{mssvReceiver}")
-    @Operation(summary = "Respond to friend request", description = "Accept or reject a friend request")
-    public ResponseEntity<SuccessResponse> respondToFriendRequest(@PathVariable String mssvReceiver,
-            @Valid @RequestBody RespondFriendRequestRequest request, @AuthenticationPrincipal String mssvSender) {
-        log.info("[Friend Controller] Responding to friend request {} by {} with action: {}", mssvReceiver, mssvSender,
+    @PutMapping("/requests/{senderMssv}")
+    @Operation(summary = "Respond to friend request", description = "Accept or reject a friend request from a sender person to me")
+    public ResponseEntity<SuccessResponse> respondToFriendRequest(@PathVariable String senderMssv,
+            @Valid @RequestBody RespondFriendRequestRequest request, @AuthenticationPrincipal String receiverMssv) {
+        log.info("[Friend Controller] Responding to friend request {} by {} with action: {}", senderMssv, receiverMssv,
                 request.action());
-        friendService.respondToFriendRequest(mssvSender, mssvReceiver, request);
+        friendService.respondToFriendRequest(senderMssv, receiverMssv, request);
         return success("Friend request responded successfully");
     }
 
