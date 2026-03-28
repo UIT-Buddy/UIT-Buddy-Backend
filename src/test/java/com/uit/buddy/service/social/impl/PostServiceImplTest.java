@@ -20,7 +20,7 @@ import com.uit.buddy.mapper.social.PostMapper;
 import com.uit.buddy.repository.social.PostRepository;
 import com.uit.buddy.repository.social.projection.PostFeedProjection;
 import com.uit.buddy.repository.user.StudentRepository;
-import com.uit.buddy.service.cloudinary.CloudinaryService;
+import com.uit.buddy.service.file.FileService;
 import java.time.LocalDateTime;
 import java.util.*;
 import org.junit.jupiter.api.BeforeEach;
@@ -43,12 +43,15 @@ class PostServiceImplTest {
 
     @Mock
     private PostRepository postRepository;
+
     @Mock
     private StudentRepository studentRepository;
+
     @Mock
     private PostMapper postMapper;
+
     @Mock
-    private CloudinaryService cloudinaryService;
+    private FileService cloudinaryService;
 
     @InjectMocks
     private PostServiceImpl postService;

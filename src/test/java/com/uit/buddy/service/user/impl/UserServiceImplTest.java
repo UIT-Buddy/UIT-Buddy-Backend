@@ -13,8 +13,8 @@ import com.uit.buddy.mapper.user.UserMapper;
 import com.uit.buddy.mapper.user.UserSettingMapper;
 import com.uit.buddy.repository.user.StudentRepository;
 import com.uit.buddy.repository.user.UserSettingRepository;
-import com.uit.buddy.service.cloudinary.CloudinaryService;
 import com.uit.buddy.service.cometchat.CometChatService;
+import com.uit.buddy.service.file.FileService;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -31,14 +31,19 @@ class UserServiceImplTest {
 
     @Mock
     private StudentRepository studentRepository;
+
     @Mock
     private UserSettingRepository userSettingRepository;
+
     @Mock
-    private CloudinaryService cloudinaryService;
+    private FileService cloudinaryService;
+
     @Mock
     private UserMapper userMapper;
+
     @Mock
     private UserSettingMapper userSettingMapper;
+
     @Mock
     private CometChatService cometChatService;
 

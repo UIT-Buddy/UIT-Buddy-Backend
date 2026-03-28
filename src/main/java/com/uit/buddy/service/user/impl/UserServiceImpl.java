@@ -14,8 +14,8 @@ import com.uit.buddy.mapper.user.UserMapper;
 import com.uit.buddy.mapper.user.UserSettingMapper;
 import com.uit.buddy.repository.user.StudentRepository;
 import com.uit.buddy.repository.user.UserSettingRepository;
-import com.uit.buddy.service.cloudinary.CloudinaryService;
 import com.uit.buddy.service.cometchat.CometChatService;
+import com.uit.buddy.service.file.FileService;
 import com.uit.buddy.service.social.FriendService;
 import com.uit.buddy.service.user.UserService;
 import lombok.RequiredArgsConstructor;
@@ -33,7 +33,7 @@ public class UserServiceImpl implements UserService {
 
     private final StudentRepository studentRepository;
     private final UserMapper userMapper;
-    private final CloudinaryService cloudinaryService;
+    private final FileService cloudinaryService;
     private final CometChatService cometChatService;
     private final UserSettingRepository userSettingRepository;
     private final UserSettingMapper userSettingMapper;

@@ -14,7 +14,7 @@ import com.uit.buddy.exception.user.UserException;
 import com.uit.buddy.mapper.social.PostMapper;
 import com.uit.buddy.repository.social.PostRepository;
 import com.uit.buddy.repository.user.StudentRepository;
-import com.uit.buddy.service.cloudinary.CloudinaryService;
+import com.uit.buddy.service.file.FileService;
 import com.uit.buddy.service.social.PostService;
 import com.uit.buddy.util.CursorUtils;
 import java.time.LocalDateTime;
@@ -37,7 +37,7 @@ public class PostServiceImpl implements PostService {
     private final PostRepository postRepository;
     private final StudentRepository studentRepository;
     private final PostMapper postMapper;
-    private final CloudinaryService cloudinaryService;
+    private final FileService cloudinaryService;
 
     @Value("${post.limit-upload-images}")
     private int limitNumberOfImages;
