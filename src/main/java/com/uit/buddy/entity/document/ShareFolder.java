@@ -8,23 +8,22 @@ import java.util.UUID;
 import lombok.*;
 
 @Entity
-@Table(name = "share_document", uniqueConstraints = {
-        @UniqueConstraint(name = "uk_document_recipient", columnNames = { "document_id", "mssv" }) }, indexes = {
-                @Index(name = "idx_share_doc_id", columnList = "document_id"),
+@Table(name = "share_folder", uniqueConstraints = {
+        @UniqueConstraint(name = "uk_folder_recipient", columnNames = { "folder_id", "mssv" }) }, indexes = {
+                @Index(name = "idx_share_folder_id", columnList = "folder_id"),
                 @Index(name = "idx_share_recipient", columnList = "mssv") })
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class ShareDocument extends AbstractBaseEntity {
-
-    @Column(name = "document_id", length = 50, insertable = false, updatable = false)
-    private UUID documentId;
+public class ShareFolder extends AbstractBaseEntity {
+    @Column(name = "folder_id", length = 50, insertable = false, updatable = false)
+    private UUID folderId;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "document_id", referencedColumnName = "id", foreignKey = @ForeignKey(name = "fk_share_document"))
-    private Document document;
+    @JoinColumn(name = "folder_id", referencedColumnName = "id", foreignKey = @ForeignKey(name = "fk_share_folder"))
+    private Folder folder;
 
     @Column(name = "mssv", length = 12, insertable = false, updatable = false)
     private String mssv;
