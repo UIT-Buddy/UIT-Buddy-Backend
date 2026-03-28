@@ -51,7 +51,7 @@ class PostServiceImplTest {
     private PostMapper postMapper;
 
     @Mock
-    private FileService cloudinaryService;
+    private FileService fileService;
 
     @InjectMocks
     private PostServiceImpl postService;
@@ -92,13 +92,13 @@ class PostServiceImplTest {
 
         when(studentRepository.existsById(mssv)).thenReturn(true);
         when(studentRepository.getReferenceById(mssv)).thenReturn(student);
-        when(cloudinaryService.uploadMultiMedia(null, null)).thenReturn(Collections.emptyList());
+        when(fileService.uploadMultiMedia(null, null)).thenReturn(Collections.emptyList());
         when(postRepository.save(any(Post.class))).thenReturn(post);
 
         postService.createPost(mssv, "Test Title", "Test Content", request);
 
         verify(studentRepository).existsById(mssv);
-        verify(cloudinaryService).uploadMultiMedia(null, null);
+        verify(fileService).uploadMultiMedia(null, null);
         verify(postRepository).save(any(Post.class));
     }
 
@@ -223,12 +223,12 @@ class PostServiceImplTest {
         post.setMedias(List.of(media));
 
         when(postRepository.findById(postId)).thenReturn(Optional.of(post));
-        doNothing().when(cloudinaryService).deletePostMedia(anyList());
+        doNothing().when(fileService).deletePostMedia(anyList());
         doNothing().when(postRepository).delete(post);
 
         postService.deletePost(postId, mssv);
 
-        verify(cloudinaryService).deletePostMedia(anyList());
+        verify(fileService).deletePostMedia(anyList());
         verify(postRepository).delete(post);
     }
 
@@ -241,7 +241,7 @@ class PostServiceImplTest {
 
         postService.deletePost(postId, mssv);
 
-        verify(cloudinaryService, never()).deletePostMedia(anyList());
+        verify(fileService, never()).deletePostMedia(anyList());
         verify(postRepository).delete(post);
     }
 

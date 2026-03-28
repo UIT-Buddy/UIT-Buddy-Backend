@@ -48,7 +48,7 @@ public class DocumentController extends AbstractBaseController {
     }
 
     @PostMapping(value = "/file", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    @Operation(summary = "Create new files", description = "Create new files and upload to cloudinary")
+    @Operation(summary = "Create new files", description = "Create new files and upload to storage")
     public ResponseEntity<CreatedResponse<List<DocumentFileResponse>>> createFile(@AuthenticationPrincipal String mssv,
             @ModelAttribute CreateFileRequest request) {
         List<DocumentFileResponse> response = documentService.createNewFile(mssv, request);
