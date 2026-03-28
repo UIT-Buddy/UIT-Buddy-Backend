@@ -35,9 +35,7 @@ public class S3FileServiceImpl implements FileService {
     private final S3Properties properties;
     private final Executor executor;
 
-    public S3FileServiceImpl(
-            S3Client s3Client,
-            S3Properties properties,
+    public S3FileServiceImpl(S3Client s3Client, S3Properties properties,
             @Qualifier("uploadExecutor") Executor executor) {
         this.s3Client = s3Client;
         this.properties = properties;
@@ -65,25 +63,15 @@ public class S3FileServiceImpl implements FileService {
     @Override
     public PostMedia uploadPostImage(MultipartFile file, String postId) {
         validateFile(file, FileType.IMAGE);
-        return uploadPostMedia(
-                extractBytes(file),
-                file.getContentType(),
-                file.getOriginalFilename(),
-                StorageConstants.FOLDER_POST_IMAGES,
-                postId,
-                FileType.IMAGE);
+        return uploadPostMedia(extractBytes(file), file.getContentType(), file.getOriginalFilename(),
+                StorageConstants.FOLDER_POST_IMAGES, postId, FileType.IMAGE);
     }
 
     @Override
     public PostMedia uploadPostVideo(MultipartFile file, String postId) {
         validateFile(file, FileType.VIDEO);
-        return uploadPostMedia(
-                extractBytes(file),
-                file.getContentType(),
-                file.getOriginalFilename(),
-                StorageConstants.FOLDER_POST_VIDEOS,
-                postId,
-                FileType.VIDEO);
+        return uploadPostMedia(extractBytes(file), file.getContentType(), file.getOriginalFilename(),
+                StorageConstants.FOLDER_POST_VIDEOS, postId, FileType.VIDEO);
     }
 
     @Override
@@ -92,42 +80,35 @@ public class S3FileServiceImpl implements FileService {
             return;
         }
 
-        CompletableFuture.runAsync(
-                () -> {
-                    for (PostMedia media : medias) {
-                        String key = extractKeyFromUrl(media.getUrl());
-                        if (key == null) {
-                            continue;
-                        }
-                        deleteObject(key);
-                    }
-                },
-                executor);
+        CompletableFuture.runAsync(() -> {
+            for (PostMedia media : medias) {
+                String key = extractKeyFromUrl(media.getUrl());
+                if (key == null) {
+                    continue;
+                }
+                deleteObject(key);
+            }
+        }, executor);
     }
 
     @Override
     public void validateFile(MultipartFile file, FileType fileType) {
-        String[] allowed = fileType == FileType.IMAGE
-                ? properties.getAllowedImageTypes()
+        String[] allowed = fileType == FileType.IMAGE ? properties.getAllowedImageTypes()
                 : properties.getAllowedVideoTypes();
 
         if (file == null || file.isEmpty()) {
             throw new UserException(UserErrorCode.FILE_EMPTY);
         }
 
-        if (file.getContentType() == null
-                || allowed == null
+        if (file.getContentType() == null || allowed == null
                 || Arrays.stream(allowed).noneMatch(file.getContentType()::equalsIgnoreCase)) {
-            throw new UserException(
-                    UserErrorCode.INVALID_FILE_TYPE,
+            throw new UserException(UserErrorCode.INVALID_FILE_TYPE,
                     "Allowed: " + String.join(", ", allowed == null ? new String[0] : allowed));
         }
     }
 
     @Override
-    public List<PostMedia> uploadMultiMedia(
-            List<MultipartFile> images,
-            List<MultipartFile> videos) {
+    public List<PostMedia> uploadMultiMedia(List<MultipartFile> images, List<MultipartFile> videos) {
         validateFiles(images, videos);
 
         List<MultipartFile> safeImages = images != null ? images : Collections.emptyList();
@@ -137,28 +118,16 @@ public class S3FileServiceImpl implements FileService {
         for (MultipartFile file : safeImages) {
             UploadPayload payload = toPayload(file);
             String uniqueId = UUID.randomUUID().toString().substring(0, 8);
-            futures.add(CompletableFuture.supplyAsync(
-                    () -> uploadPostMedia(
-                            payload.data(),
-                            payload.contentType(),
-                            payload.originalFilename(),
-                            StorageConstants.FOLDER_POST_IMAGES,
-                            uniqueId,
-                            FileType.IMAGE),
+            futures.add(CompletableFuture.supplyAsync(() -> uploadPostMedia(payload.data(), payload.contentType(),
+                    payload.originalFilename(), StorageConstants.FOLDER_POST_IMAGES, uniqueId, FileType.IMAGE),
                     executor));
         }
 
         for (MultipartFile file : safeVideos) {
             UploadPayload payload = toPayload(file);
             String uniqueId = UUID.randomUUID().toString().substring(0, 8);
-            futures.add(CompletableFuture.supplyAsync(
-                    () -> uploadPostMedia(
-                            payload.data(),
-                            payload.contentType(),
-                            payload.originalFilename(),
-                            StorageConstants.FOLDER_POST_VIDEOS,
-                            uniqueId,
-                            FileType.VIDEO),
+            futures.add(CompletableFuture.supplyAsync(() -> uploadPostMedia(payload.data(), payload.contentType(),
+                    payload.originalFilename(), StorageConstants.FOLDER_POST_VIDEOS, uniqueId, FileType.VIDEO),
                     executor));
         }
 
@@ -184,26 +153,15 @@ public class S3FileServiceImpl implements FileService {
             throw new UserException(UserErrorCode.FILE_EMPTY);
         }
 
-        String extension =
-                StorageConstants.resolveExtension(file.getOriginalFilename(), file.getContentType());
-        String key = buildKey(
-                StorageConstants.FOLDER_DOCUMENT_FILES,
-                UUID.randomUUID().toString(),
-                extension);
+        String extension = StorageConstants.resolveExtension(file.getOriginalFilename(), file.getContentType());
+        String key = buildKey(StorageConstants.FOLDER_DOCUMENT_FILES, UUID.randomUUID().toString(), extension);
         uploadObject(extractBytes(file), key, file.getContentType());
-        return new DocumentUploadResult(
-                buildPublicUrl(key),
-                StorageConstants.toMegabytes(file.getSize()),
+        return new DocumentUploadResult(buildPublicUrl(key), StorageConstants.toMegabytes(file.getSize()),
                 StorageConstants.extractFileType(file.getOriginalFilename()));
     }
 
-    private PostMedia uploadPostMedia(
-            byte[] data,
-            String contentType,
-            String originalFilename,
-            String folder,
-            String objectId,
-            FileType fileType) {
+    private PostMedia uploadPostMedia(byte[] data, String contentType, String originalFilename, String folder,
+            String objectId, FileType fileType) {
         String extension = StorageConstants.resolveExtension(originalFilename, contentType);
         String key = buildKey(folder, objectId, extension);
         uploadObject(data, key, contentType);
@@ -212,11 +170,8 @@ public class S3FileServiceImpl implements FileService {
 
     private void uploadObject(byte[] data, String key, String contentType) {
         try {
-            PutObjectRequest request = PutObjectRequest.builder()
-                    .bucket(properties.getBucketName())
-                    .key(key)
-                    .contentType(contentType)
-                    .build();
+            PutObjectRequest request = PutObjectRequest.builder().bucket(properties.getBucketName()).key(key)
+                    .contentType(contentType).build();
 
             s3Client.putObject(request, RequestBody.fromBytes(data));
             log.info("[S3] Uploaded object: {}", key);
@@ -228,10 +183,7 @@ public class S3FileServiceImpl implements FileService {
 
     private void deleteObject(String key) {
         try {
-            s3Client.deleteObject(DeleteObjectRequest.builder()
-                    .bucket(properties.getBucketName())
-                    .key(key)
-                    .build());
+            s3Client.deleteObject(DeleteObjectRequest.builder().bucket(properties.getBucketName()).key(key).build());
             log.info("[S3] Deleted object: {}", key);
         } catch (Exception e) {
             log.error("[S3] Delete failed for {}: {}", key, e.getMessage());
@@ -256,12 +208,7 @@ public class S3FileServiceImpl implements FileService {
             return publicBaseUrl + StorageConstants.PATH_SEPARATOR + key;
         }
 
-        return "https://"
-                + properties.getBucketName()
-                + ".s3."
-                + properties.getRegion()
-                + ".amazonaws.com/"
-                + key;
+        return "https://" + properties.getBucketName() + ".s3." + properties.getRegion() + ".amazonaws.com/" + key;
     }
 
     private String extractKeyFromUrl(String url) {
@@ -278,10 +225,7 @@ public class S3FileServiceImpl implements FileService {
             }
         }
 
-        String s3BaseUrl = "https://"
-                + properties.getBucketName()
-                + ".s3."
-                + properties.getRegion()
+        String s3BaseUrl = "https://" + properties.getBucketName() + ".s3." + properties.getRegion()
                 + ".amazonaws.com/";
         if (cleanUrl.startsWith(s3BaseUrl)) {
             return cleanUrl.substring(s3BaseUrl.length());
