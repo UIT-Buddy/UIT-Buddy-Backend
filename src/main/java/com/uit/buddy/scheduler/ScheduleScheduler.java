@@ -19,16 +19,14 @@ public class ScheduleScheduler {
     private final ScheduleService scheduleService;
     private final StudentRepository studentRepository;
     private final Executor executor;
-    public ScheduleScheduler(
-            ScheduleService scheduleService,
-            StudentRepository studentRepository,
-            @Qualifier("fetchExecutor") Executor executor
-    )
-    {
+
+    public ScheduleScheduler(ScheduleService scheduleService, StudentRepository studentRepository,
+            @Qualifier("fetchExecutor") Executor executor) {
         this.scheduleService = scheduleService;
         this.studentRepository = studentRepository;
         this.executor = executor;
     }
+
     @Scheduled(cron = "0 */5 * * * *")
     public void scrapeAllDeadlineOfStudent() {
         List<String> listOfMssv = studentRepository.findMssvAll();

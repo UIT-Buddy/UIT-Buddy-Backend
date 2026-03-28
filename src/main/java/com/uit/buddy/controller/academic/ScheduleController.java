@@ -1,8 +1,22 @@
 package com.uit.buddy.controller.academic;
 
-import java.util.List;
-
+import com.uit.buddy.controller.AbstractBaseController;
+import com.uit.buddy.dto.base.SingleResponse;
+import com.uit.buddy.dto.request.schedule.CreateDeadlineRequest;
+import com.uit.buddy.dto.request.schedule.UploadScheduleRequest;
+import com.uit.buddy.dto.response.schedule.CourseCalendarResponse;
+import com.uit.buddy.dto.response.schedule.CourseContentResponse;
 import com.uit.buddy.dto.response.schedule.CreateDeadlineResponse;
+import com.uit.buddy.dto.response.schedule.DeadlineResponse;
+import com.uit.buddy.exception.schedule.ScheduleErrorCode;
+import com.uit.buddy.exception.schedule.ScheduleException;
+import com.uit.buddy.service.academic.ScheduleService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
+import java.util.List;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -14,23 +28,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-
-import com.uit.buddy.controller.AbstractBaseController;
-import com.uit.buddy.dto.base.SingleResponse;
-import com.uit.buddy.dto.request.schedule.CreateDeadlineRequest;
-import com.uit.buddy.dto.request.schedule.UploadScheduleRequest;
-import com.uit.buddy.dto.response.schedule.CourseCalendarResponse;
-import com.uit.buddy.dto.response.schedule.CourseContentResponse;
-import com.uit.buddy.dto.response.schedule.DeadlineResponse;
-import com.uit.buddy.exception.schedule.ScheduleErrorCode;
-import com.uit.buddy.exception.schedule.ScheduleException;
-import com.uit.buddy.service.academic.ScheduleService;
-
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 
 @RestController
 @RequestMapping("/api/schedule")
@@ -59,8 +56,7 @@ public class ScheduleController extends AbstractBaseController {
     @PostMapping("/deadline")
     @Operation(summary = "Create deadline", description = "Create personal or course-linked deadline")
     public ResponseEntity<SingleResponse<CreateDeadlineResponse>> createDeadline(
-            @Valid @RequestBody CreateDeadlineRequest request,
-            @AuthenticationPrincipal String mssv) {
+            @Valid @RequestBody CreateDeadlineRequest request, @AuthenticationPrincipal String mssv) {
         log.info("[Schedule Controller] Creating deadline for student: {}", mssv);
         CreateDeadlineResponse exercise = scheduleService.createDeadline(mssv, request);
         return successSingle(exercise, "Deadline created successfully");

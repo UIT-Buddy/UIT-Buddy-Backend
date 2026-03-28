@@ -17,35 +17,34 @@ import com.uit.buddy.service.learning.AssignmentService;
 @Service
 public class AssignmentServiceImpl implements AssignmentService {
 
-	private final StudentTaskRepository studentTaskRepository;
-	private final ScheduleMapper scheduleMapper;
-	private final Executor executor;
+    private final StudentTaskRepository studentTaskRepository;
+    private final ScheduleMapper scheduleMapper;
+    private final Executor executor;
 
-	public AssignmentServiceImpl(StudentTaskRepository studentTaskRepository, ScheduleMapper scheduleMapper,
-			@Qualifier("fetchExecutor") Executor executor) {
-		this.studentTaskRepository = studentTaskRepository;
-		this.scheduleMapper = scheduleMapper;
-		this.executor = executor;
-	}
+    public AssignmentServiceImpl(StudentTaskRepository studentTaskRepository, ScheduleMapper scheduleMapper,
+            @Qualifier("fetchExecutor") Executor executor) {
+        this.studentTaskRepository = studentTaskRepository;
+        this.scheduleMapper = scheduleMapper;
+        this.executor = executor;
+    }
 
-	@Override
-	public List<CourseContentResponse> getDeadlineWithMssv(String mssv, Integer month, Integer year) {
-		return fetchDeadlineAsync(mssv, month, year).join();
-	}
+    @Override
+    public List<CourseContentResponse> getDeadlineWithMssv(String mssv, Integer month, Integer year) {
+        return fetchDeadlineAsync(mssv, month, year).join();
+    }
 
-	private CompletableFuture<List<CourseContentResponse>> fetchDeadlineAsync(String mssv, Integer month,
-			Integer year) {
-		return CompletableFuture.supplyAsync(() -> {
-			List<CourseContentResponse> listCourseContent = new ArrayList<>();
-			List<StudentTask> listStudentTask = month != null && year != null
-					? studentTaskRepository.findDeadlineTasksByMssv(mssv, month, year)
-					: studentTaskRepository.findDeadlineTasksByMssv(mssv);
-			for (StudentTask task : listStudentTask) {
-				listCourseContent.add(scheduleMapper.toCourseContentResponse(task));
-			}
-			return listCourseContent;
-		}, executor);
-	}
+    private CompletableFuture<List<CourseContentResponse>> fetchDeadlineAsync(String mssv, Integer month,
+            Integer year) {
+        return CompletableFuture.supplyAsync(() -> {
+            List<CourseContentResponse> listCourseContent = new ArrayList<>();
+            List<StudentTask> listStudentTask = month != null && year != null
+                    ? studentTaskRepository.findDeadlineTasksByMssv(mssv, month, year)
+                    : studentTaskRepository.findDeadlineTasksByMssv(mssv);
+            for (StudentTask task : listStudentTask) {
+                listCourseContent.add(scheduleMapper.toCourseContentResponse(task));
+            }
+            return listCourseContent;
+        }, executor);
+    }
 
 }
-

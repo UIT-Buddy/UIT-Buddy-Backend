@@ -25,8 +25,7 @@ public interface StudentSubjectClassRepository extends CrudRepository<StudentSub
     List<StudentSubjectClass> findAllByStudentMssvAndSemester(@Param("mssv") String mssv,
             @Param("semesterCode") String semesterCode);
 
-    @Query("SELECT ssc FROM StudentSubjectClass ssc "
-            + "JOIN FETCH ssc.subjectClass sc "
+    @Query("SELECT ssc FROM StudentSubjectClass ssc " + "JOIN FETCH ssc.subjectClass sc "
             + "WHERE ssc.student.mssv = :mssv AND sc.courseCode = :courseCode ")
     StudentSubjectClass findAllByStudentMssvAndCourseCode(@Param("mssv") String mssv,
             @Param("courseCode") String courseCode);

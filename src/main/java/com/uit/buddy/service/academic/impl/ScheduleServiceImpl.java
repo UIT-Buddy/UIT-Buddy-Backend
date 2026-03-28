@@ -89,8 +89,9 @@ public class ScheduleServiceImpl implements ScheduleService {
 
     public ScheduleServiceImpl(IcsParser icsParser, StudentRepository studentRepository,
             SubjectClassRepository subjectClassRepository, StudentSubjectClassRepository studentSubjectClassRepository,
-            CourseRepository courseRepository, CurriculumCourseRepository curriculumCourseRepository,AssignmentService assignmentService,
-            SemesterRepository semesterRepository, UitClient uitClient, EncryptionUtils encryptionUtils,StudentTaskRepository studentTaskRepository,
+            CourseRepository courseRepository, CurriculumCourseRepository curriculumCourseRepository,
+            AssignmentService assignmentService, SemesterRepository semesterRepository, UitClient uitClient,
+            EncryptionUtils encryptionUtils, StudentTaskRepository studentTaskRepository,
             @Qualifier("uploadExecutor") Executor executor, ScheduleMapper scheduleMapper) {
         this.icsParser = icsParser;
         this.studentRepository = studentRepository;
@@ -148,7 +149,8 @@ public class ScheduleServiceImpl implements ScheduleService {
             throw new ScheduleException(ScheduleErrorCode.INVALID_EXERCISE_NAME);
         if (request.dueDate() == null)
             throw new ScheduleException(ScheduleErrorCode.INVALID_DUE_TIME);
-        Student student = studentRepository.findById(mssv).orElseThrow(() -> new UserException(UserErrorCode.STUDENT_NOT_FOUND));
+        Student student = studentRepository.findById(mssv)
+                .orElseThrow(() -> new UserException(UserErrorCode.STUDENT_NOT_FOUND));
         StudentSubjectClass studentSubjectClass = null;
         if (request.classCode() != null) {
             studentSubjectClass = studentSubjectClassRepository.findSubjectByClassCode(mssv, request.classCode());
@@ -158,13 +160,8 @@ public class ScheduleServiceImpl implements ScheduleService {
         TaskType taskType = studentSubjectClass == null ? TaskType.PERSONAL : TaskType.ASSIGNMENT;
         SubjectClass subjectClass = subjectClassRepository.findByClassCodeAndStudentMssv(mssv, request.classCode());
         log.info("[SCHEDULE SERVICE]: Create task for user with id {}", mssv);
-        StudentTask studentTask = StudentTask.builder()
-                .student(student)
-                .taskType(taskType)
-                .subjectClass(subjectClass)
-                .personalTitle(request.exerciseName())
-                .reminderAt(request.dueDate())
-                .build();
+        StudentTask studentTask = StudentTask.builder().student(student).taskType(taskType).subjectClass(subjectClass)
+                .personalTitle(request.exerciseName()).reminderAt(request.dueDate()).build();
         studentTaskRepository.save(studentTask);
         return scheduleMapper.toCreateDeadlineResponse(studentTask);
     }

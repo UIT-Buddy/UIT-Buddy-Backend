@@ -16,13 +16,10 @@ public interface SubjectClassRepository extends JpaRepository<SubjectClass, UUID
     List<SubjectClass> findAllByClassCodeInAndSemester(Collection<String> classCodes, Semester semester);
 
     @Query("""
-        SELECT ssc.subjectClass
-        FROM StudentSubjectClass ssc
-        WHERE ssc.subjectClass.classCode = :classCode
-          AND ssc.student.mssv = :mssv
-    """)
-    SubjectClass findByClassCodeAndStudentMssv(
-            @Param("mssv") String mssv,
-            @Param("classCode") String classCode
-    );
+                SELECT ssc.subjectClass
+                FROM StudentSubjectClass ssc
+                WHERE ssc.subjectClass.classCode = :classCode
+                  AND ssc.student.mssv = :mssv
+            """)
+    SubjectClass findByClassCodeAndStudentMssv(@Param("mssv") String mssv, @Param("classCode") String classCode);
 }
