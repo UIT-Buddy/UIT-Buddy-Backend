@@ -30,7 +30,7 @@ import com.uit.buddy.mapper.document.DocumentMapper;
 import com.uit.buddy.repository.document.DocumentRepository;
 import com.uit.buddy.repository.document.FolderRepository;
 import com.uit.buddy.repository.user.StudentRepository;
-import com.uit.buddy.service.cloudinary.CloudinaryService;
+import com.uit.buddy.service.file.FileService;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -55,12 +55,16 @@ class DocumentServiceImplTest {
 
     @Mock
     private FolderRepository folderRepository;
+
     @Mock
     private DocumentRepository documentRepository;
+
     @Mock
     private StudentRepository studentRepository;
+
     @Mock
-    private CloudinaryService cloudinaryService;
+    private FileService cloudinaryService;
+
     @Mock
     private DocumentMapper documentMapper;
 

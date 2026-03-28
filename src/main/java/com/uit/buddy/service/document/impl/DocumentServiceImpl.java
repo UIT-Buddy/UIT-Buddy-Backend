@@ -18,8 +18,8 @@ import com.uit.buddy.mapper.document.DocumentMapper;
 import com.uit.buddy.repository.document.DocumentRepository;
 import com.uit.buddy.repository.document.FolderRepository;
 import com.uit.buddy.repository.user.StudentRepository;
-import com.uit.buddy.service.cloudinary.CloudinaryService;
 import com.uit.buddy.service.document.DocumentService;
+import com.uit.buddy.service.file.FileService;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -39,7 +39,7 @@ public class DocumentServiceImpl implements DocumentService {
     private final FolderRepository folderRepository;
     private final DocumentRepository documentRepository;
     private final StudentRepository studentRepository;
-    private final CloudinaryService cloudinaryService;
+    private final FileService cloudinaryService;
     private final DocumentMapper documentMapper;
 
     @Override
@@ -137,7 +137,7 @@ public class DocumentServiceImpl implements DocumentService {
         if (folder.getParent() == null) {
             return folder.getFolderName();
         }
-        return buildFolderPath(folder.getParent()) + "/" + folder.getFolderName();
+        return (buildFolderPath(folder.getParent()) + "/" + folder.getFolderName());
     }
 
     private Folder findOwnedFolder(String mssv, UUID folderId) {
@@ -154,5 +154,4 @@ public class DocumentServiceImpl implements DocumentService {
                 .orElseGet(() -> folderRepository.save(Folder.builder().owner(studentRepository.getReferenceById(mssv))
                         .folderName(CloudinaryConstants.ROOT_FOLDER_NAME).parent(null).build()));
     }
-
 }

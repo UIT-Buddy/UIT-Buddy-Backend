@@ -1,4 +1,4 @@
-package com.uit.buddy.service.cloudinary.impl;
+package com.uit.buddy.service.file.impl;
 
 import com.cloudinary.Cloudinary;
 import com.cloudinary.Transformation;
@@ -11,7 +11,7 @@ import com.uit.buddy.exception.system.SystemErrorCode;
 import com.uit.buddy.exception.system.SystemException;
 import com.uit.buddy.exception.user.UserErrorCode;
 import com.uit.buddy.exception.user.UserException;
-import com.uit.buddy.service.cloudinary.CloudinaryService;
+import com.uit.buddy.service.file.FileService;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -29,7 +29,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 @Service
 @Slf4j
-public class CloudinaryServiceImpl implements CloudinaryService {
+public class CloudinaryServiceImpl implements FileService {
 
     private final Cloudinary cloudinary;
     private final CloudinaryProperties properties;

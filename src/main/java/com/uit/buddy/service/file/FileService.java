@@ -1,4 +1,4 @@
-package com.uit.buddy.service.cloudinary;
+package com.uit.buddy.service.file;
 
 import com.uit.buddy.dto.response.document.DocumentUploadResult;
 import com.uit.buddy.entity.social.PostMedia;
@@ -6,8 +6,7 @@ import com.uit.buddy.enums.FileType;
 import java.util.List;
 import org.springframework.web.multipart.MultipartFile;
 
-public interface CloudinaryService {
-
+public interface FileService {
     String createDefaultAvatar(String mssv);
 
     void deleteAvatar(String publicId);
