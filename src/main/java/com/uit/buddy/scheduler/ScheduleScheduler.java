@@ -1,17 +1,14 @@
 package com.uit.buddy.scheduler;
 
+import com.uit.buddy.repository.user.StudentRepository;
+import com.uit.buddy.service.academic.ScheduleService;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
-
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
-
-import com.uit.buddy.repository.user.StudentRepository;
-import com.uit.buddy.service.academic.ScheduleService;
-
-import lombok.extern.slf4j.Slf4j;
 
 @Service
 @Slf4j

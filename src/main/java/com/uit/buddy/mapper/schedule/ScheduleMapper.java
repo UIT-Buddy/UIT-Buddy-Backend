@@ -1,13 +1,5 @@
 package com.uit.buddy.mapper.schedule;
 
-import java.time.LocalDateTime;
-import java.time.LocalTime;
-import java.util.List;
-import java.util.Locale;
-
-import org.mapstruct.Mapper;
-import org.mapstruct.Mapping;
-
 import com.uit.buddy.constant.IcsConstants;
 import com.uit.buddy.dto.response.schedule.CourseCalendarResponse.Course;
 import com.uit.buddy.dto.response.schedule.CourseContentResponse;
@@ -16,6 +8,12 @@ import com.uit.buddy.entity.academic.StudentSubjectClass;
 import com.uit.buddy.entity.learning.StudentTask;
 import com.uit.buddy.enums.DeadlineStatus;
 import com.uit.buddy.enums.TaskType;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.util.List;
+import java.util.Locale;
+import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
 
 @Mapper(componentModel = "spring")
 public interface ScheduleMapper {

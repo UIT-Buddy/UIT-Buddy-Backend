@@ -1,18 +1,16 @@
 package com.uit.buddy.service.learning.impl;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Executor;
-
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.stereotype.Service;
-
 import com.uit.buddy.dto.response.schedule.CourseContentResponse;
 import com.uit.buddy.entity.learning.StudentTask;
 import com.uit.buddy.mapper.schedule.ScheduleMapper;
 import com.uit.buddy.repository.learning.StudentTaskRepository;
 import com.uit.buddy.service.learning.AssignmentService;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.stereotype.Service;
 
 @Service
 public class AssignmentServiceImpl implements AssignmentService {

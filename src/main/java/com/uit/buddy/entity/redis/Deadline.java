@@ -1,12 +1,11 @@
 package com.uit.buddy.entity.redis;
 
+import java.time.LocalDate;
+import java.time.LocalTime;
 import lombok.*;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.redis.core.RedisHash;
 import org.springframework.data.redis.core.index.Indexed;
-
-import java.time.LocalDate;
-import java.time.LocalTime;
 
 @RedisHash("deadline")
 @Getter

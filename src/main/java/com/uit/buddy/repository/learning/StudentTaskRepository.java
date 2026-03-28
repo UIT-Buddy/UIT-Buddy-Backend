@@ -1,14 +1,12 @@
 package com.uit.buddy.repository.learning;
 
+import com.uit.buddy.entity.learning.StudentTask;
 import java.util.List;
 import java.util.UUID;
-
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
-
-import com.uit.buddy.entity.learning.StudentTask;
 
 @Repository
 public interface StudentTaskRepository extends JpaRepository<StudentTask, UUID> {
