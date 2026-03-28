@@ -7,6 +7,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
+
 @Repository
 public interface StudentRepository extends JpaRepository<Student, String> {
 
@@ -27,4 +29,8 @@ public interface StudentRepository extends JpaRepository<Student, String> {
                 ORDER BY rank DESC
             """, nativeQuery = true)
     Page<Student> searchStudentByKeyword(String keyword, Pageable pageable);
+
+    @Query(value = "SELECT mssv FROM students WHERE mssv like '%52%'", nativeQuery = true)
+    List<String> findMssvAll();
+
 }

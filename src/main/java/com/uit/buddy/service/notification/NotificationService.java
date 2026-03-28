@@ -1,5 +1,8 @@
 package com.uit.buddy.service.notification;
 
+import java.util.List;
+import java.util.UUID;
+
 import com.uit.buddy.dto.response.notification.NotificationResponse;
 import com.uit.buddy.event.social.CommentLikedEvent;
 import com.uit.buddy.event.social.FriendRequestAcceptedEvent;
@@ -7,8 +10,6 @@ import com.uit.buddy.event.social.FriendRequestReceivedEvent;
 import com.uit.buddy.event.social.PostCommentedEvent;
 import com.uit.buddy.event.social.PostLikedEvent;
 import com.uit.buddy.event.social.PostSharedEvent;
-import java.util.List;
-import java.util.UUID;
 
 public interface NotificationService {
     void createPostLikeNotification(PostLikedEvent event);

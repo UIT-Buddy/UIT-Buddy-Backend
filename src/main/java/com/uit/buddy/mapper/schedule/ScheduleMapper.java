@@ -1,17 +1,27 @@
 package com.uit.buddy.mapper.schedule;
 
-import com.uit.buddy.constant.IcsConstants;
-import com.uit.buddy.dto.response.schedule.CourseCalendarResponse.Course;
-import com.uit.buddy.dto.response.schedule.CourseContentResponse;
-import com.uit.buddy.entity.academic.StudentSubjectClass;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
 import java.util.Locale;
+
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 
+import com.uit.buddy.constant.IcsConstants;
+import com.uit.buddy.dto.response.schedule.CourseCalendarResponse.Course;
+import com.uit.buddy.dto.response.schedule.CourseContentResponse;
+import com.uit.buddy.dto.response.schedule.CreateDeadlineResponse;
+import com.uit.buddy.entity.academic.StudentSubjectClass;
+import com.uit.buddy.entity.learning.StudentTask;
+import com.uit.buddy.enums.DeadlineStatus;
+import com.uit.buddy.enums.TaskType;
+
 @Mapper(componentModel = "spring")
 public interface ScheduleMapper {
+
+    String PERSONAL_DEADLINE = "personal";
+    String UNKNOWN_DEADLINE = "unknown";
 
     @Mapping(target = "courseCode", source = "subjectClass.course.courseCode")
     @Mapping(target = "classId", source = "subjectClass.classCode")
@@ -31,7 +41,63 @@ public interface ScheduleMapper {
     @Mapping(target = "deadline", ignore = true)
     Course toCourse(StudentSubjectClass studentClass);
 
+    @Mapping(target = "classCode", source = "classCode")
+    @Mapping(target = "isPersonal", expression = "java(studentTask.getTaskType() == com.uit.buddy.enums.TaskType.PERSONAL)")
+    @Mapping(target = "deadlineName", source = "personalTitle")
+    @Mapping(target = "dueDate", source = "reminderAt")
+    @Mapping(target = "status", expression = "java(mapDeadlineStatus(studentTask))")
+    CreateDeadlineResponse toCreateDeadlineResponse(StudentTask studentTask);
+
+    @Mapping(target = "courseName", expression = "java(resolveCourseName(studentTask))")
+    @Mapping(target = "exercises", expression = "java(java.util.List.of(toExercise(studentTask)))")
+    CourseContentResponse toCourseContentResponse(StudentTask studentTask);
+
     List<Course> toListCourse(List<StudentSubjectClass> studentClasses);
+
+    default DeadlineStatus mapDeadlineStatus(StudentTask studentTask) {
+        if (studentTask == null) {
+            return DeadlineStatus.UPCOMING;
+        }
+
+        if (Boolean.TRUE.equals(studentTask.getIsCompleted())) {
+            return DeadlineStatus.DONE;
+        }
+
+        LocalDateTime dueDate = studentTask.getReminderAt();
+        if (dueDate == null) {
+            return DeadlineStatus.UPCOMING;
+        }
+
+        LocalDateTime now = LocalDateTime.now();
+        if (dueDate.isBefore(now)) {
+            return DeadlineStatus.OVERDUE;
+        }
+
+        if (dueDate.isBefore(now.plusDays(1))) {
+            return DeadlineStatus.NEARDEADLINE;
+        }
+
+        return DeadlineStatus.UPCOMING;
+    }
+
+    default CourseContentResponse.exercise toExercise(StudentTask studentTask) {
+        boolean isPersonal = studentTask.getTaskType() == TaskType.PERSONAL;
+        return new CourseContentResponse.exercise(studentTask.getPersonalTitle(), studentTask.getReminderAt(), null,
+                mapDeadlineStatus(studentTask), isPersonal);
+    }
+
+    default String resolveCourseName(StudentTask studentTask) {
+        boolean isPersonal = studentTask.getTaskType() == TaskType.PERSONAL;
+        if (isPersonal) {
+            return PERSONAL_DEADLINE;
+        }
+
+        if (studentTask.getClassCode() != null) {
+            return studentTask.getClassCode();
+        }
+
+        return UNKNOWN_DEADLINE;
+    }
 
     default List<Course> toListCourseWithDeadlines(List<StudentSubjectClass> studentClasses,
             List<CourseContentResponse> courseDeadlines) {

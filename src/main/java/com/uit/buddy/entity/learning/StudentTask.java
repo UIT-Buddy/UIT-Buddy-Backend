@@ -1,6 +1,7 @@
 package com.uit.buddy.entity.learning;
 
 import com.uit.buddy.entity.AbstractBaseEntity;
+import com.uit.buddy.entity.academic.SubjectClass;
 import com.uit.buddy.entity.user.Student;
 import com.uit.buddy.enums.TaskPriority;
 import com.uit.buddy.enums.TaskType;
@@ -25,9 +26,12 @@ public class StudentTask extends AbstractBaseEntity {
     @JoinColumn(name = "mssv", referencedColumnName = "mssv", foreignKey = @ForeignKey(name = "fk_task_student"))
     private Student student;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "assignment_id", foreignKey = @ForeignKey(name = "fk_task_assignment"))
-    private Assignment assignment;
+    @Column(name = "class_code", length = 30, insertable = false, updatable = false)
+    private String classCode;
+
+    @ManyToOne(fetch = FetchType.LAZY, optional = true)
+    @JoinColumn(name = "class_code", referencedColumnName = "class_code", foreignKey = @ForeignKey(name = "fk_assignment_class"))
+    private SubjectClass subjectClass;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "task_type", length = 20)
@@ -40,13 +44,6 @@ public class StudentTask extends AbstractBaseEntity {
     @Builder.Default
     private Boolean isCompleted = false;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "priority", length = 20)
-    private TaskPriority priority;
-
     @Column(name = "reminder_at")
     private LocalDateTime reminderAt;
-
-    @Column(name = "grade")
-    private Float grade;
 }

@@ -1,15 +1,17 @@
 package com.uit.buddy.repository.academic;
 
-import com.uit.buddy.entity.academic.StudentSubjectClass;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
+
+import com.uit.buddy.entity.academic.StudentSubjectClass;
 
 @Repository
 public interface StudentSubjectClassRepository extends CrudRepository<StudentSubjectClass, UUID> {
@@ -22,6 +24,12 @@ public interface StudentSubjectClassRepository extends CrudRepository<StudentSub
             + "WHERE ssc.student.mssv = :mssv AND sc.semester.semesterCode = :semesterCode")
     List<StudentSubjectClass> findAllByStudentMssvAndSemester(@Param("mssv") String mssv,
             @Param("semesterCode") String semesterCode);
+
+    @Query("SELECT ssc FROM StudentSubjectClass ssc "
+            + "JOIN FETCH ssc.subjectClass sc "
+            + "WHERE ssc.student.mssv = :mssv AND sc.courseCode = :courseCode ")
+    StudentSubjectClass findAllByStudentMssvAndCourseCode(@Param("mssv") String mssv,
+            @Param("courseCode") String courseCode);
 
     @Query("SELECT ssc FROM StudentSubjectClass ssc WHERE ssc.student.mssv = :mssv")
     List<StudentSubjectClass> findSubjectsByMssv(@Param("mssv") String mssv);
