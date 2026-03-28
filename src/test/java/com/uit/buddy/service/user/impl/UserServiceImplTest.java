@@ -36,7 +36,7 @@ class UserServiceImplTest {
     private UserSettingRepository userSettingRepository;
 
     @Mock
-    private FileService cloudinaryService;
+    private FileService fileService;
 
     @Mock
     private UserMapper userMapper;

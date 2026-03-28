@@ -37,7 +37,7 @@ public class PostServiceImpl implements PostService {
     private final PostRepository postRepository;
     private final StudentRepository studentRepository;
     private final PostMapper postMapper;
-    private final FileService cloudinaryService;
+    private final FileService fileService;
 
     @Value("${post.limit-upload-images}")
     private int limitNumberOfImages;
@@ -52,7 +52,7 @@ public class PostServiceImpl implements PostService {
         if (!studentRepository.existsById(mssv)) {
             throw new UserException(UserErrorCode.STUDENT_NOT_FOUND);
         }
-        List<PostMedia> medias = cloudinaryService.uploadMultiMedia(request.images(), request.videos());
+        List<PostMedia> medias = fileService.uploadMultiMedia(request.images(), request.videos());
         saveToDb(mssv, title, content, medias);
     }
 
@@ -113,10 +113,10 @@ public class PostServiceImpl implements PostService {
         Post post = getPostAndValidateOwner(postId, mssv);
         List<PostMedia> medias = post.getMedias();
         if (medias != null && !medias.isEmpty()) {
-            cloudinaryService.deletePostMedia(medias);
+            fileService.deletePostMedia(medias);
         }
         postRepository.delete(post);
-        log.info("[Post Service] Successfully deleted post {} and its cloud media", postId);
+        log.info("[Post Service] Successfully deleted post {} and its stored media", postId);
     }
 
     @Override

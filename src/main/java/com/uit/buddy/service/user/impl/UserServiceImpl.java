@@ -33,7 +33,7 @@ public class UserServiceImpl implements UserService {
 
     private final StudentRepository studentRepository;
     private final UserMapper userMapper;
-    private final FileService cloudinaryService;
+    private final FileService fileService;
     private final CometChatService cometChatService;
     private final UserSettingRepository userSettingRepository;
     private final UserSettingMapper userSettingMapper;
@@ -95,7 +95,7 @@ public class UserServiceImpl implements UserService {
         Student student = studentRepository.findById(mssv)
                 .orElseThrow(() -> new UserException(UserErrorCode.STUDENT_NOT_FOUND));
 
-        String avatarUrl = cloudinaryService.uploadAvatar(file, mssv);
+        String avatarUrl = fileService.uploadAvatar(file, mssv);
 
         student.setAvatarUrl(avatarUrl);
         studentRepository.save(student);
