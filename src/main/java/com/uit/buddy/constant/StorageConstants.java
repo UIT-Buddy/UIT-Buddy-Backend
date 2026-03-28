@@ -21,8 +21,7 @@ public final class StorageConstants {
     public static final String PATH_SEPARATOR = "/";
 
     private static final Map<String, FileType> FILE_TYPE_MAP = new HashMap<>();
-    private static final Map<String, String> CONTENT_TYPE_EXTENSION_MAP =
-            new HashMap<>();
+    private static final Map<String, String> CONTENT_TYPE_EXTENSION_MAP = new HashMap<>();
 
     static {
         FILE_TYPE_MAP.put("png", FileType.IMAGE);
@@ -54,18 +53,14 @@ public final class StorageConstants {
         CONTENT_TYPE_EXTENSION_MAP.put("video/webm", "webm");
         CONTENT_TYPE_EXTENSION_MAP.put("application/pdf", "pdf");
         CONTENT_TYPE_EXTENSION_MAP.put("application/msword", "doc");
-        CONTENT_TYPE_EXTENSION_MAP.put(
-                "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        CONTENT_TYPE_EXTENSION_MAP.put("application/vnd.openxmlformats-officedocument.wordprocessingml.document",
                 "docx");
         CONTENT_TYPE_EXTENSION_MAP.put("text/plain", "txt");
         CONTENT_TYPE_EXTENSION_MAP.put("application/vnd.ms-excel", "xls");
-        CONTENT_TYPE_EXTENSION_MAP.put(
-                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                "xlsx");
+        CONTENT_TYPE_EXTENSION_MAP.put("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "xlsx");
         CONTENT_TYPE_EXTENSION_MAP.put("text/csv", "csv");
         CONTENT_TYPE_EXTENSION_MAP.put("application/vnd.ms-powerpoint", "ppt");
-        CONTENT_TYPE_EXTENSION_MAP.put(
-                "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+        CONTENT_TYPE_EXTENSION_MAP.put("application/vnd.openxmlformats-officedocument.presentationml.presentation",
                 "pptx");
     }
 

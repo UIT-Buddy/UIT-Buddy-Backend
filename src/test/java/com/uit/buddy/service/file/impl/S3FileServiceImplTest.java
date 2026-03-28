@@ -115,10 +115,8 @@ class S3FileServiceImplTest {
             when(file.getBytes()).thenThrow(new IOException("Read error"));
             when(properties.getAllowedImageTypes()).thenReturn(new String[] { "image/jpeg", "image/png" });
 
-            assertThatThrownBy(() -> fileService.uploadAvatar(file, "21520001"))
-                    .isInstanceOf(SystemException.class)
-                    .extracting("code")
-                    .isEqualTo(SystemErrorCode.EXTERNAL_SERVICE_ERROR.getCode());
+            assertThatThrownBy(() -> fileService.uploadAvatar(file, "21520001")).isInstanceOf(SystemException.class)
+                    .extracting("code").isEqualTo(SystemErrorCode.EXTERNAL_SERVICE_ERROR.getCode());
         }
 
         @Test
@@ -129,10 +127,8 @@ class S3FileServiceImplTest {
             when(s3Client.putObject(any(PutObjectRequest.class), any(RequestBody.class)))
                     .thenThrow(new RuntimeException("Upload failed"));
 
-            assertThatThrownBy(() -> fileService.uploadAvatar(file, "21520001"))
-                    .isInstanceOf(SystemException.class)
-                    .extracting("code")
-                    .isEqualTo(SystemErrorCode.EXTERNAL_SERVICE_ERROR.getCode());
+            assertThatThrownBy(() -> fileService.uploadAvatar(file, "21520001")).isInstanceOf(SystemException.class)
+                    .extracting("code").isEqualTo(SystemErrorCode.EXTERNAL_SERVICE_ERROR.getCode());
         }
     }
 
@@ -160,10 +156,8 @@ class S3FileServiceImplTest {
             when(s3Client.putObject(any(PutObjectRequest.class), any(RequestBody.class)))
                     .thenThrow(new RuntimeException("Upload failed"));
 
-            assertThatThrownBy(() -> fileService.uploadPostImage(file, "post-123"))
-                    .isInstanceOf(SystemException.class)
-                    .extracting("code")
-                    .isEqualTo(SystemErrorCode.EXTERNAL_SERVICE_ERROR.getCode());
+            assertThatThrownBy(() -> fileService.uploadPostImage(file, "post-123")).isInstanceOf(SystemException.class)
+                    .extracting("code").isEqualTo(SystemErrorCode.EXTERNAL_SERVICE_ERROR.getCode());
         }
 
         @Test
@@ -186,10 +180,8 @@ class S3FileServiceImplTest {
             when(s3Client.putObject(any(PutObjectRequest.class), any(RequestBody.class)))
                     .thenThrow(new RuntimeException("Upload failed"));
 
-            assertThatThrownBy(() -> fileService.uploadPostVideo(file, "post-123"))
-                    .isInstanceOf(SystemException.class)
-                    .extracting("code")
-                    .isEqualTo(SystemErrorCode.EXTERNAL_SERVICE_ERROR.getCode());
+            assertThatThrownBy(() -> fileService.uploadPostVideo(file, "post-123")).isInstanceOf(SystemException.class)
+                    .extracting("code").isEqualTo(SystemErrorCode.EXTERNAL_SERVICE_ERROR.getCode());
         }
     }
 
@@ -202,10 +194,8 @@ class S3FileServiceImplTest {
         void shouldThrowExceptionWhenFileIsNull() {
             when(properties.getAllowedImageTypes()).thenReturn(new String[] { "image/jpeg", "image/png" });
 
-            assertThatThrownBy(() -> fileService.validateFile(null, FileType.IMAGE))
-                    .isInstanceOf(UserException.class)
-                    .extracting("code")
-                    .isEqualTo(UserErrorCode.FILE_EMPTY.getCode());
+            assertThatThrownBy(() -> fileService.validateFile(null, FileType.IMAGE)).isInstanceOf(UserException.class)
+                    .extracting("code").isEqualTo(UserErrorCode.FILE_EMPTY.getCode());
         }
 
         @Test
@@ -215,9 +205,7 @@ class S3FileServiceImplTest {
             when(properties.getAllowedImageTypes()).thenReturn(new String[] { "image/jpeg", "image/png" });
 
             assertThatThrownBy(() -> fileService.validateFile(emptyFile, FileType.IMAGE))
-                    .isInstanceOf(UserException.class)
-                    .extracting("code")
-                    .isEqualTo(UserErrorCode.FILE_EMPTY.getCode());
+                    .isInstanceOf(UserException.class).extracting("code").isEqualTo(UserErrorCode.FILE_EMPTY.getCode());
         }
 
         @Test
@@ -226,10 +214,8 @@ class S3FileServiceImplTest {
             MultipartFile file = new MockMultipartFile("file", "test.txt", "text/plain", "content".getBytes());
             when(properties.getAllowedImageTypes()).thenReturn(new String[] { "image/jpeg", "image/png" });
 
-            assertThatThrownBy(() -> fileService.validateFile(file, FileType.IMAGE))
-                    .isInstanceOf(UserException.class)
-                    .extracting("code")
-                    .isEqualTo(UserErrorCode.INVALID_FILE_TYPE.getCode());
+            assertThatThrownBy(() -> fileService.validateFile(file, FileType.IMAGE)).isInstanceOf(UserException.class)
+                    .extracting("code").isEqualTo(UserErrorCode.INVALID_FILE_TYPE.getCode());
         }
 
         @Test
@@ -295,18 +281,13 @@ class S3FileServiceImplTest {
         @DisplayName("Should delete only S3 and public CDN media")
         void shouldDeleteOnlyS3AndPublicCdnMedia() {
             when(properties.getPublicBaseUrl()).thenReturn("cdn.example.com");
-            PostMedia cloudFrontMedia = PostMedia.builder()
-                    .url("https://cdn.example.com/posts/images/post-image.jpg")
-                    .type(FileType.IMAGE)
-                    .build();
+            PostMedia cloudFrontMedia = PostMedia.builder().url("https://cdn.example.com/posts/images/post-image.jpg")
+                    .type(FileType.IMAGE).build();
             PostMedia s3Media = PostMedia.builder()
                     .url("https://uitbuddy-storage.s3.ap-southeast-2.amazonaws.com/posts/videos/post-video.mp4")
-                    .type(FileType.VIDEO)
-                    .build();
+                    .type(FileType.VIDEO).build();
             PostMedia legacyMedia = PostMedia.builder()
-                    .url("https://legacy-storage.example.com/posts/images/old-image.jpg")
-                    .type(FileType.IMAGE)
-                    .build();
+                    .url("https://legacy-storage.example.com/posts/images/old-image.jpg").type(FileType.IMAGE).build();
 
             fileService.deletePostMedia(List.of(cloudFrontMedia, s3Media, legacyMedia));
 
@@ -319,10 +300,8 @@ class S3FileServiceImplTest {
         @Test
         @DisplayName("Should swallow exception when media deletion fails")
         void shouldSwallowExceptionWhenMediaDeletionFails() {
-            PostMedia media = PostMedia.builder()
-                    .url("https://cdn.example.com/posts/images/post-image.jpg")
-                    .type(FileType.IMAGE)
-                    .build();
+            PostMedia media = PostMedia.builder().url("https://cdn.example.com/posts/images/post-image.jpg")
+                    .type(FileType.IMAGE).build();
             when(s3Client.deleteObject(any(DeleteObjectRequest.class)))
                     .thenThrow(new RuntimeException("Delete failed"));
 
@@ -368,20 +347,18 @@ class S3FileServiceImplTest {
             List<PostMedia> result = fileService.uploadMultiMedia(List.of(image), List.of(video));
 
             assertThat(result).hasSize(2);
-            assertThat(result).extracting(PostMedia::getType)
-                    .containsExactlyInAnyOrder(FileType.IMAGE, FileType.VIDEO);
+            assertThat(result).extracting(PostMedia::getType).containsExactlyInAnyOrder(FileType.IMAGE, FileType.VIDEO);
         }
 
         @Test
         @DisplayName("Should fail fast when media validation fails")
         void shouldFailFastWhenMediaValidationFails() {
-            MultipartFile invalidImage =
-                    new MockMultipartFile("image", "image.txt", "text/plain", "content".getBytes());
+            MultipartFile invalidImage = new MockMultipartFile("image", "image.txt", "text/plain",
+                    "content".getBytes());
             when(properties.getAllowedImageTypes()).thenReturn(new String[] { "image/jpeg" });
 
             assertThatThrownBy(() -> fileService.uploadMultiMedia(List.of(invalidImage), null))
-                    .isInstanceOf(UserException.class)
-                    .extracting("code")
+                    .isInstanceOf(UserException.class).extracting("code")
                     .isEqualTo(UserErrorCode.INVALID_FILE_TYPE.getCode());
         }
 
@@ -395,8 +372,7 @@ class S3FileServiceImplTest {
             when(properties.getAllowedImageTypes()).thenReturn(new String[] { "image/jpeg", "image/png" });
 
             assertThatThrownBy(() -> fileService.uploadMultiMedia(List.of(image), null))
-                    .isInstanceOf(SystemException.class)
-                    .extracting("code")
+                    .isInstanceOf(SystemException.class).extracting("code")
                     .isEqualTo(SystemErrorCode.EXTERNAL_SERVICE_ERROR.getCode());
         }
 
@@ -409,11 +385,8 @@ class S3FileServiceImplTest {
                     .thenThrow(new RuntimeException("Upload failed"));
 
             assertThatThrownBy(() -> fileService.uploadMultiMedia(List.of(image), null))
-                    .isInstanceOf(CompletionException.class)
-                    .cause()
-                    .isInstanceOf(SystemException.class)
-                    .extracting("code")
-                    .isEqualTo(SystemErrorCode.EXTERNAL_SERVICE_ERROR.getCode());
+                    .isInstanceOf(CompletionException.class).cause().isInstanceOf(SystemException.class)
+                    .extracting("code").isEqualTo(SystemErrorCode.EXTERNAL_SERVICE_ERROR.getCode());
         }
     }
 
@@ -436,16 +409,10 @@ class S3FileServiceImplTest {
         @Test
         @DisplayName("Should upload multiple documents successfully")
         void shouldUploadMultipleDocumentsSuccessfully() {
-            MultipartFile file1 = new MockMultipartFile(
-                    "file1",
-                    "report.pdf",
-                    "application/pdf",
+            MultipartFile file1 = new MockMultipartFile("file1", "report.pdf", "application/pdf",
                     new byte[2 * 1024 * 1024]);
-            MultipartFile file2 = new MockMultipartFile(
-                    "file2",
-                    "sheet.xlsx",
-                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                    new byte[1024 * 1024]);
+            MultipartFile file2 = new MockMultipartFile("file2", "sheet.xlsx",
+                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", new byte[1024 * 1024]);
 
             List<DocumentUploadResult> result = fileService.uploadMultipleDocuments(List.of(file1, file2));
 
@@ -461,10 +428,7 @@ class S3FileServiceImplTest {
         @Test
         @DisplayName("Should classify unknown document extension as other")
         void shouldClassifyUnknownDocumentExtensionAsOther() {
-            MultipartFile file = new MockMultipartFile(
-                    "file",
-                    "archive.bin",
-                    "application/octet-stream",
+            MultipartFile file = new MockMultipartFile("file", "archive.bin", "application/octet-stream",
                     new byte[512]);
 
             List<DocumentUploadResult> result = fileService.uploadMultipleDocuments(List.of(file));
@@ -481,11 +445,8 @@ class S3FileServiceImplTest {
             MultipartFile emptyFile = new MockMultipartFile("file", "empty.pdf", "application/pdf", new byte[0]);
 
             assertThatThrownBy(() -> fileService.uploadMultipleDocuments(List.of(emptyFile)))
-                    .isInstanceOf(CompletionException.class)
-                    .cause()
-                    .isInstanceOf(UserException.class)
-                    .extracting("code")
-                    .isEqualTo(UserErrorCode.FILE_EMPTY.getCode());
+                    .isInstanceOf(CompletionException.class).cause().isInstanceOf(UserException.class)
+                    .extracting("code").isEqualTo(UserErrorCode.FILE_EMPTY.getCode());
         }
 
         @Test
@@ -496,11 +457,8 @@ class S3FileServiceImplTest {
             when(file.getBytes()).thenThrow(new IOException("Read error"));
 
             assertThatThrownBy(() -> fileService.uploadMultipleDocuments(List.of(file)))
-                    .isInstanceOf(CompletionException.class)
-                    .cause()
-                    .isInstanceOf(SystemException.class)
-                    .extracting("code")
-                    .isEqualTo(SystemErrorCode.EXTERNAL_SERVICE_ERROR.getCode());
+                    .isInstanceOf(CompletionException.class).cause().isInstanceOf(SystemException.class)
+                    .extracting("code").isEqualTo(SystemErrorCode.EXTERNAL_SERVICE_ERROR.getCode());
         }
 
         @Test
@@ -511,11 +469,8 @@ class S3FileServiceImplTest {
                     .thenThrow(new RuntimeException("Upload failed"));
 
             assertThatThrownBy(() -> fileService.uploadMultipleDocuments(List.of(file)))
-                    .isInstanceOf(CompletionException.class)
-                    .cause()
-                    .isInstanceOf(SystemException.class)
-                    .extracting("code")
-                    .isEqualTo(SystemErrorCode.EXTERNAL_SERVICE_ERROR.getCode());
+                    .isInstanceOf(CompletionException.class).cause().isInstanceOf(SystemException.class)
+                    .extracting("code").isEqualTo(SystemErrorCode.EXTERNAL_SERVICE_ERROR.getCode());
         }
     }
 }
