@@ -2,21 +2,25 @@ package com.uit.buddy.service.academic.impl;
 
 import com.uit.buddy.client.UitClient;
 import com.uit.buddy.constant.IcsConstants;
-import com.uit.buddy.dto.request.academic.UploadScheduleRequest;
+import com.uit.buddy.dto.request.schedule.CreateDeadlineRequest;
+import com.uit.buddy.dto.request.schedule.UploadScheduleRequest;
 import com.uit.buddy.dto.response.client.AssignmentDetailResponse;
 import com.uit.buddy.dto.response.client.CourseDetailResponse;
 import com.uit.buddy.dto.response.client.EnrolledCourseResponse;
 import com.uit.buddy.dto.response.client.SiteInfoResponse;
 import com.uit.buddy.dto.response.schedule.CourseCalendarResponse;
 import com.uit.buddy.dto.response.schedule.CourseContentResponse;
+import com.uit.buddy.dto.response.schedule.CreateDeadlineResponse;
 import com.uit.buddy.dto.response.schedule.DeadlineResponse;
 import com.uit.buddy.entity.academic.Course;
 import com.uit.buddy.entity.academic.Semester;
 import com.uit.buddy.entity.academic.StudentSubjectClass;
 import com.uit.buddy.entity.academic.SubjectClass;
+import com.uit.buddy.entity.learning.StudentTask;
 import com.uit.buddy.entity.user.Student;
 import com.uit.buddy.enums.DeadlineStatus;
 import com.uit.buddy.enums.StudentClassStatus;
+import com.uit.buddy.enums.TaskType;
 import com.uit.buddy.exception.schedule.ScheduleErrorCode;
 import com.uit.buddy.exception.schedule.ScheduleException;
 import com.uit.buddy.exception.system.SystemErrorCode;
@@ -29,8 +33,10 @@ import com.uit.buddy.repository.academic.CurriculumCourseRepository;
 import com.uit.buddy.repository.academic.SemesterRepository;
 import com.uit.buddy.repository.academic.StudentSubjectClassRepository;
 import com.uit.buddy.repository.academic.SubjectClassRepository;
+import com.uit.buddy.repository.learning.StudentTaskRepository;
 import com.uit.buddy.repository.user.StudentRepository;
 import com.uit.buddy.service.academic.ScheduleService;
+import com.uit.buddy.service.learning.AssignmentService;
 import com.uit.buddy.util.EncryptionUtils;
 import com.uit.buddy.util.IcsParser;
 import com.uit.buddy.util.IcsParser.IcsEvent;
@@ -69,7 +75,9 @@ public class ScheduleServiceImpl implements ScheduleService {
     private final StudentSubjectClassRepository studentSubjectClassRepository;
     private final CourseRepository courseRepository;
     private final CurriculumCourseRepository curriculumCourseRepository;
+    private final StudentTaskRepository studentTaskRepository;
     private final SemesterRepository semesterRepository;
+    private final AssignmentService assignmentService;
     private final UitClient uitClient;
     private final EncryptionUtils encryptionUtils;
     private final Executor executor;
@@ -79,7 +87,8 @@ public class ScheduleServiceImpl implements ScheduleService {
     public ScheduleServiceImpl(IcsParser icsParser, StudentRepository studentRepository,
             SubjectClassRepository subjectClassRepository, StudentSubjectClassRepository studentSubjectClassRepository,
             CourseRepository courseRepository, CurriculumCourseRepository curriculumCourseRepository,
-            SemesterRepository semesterRepository, UitClient uitClient, EncryptionUtils encryptionUtils,
+            AssignmentService assignmentService, SemesterRepository semesterRepository, UitClient uitClient,
+            EncryptionUtils encryptionUtils, StudentTaskRepository studentTaskRepository,
             @Qualifier("uploadExecutor") Executor executor, ScheduleMapper scheduleMapper) {
         this.icsParser = icsParser;
         this.studentRepository = studentRepository;
@@ -92,6 +101,8 @@ public class ScheduleServiceImpl implements ScheduleService {
         this.encryptionUtils = encryptionUtils;
         this.executor = executor;
         this.scheduleMapper = scheduleMapper;
+        this.studentTaskRepository = studentTaskRepository;
+        this.assignmentService = assignmentService;
     }
 
     @Override
@@ -126,6 +137,42 @@ public class ScheduleServiceImpl implements ScheduleService {
             log.error("[Schedule Service] IO error during sync upload for student {}: ", mssv, e);
             throw new SystemException(SystemErrorCode.INTERNAL_ERROR);
         }
+    }
+
+    @Override
+    public CreateDeadlineResponse createDeadline(String mssv, CreateDeadlineRequest request) {
+        String classCode = request.classCode();
+        if (request.exerciseName() == null)
+            throw new ScheduleException(ScheduleErrorCode.INVALID_EXERCISE_NAME);
+        if (request.dueDate() == null)
+            throw new ScheduleException(ScheduleErrorCode.INVALID_DUE_TIME);
+        Student student = studentRepository.findById(mssv)
+                .orElseThrow(() -> new UserException(UserErrorCode.STUDENT_NOT_FOUND));
+        StudentSubjectClass studentSubjectClass = null;
+        if (request.classCode() != null) {
+            studentSubjectClass = studentSubjectClassRepository.findSubjectByClassCode(mssv, request.classCode());
+            if (studentSubjectClass == null)
+                throw new ScheduleException(ScheduleErrorCode.CLASS_NOT_FOUND);
+        }
+        TaskType taskType = studentSubjectClass == null ? TaskType.PERSONAL : TaskType.ASSIGNMENT;
+        SubjectClass subjectClass = subjectClassRepository.findByClassCodeAndStudentMssv(mssv, request.classCode());
+        log.info("[SCHEDULE SERVICE]: Create task for user with id {}", mssv);
+        StudentTask studentTask = StudentTask.builder().student(student).taskType(taskType).subjectClass(subjectClass)
+                .personalTitle(request.exerciseName()).reminderAt(request.dueDate()).build();
+        studentTaskRepository.save(studentTask);
+        return scheduleMapper.toCreateDeadlineResponse(studentTask);
+    }
+
+    @Override
+    public DeadlineResponse fetchDeadline(String mssv, Integer month, Integer year, Pageable pageable) {
+        List<CourseContentResponse> moodleTask = fetchCourseDeadlinesFromMoodle(mssv, month, year);
+        List<CourseContentResponse> studentTasks = assignmentService.getDeadlineWithMssv(mssv, month, year);
+        List<CourseContentResponse> joinedTask = new ArrayList<>(moodleTask);
+        joinedTask.addAll(studentTasks);
+
+        int totalDeadlines = joinedTask.stream().mapToInt(c -> c.exercises().size()).sum();
+        List<CourseContentResponse> pagedCourseContents = paginateDeadlines(joinedTask, pageable);
+        return new DeadlineResponse(totalDeadlines, pagedCourseContents);
     }
 
     @Override
@@ -320,7 +367,8 @@ public class ScheduleServiceImpl implements ScheduleService {
         }
     }
 
-    private List<CourseContentResponse> fetchCourseDeadlinesFromMoodle(String mssv, Integer month, Integer year) {
+    @Override
+    public List<CourseContentResponse> fetchCourseDeadlinesFromMoodle(String mssv, Integer month, Integer year) {
         Student student = studentRepository.findById(mssv)
                 .orElseThrow(() -> new UserException(UserErrorCode.STUDENT_NOT_FOUND));
         String decryptedWstoken = encryptionUtils.decrypt(student.getEncryptedWstoken());
@@ -391,7 +439,7 @@ public class ScheduleServiceImpl implements ScheduleService {
                     }
 
                     exercises.add(new CourseContentResponse.exercise(module.name(), dueDate, module.url(),
-                            determineDeadlineStatus(dueDate, decryptedWstoken, module.id())));
+                            determineDeadlineStatus(dueDate, decryptedWstoken, module.id()), false));
                 }
             }
         }

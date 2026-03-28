@@ -9,4 +9,5 @@ public final class AsyncConstants {
     public static final String MEDIA_THREAD_PREFIX = "Buddy-Media-";
     public static final String COMET_CHAT_THREAD_PREFIX = "Buddy-CometChat-";
     public static final String NOTIFICATION_THREAD_PREFIX = "Buddy-Notification-";
+    public static final String FETCH_THREAD_PREFIX = "Buddy-Fetch-";
 }

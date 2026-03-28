@@ -2,9 +2,11 @@ package com.uit.buddy.controller.academic;
 
 import com.uit.buddy.controller.AbstractBaseController;
 import com.uit.buddy.dto.base.SingleResponse;
-import com.uit.buddy.dto.base.SuccessResponse;
-import com.uit.buddy.dto.request.academic.UploadScheduleRequest;
+import com.uit.buddy.dto.request.schedule.CreateDeadlineRequest;
+import com.uit.buddy.dto.request.schedule.UploadScheduleRequest;
 import com.uit.buddy.dto.response.schedule.CourseCalendarResponse;
+import com.uit.buddy.dto.response.schedule.CourseContentResponse;
+import com.uit.buddy.dto.response.schedule.CreateDeadlineResponse;
 import com.uit.buddy.dto.response.schedule.DeadlineResponse;
 import com.uit.buddy.exception.schedule.ScheduleErrorCode;
 import com.uit.buddy.exception.schedule.ScheduleException;
@@ -22,6 +24,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -50,15 +53,24 @@ public class ScheduleController extends AbstractBaseController {
         return successSingle(uploadedCourses, "Schedule uploaded successfully");
     }
 
+    @PostMapping("/deadline")
+    @Operation(summary = "Create deadline", description = "Create personal or course-linked deadline")
+    public ResponseEntity<SingleResponse<CreateDeadlineResponse>> createDeadline(
+            @Valid @RequestBody CreateDeadlineRequest request, @AuthenticationPrincipal String mssv) {
+        log.info("[Schedule Controller] Creating deadline for student: {}", mssv);
+        CreateDeadlineResponse exercise = scheduleService.createDeadline(mssv, request);
+        return successSingle(exercise, "Deadline created successfully");
+    }
+
     @GetMapping("/deadline")
-    @Operation(summary = "Fetch deadlines from Moodle", description = "Fetch assignment deadlines from Moodle")
+    @Operation(summary = "Fetch deadlines", description = "Fetch assignment deadlines from Moodle and StudentTask")
     public ResponseEntity<SingleResponse<DeadlineResponse>> fetchDeadlinesFromMoodle(
             @RequestParam(defaultValue = "1") int page, @RequestParam(defaultValue = "15") int limit,
             @RequestParam(defaultValue = "desc") String sortType,
             @RequestParam(defaultValue = "created_at") String sortBy,
             @RequestParam(name = "month", required = false) Integer month,
             @RequestParam(name = "year", required = false) Integer year, @AuthenticationPrincipal String mssv) {
-        log.info("[Schedule Controller] Fetching deadlines from Moodle for student: {}", mssv);
+        log.info("[Schedule Controller] Fetching deadlines for student: {}", mssv);
         if (month != null && (month < 1 || month > 12)) {
             throw new ScheduleException(ScheduleErrorCode.INVALID_MONTH);
         }
@@ -66,7 +78,7 @@ public class ScheduleController extends AbstractBaseController {
             throw new ScheduleException(ScheduleErrorCode.INVALID_FILTER_WITH_DEADLINES);
         }
         Pageable pageable = createPageable(page, limit, sortType, sortBy);
-        DeadlineResponse deadlines = scheduleService.fetchDeadlinesFromMoodle(mssv, month, year, pageable);
+        DeadlineResponse deadlines = scheduleService.fetchDeadline(mssv, month, year, pageable);
         return successSingle(deadlines, "Deadlines fetched successfully");
     }
 
