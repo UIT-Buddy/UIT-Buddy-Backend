@@ -12,6 +12,8 @@ import org.springframework.data.domain.Pageable;
 public interface ScheduleService {
     List<CourseCalendarResponse.Course> uploadSchedule(String mssv, UploadScheduleRequest request);
 
+    List<String> fetchStudyingClassCodes(String mssv);
+
     CreateDeadlineResponse createDeadline(String mssv, CreateDeadlineRequest request);
 
     DeadlineResponse fetchDeadline(String mssv, Integer month, Integer year, Pageable pageable);

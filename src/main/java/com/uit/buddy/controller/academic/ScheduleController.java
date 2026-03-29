@@ -5,7 +5,6 @@ import com.uit.buddy.dto.base.SingleResponse;
 import com.uit.buddy.dto.request.schedule.CreateDeadlineRequest;
 import com.uit.buddy.dto.request.schedule.UploadScheduleRequest;
 import com.uit.buddy.dto.response.schedule.CourseCalendarResponse;
-import com.uit.buddy.dto.response.schedule.CourseContentResponse;
 import com.uit.buddy.dto.response.schedule.CreateDeadlineResponse;
 import com.uit.buddy.dto.response.schedule.DeadlineResponse;
 import com.uit.buddy.exception.schedule.ScheduleErrorCode;
@@ -61,6 +60,14 @@ public class ScheduleController extends AbstractBaseController {
         log.info("[Schedule Controller] Creating deadline for student: {}", mssv);
         CreateDeadlineResponse exercise = scheduleService.createDeadline(mssv, request);
         return successSingle(exercise, "Deadline created successfully");
+    }
+
+    @GetMapping("/deadline/class-codes/studying")
+    @Operation(summary = "Fetch studying class codes", description = "Fetch classCode list for current user where status is STUDYING")
+    public ResponseEntity<SingleResponse<List<String>>> fetchStudyingClassCodes(@AuthenticationPrincipal String mssv) {
+        log.info("[Schedule Controller] Fetching studying class codes for student: {}", mssv);
+        List<String> classCodes = scheduleService.fetchStudyingClassCodes(mssv);
+        return successSingle(classCodes, "Studying class codes fetched successfully");
     }
 
     @GetMapping("/deadline")
