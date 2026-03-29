@@ -14,8 +14,8 @@ import com.uit.buddy.mapper.user.UserMapper;
 import com.uit.buddy.mapper.user.UserSettingMapper;
 import com.uit.buddy.repository.user.StudentRepository;
 import com.uit.buddy.repository.user.UserSettingRepository;
-import com.uit.buddy.service.cloudinary.CloudinaryService;
 import com.uit.buddy.service.cometchat.CometChatService;
+import com.uit.buddy.service.file.FileService;
 import com.uit.buddy.service.social.FriendService;
 import com.uit.buddy.service.user.UserService;
 import lombok.RequiredArgsConstructor;
@@ -33,7 +33,7 @@ public class UserServiceImpl implements UserService {
 
     private final StudentRepository studentRepository;
     private final UserMapper userMapper;
-    private final CloudinaryService cloudinaryService;
+    private final FileService fileService;
     private final CometChatService cometChatService;
     private final UserSettingRepository userSettingRepository;
     private final UserSettingMapper userSettingMapper;
@@ -95,7 +95,7 @@ public class UserServiceImpl implements UserService {
         Student student = studentRepository.findById(mssv)
                 .orElseThrow(() -> new UserException(UserErrorCode.STUDENT_NOT_FOUND));
 
-        String avatarUrl = cloudinaryService.uploadAvatar(file, mssv);
+        String avatarUrl = fileService.uploadAvatar(file, mssv);
 
         student.setAvatarUrl(avatarUrl);
         studentRepository.save(student);
