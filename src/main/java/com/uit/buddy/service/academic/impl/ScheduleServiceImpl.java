@@ -3,6 +3,7 @@ package com.uit.buddy.service.academic.impl;
 import com.uit.buddy.client.UitClient;
 import com.uit.buddy.constant.IcsConstants;
 import com.uit.buddy.dto.request.schedule.CreateDeadlineRequest;
+import com.uit.buddy.dto.request.schedule.UpdateDeadlineRequest;
 import com.uit.buddy.dto.request.schedule.UploadScheduleRequest;
 import com.uit.buddy.dto.response.client.AssignmentDetailResponse;
 import com.uit.buddy.dto.response.client.CourseDetailResponse;
@@ -169,6 +170,24 @@ public class ScheduleServiceImpl implements ScheduleService {
         StudentTask studentTask = StudentTask.builder().student(student).taskType(taskType).subjectClass(subjectClass)
                 .personalTitle(request.exerciseName()).reminderAt(request.dueDate()).build();
         studentTaskRepository.save(studentTask);
+        return scheduleMapper.toCreateDeadlineResponse(studentTask);
+    }
+
+    @Override
+    public CreateDeadlineResponse updateDeadline(String mssv, UpdateDeadlineRequest request) {
+        if (request.exerciseName() == null || request.exerciseName().isBlank())
+            throw new ScheduleException(ScheduleErrorCode.INVALID_EXERCISE_NAME);
+        if (request.dueDate() == null)
+            throw new ScheduleException(ScheduleErrorCode.INVALID_DUE_TIME);
+
+
+        StudentTask studentTask = studentTaskRepository.findByIdAndMssv(request.studentTaskId(), mssv)
+                .orElseThrow(() -> new ScheduleException(ScheduleErrorCode.ASSIGNMENT_NOT_EXIST));
+
+        studentTask.setPersonalTitle(request.exerciseName());
+        studentTask.setReminderAt(request.dueDate());
+        studentTaskRepository.save(studentTask);
+
         return scheduleMapper.toCreateDeadlineResponse(studentTask);
     }
 

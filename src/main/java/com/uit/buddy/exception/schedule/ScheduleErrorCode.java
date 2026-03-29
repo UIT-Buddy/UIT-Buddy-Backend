@@ -23,7 +23,8 @@ public enum ScheduleErrorCode {
     STUDENT_CLASS_NOT_FOUND_FOR_COURSE("SCH012", "No class mapping found for this course", HttpStatus.NOT_FOUND),
     CLASS_NOT_FOUND("SCH011", "Class in schedule not found", HttpStatus.NOT_FOUND),
     INVALID_EXERCISE_NAME("SCH012", "Exercise name is required", HttpStatus.NOT_FOUND),
-    INVALID_DUE_TIME("SCH013", "Due time is required", HttpStatus.NOT_FOUND);
+    INVALID_DUE_TIME("SCH013", "Due time is required", HttpStatus.NOT_FOUND),
+    ASSIGNMENT_NOT_EXIST("SCH014", "Assignment not exist", HttpStatus.NOT_FOUND);
 
     private final String code;
     private final String message;

@@ -1,6 +1,7 @@
 package com.uit.buddy.service.academic;
 
 import com.uit.buddy.dto.request.schedule.CreateDeadlineRequest;
+import com.uit.buddy.dto.request.schedule.UpdateDeadlineRequest;
 import com.uit.buddy.dto.request.schedule.UploadScheduleRequest;
 import com.uit.buddy.dto.response.schedule.CourseCalendarResponse;
 import com.uit.buddy.dto.response.schedule.CourseContentResponse;
@@ -15,6 +16,8 @@ public interface ScheduleService {
     List<String> fetchStudyingClassCodes(String mssv);
 
     CreateDeadlineResponse createDeadline(String mssv, CreateDeadlineRequest request);
+
+    CreateDeadlineResponse updateDeadline(String mssv, UpdateDeadlineRequest request);
 
     DeadlineResponse fetchDeadline(String mssv, Integer month, Integer year, Pageable pageable);
 
