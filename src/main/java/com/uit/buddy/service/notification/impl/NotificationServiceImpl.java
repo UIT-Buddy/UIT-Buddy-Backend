@@ -1,5 +1,14 @@
 package com.uit.buddy.service.notification.impl;
 
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.UUID;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import com.uit.buddy.dto.response.notification.NotificationResponse;
 import com.uit.buddy.entity.notification.Notification;
 import com.uit.buddy.enums.NotificationTemplate;
@@ -19,15 +28,9 @@ import com.uit.buddy.repository.user.UserSettingRepository;
 import com.uit.buddy.service.fcm.FcmService;
 import com.uit.buddy.service.notification.NotificationService;
 import com.uit.buddy.util.CursorUtils;
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.UUID;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -87,6 +90,30 @@ public class NotificationServiceImpl implements NotificationService {
         NotificationTemplate template = NotificationTemplate.COMMENT_LIKE;
         processAggregatedNotification(event.receiverMssv(), template.getTitle(), event.actorName(), template,
                 event.commentId().toString(), "thích");
+    }
+
+    @Override
+    @Transactional
+    public void createNearDeadlineNotification(String mssv, String deadlineName) {
+        NotificationTemplate template = NotificationTemplate.REMINDER;
+        processNotification(mssv, template.getTitle(),
+                "Deadline '" + deadlineName + "' sẽ đến hạn trong vòng 24 giờ.", template, null);
+    }
+
+    @Override
+    @Transactional
+    public void createOverdueDeadlineNotification(String mssv, String deadlineName) {
+        NotificationTemplate template = NotificationTemplate.ACADEMIC;
+        processNotification(mssv, template.getTitle(),
+                "Deadline '" + deadlineName + "' đã quá hạn.", template, null);
+    }
+
+    @Override
+    @Transactional
+    public void createDeadlineSummaryNotification(String mssv, int uncompletedCount) {
+        NotificationTemplate template = NotificationTemplate.ACADEMIC;
+        processNotification(mssv, template.getTitle(),
+                "Bạn hiện có " + uncompletedCount + " deadline chưa hoàn thành trên Moodle.", template, null);
     }
 
     private void processAggregatedNotification(String receiverMssv, String title, String actorName,

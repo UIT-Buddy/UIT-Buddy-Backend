@@ -10,7 +10,7 @@ import org.springframework.scheduling.config.ScheduledTaskRegistrar;
 @Configuration
 public class ScheduleConfig implements SchedulingConfigurer {
 
-    @Value("${thread.core-thread-pool-size}")
+    @Value("${schedule.core-thread-pool-size}")
     private int corePoolSize;
 
     @Override

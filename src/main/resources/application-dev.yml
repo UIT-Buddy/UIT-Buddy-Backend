@@ -114,6 +114,8 @@ thread:
   core-thread-pool-size: ${CORE_THREAD_POOL_SIZE}
   max-thread-pool-size: ${MAX_THREAD_POOL_SIZE}
   thread-queue-capacity: ${THREAD_QUEUE_CAPACITY}
+schedule:
+  core-thread-pool-size: ${CORE_SCHEDULE_THREAD_POOL_SIZE}
 scalar:
   path: ${SCALAR_PATH:/docs}
   url: ${SCALAR_URL:/v3/api-docs}

@@ -10,6 +10,7 @@ import com.uit.buddy.dto.response.schedule.CreateDeadlineResponse;
 import com.uit.buddy.dto.response.schedule.DeadlineResponse;
 import com.uit.buddy.exception.schedule.ScheduleErrorCode;
 import com.uit.buddy.exception.schedule.ScheduleException;
+import com.uit.buddy.scheduler.ScheduleScheduler;
 import com.uit.buddy.service.academic.ScheduleService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -70,6 +71,7 @@ public class ScheduleController extends AbstractBaseController {
             @RequestParam(defaultValue = "created_at") String sortBy,
             @RequestParam(name = "month", required = false) Integer month,
             @RequestParam(name = "year", required = false) Integer year, @AuthenticationPrincipal String mssv) {
+        ScheduleScheduler.stopSchedule();
         log.info("[Schedule Controller] Fetching deadlines for student: {}", mssv);
         if (month != null && (month < 1 || month > 12)) {
             throw new ScheduleException(ScheduleErrorCode.INVALID_MONTH);

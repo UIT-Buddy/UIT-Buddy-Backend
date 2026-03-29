@@ -35,6 +35,7 @@ import com.uit.buddy.repository.academic.StudentSubjectClassRepository;
 import com.uit.buddy.repository.academic.SubjectClassRepository;
 import com.uit.buddy.repository.learning.StudentTaskRepository;
 import com.uit.buddy.repository.user.StudentRepository;
+import com.uit.buddy.scheduler.ScheduleScheduler;
 import com.uit.buddy.service.academic.ScheduleService;
 import com.uit.buddy.service.learning.AssignmentService;
 import com.uit.buddy.util.EncryptionUtils;
@@ -58,6 +59,8 @@ import java.util.concurrent.Executor;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+
+import io.lettuce.core.ScriptOutputType;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.domain.Pageable;
@@ -151,7 +154,7 @@ public class ScheduleServiceImpl implements ScheduleService {
         StudentSubjectClass studentSubjectClass = null;
         if (request.classCode() != null) {
             studentSubjectClass = studentSubjectClassRepository.findSubjectByClassCode(mssv, request.classCode());
-            if (studentSubjectClass == null)
+            if (studentSubjectClass == null & !request.classCode().isEmpty())
                 throw new ScheduleException(ScheduleErrorCode.CLASS_NOT_FOUND);
         }
         TaskType taskType = studentSubjectClass == null ? TaskType.PERSONAL : TaskType.ASSIGNMENT;

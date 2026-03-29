@@ -32,7 +32,8 @@ rebuild: ## Rebuild JAR and restart Docker containers
 	@echo "Building and starting Docker containers..."
 	$(DOCKER_COMPOSE) up -d --build --remove-orphans
 	$(DOCKER_COMPOSE) ps
-
+redis-shell:
+	podman exec -it buddy-redis redis-cli
 db-shell: ## Open a psql shell in the postgres container
 	$(DOCKER_COMPOSE) exec postgres psql -U postgres -d buddy_db
 
