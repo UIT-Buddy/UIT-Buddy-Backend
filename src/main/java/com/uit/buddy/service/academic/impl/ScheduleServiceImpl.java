@@ -42,6 +42,7 @@ import com.uit.buddy.util.EncryptionUtils;
 import com.uit.buddy.util.IcsParser;
 import com.uit.buddy.util.IcsParser.IcsEvent;
 import com.uit.buddy.util.IcsParser.ParseResult;
+import io.lettuce.core.ScriptOutputType;
 import java.io.IOException;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -59,8 +60,6 @@ import java.util.concurrent.Executor;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-
-import io.lettuce.core.ScriptOutputType;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.domain.Pageable;

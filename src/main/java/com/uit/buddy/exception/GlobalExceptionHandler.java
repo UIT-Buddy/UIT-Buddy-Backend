@@ -139,6 +139,7 @@ public class GlobalExceptionHandler {
 
         return ResponseEntity.status(SystemErrorCode.INTERNAL_ERROR.getHttpStatus()).body(response);
     }
+
     @ExceptionHandler(InterruptedException.class)
     public ResponseEntity<ErrorResponse> handleThreadException(InterruptedException ex) {
         log.error("Unexpected error: ", ex);

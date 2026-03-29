@@ -1,16 +1,5 @@
 package com.uit.buddy.scheduler;
 
-import java.time.Duration;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Locale;
-import java.util.concurrent.CompletableFuture;
-
-import org.springframework.scheduling.annotation.Scheduled;
-import org.springframework.stereotype.Service;
-
 import com.uit.buddy.dto.response.schedule.CourseContentResponse;
 import com.uit.buddy.entity.redis.Deadline;
 import com.uit.buddy.enums.DeadlineStatus;
@@ -19,8 +8,16 @@ import com.uit.buddy.repository.user.StudentRepository;
 import com.uit.buddy.service.academic.ScheduleService;
 import com.uit.buddy.service.learning.AssignmentService;
 import com.uit.buddy.service.notification.NotificationService;
-
+import java.time.Duration;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
+import java.util.concurrent.CompletableFuture;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.stereotype.Service;
 
 @Service
 @Slf4j
@@ -32,24 +29,24 @@ public class ScheduleScheduler {
     private final DeadlineRepository deadlineRepository;
     public static Boolean stop = false;
     public static Boolean isRunning = true;
-    public static void stopSchedule()
-    {
-        if(isRunning)
+
+    public static void stopSchedule() {
+        if (isRunning)
             stop = true;
     }
-    private void refreshSchedule()
-    {
+
+    private void refreshSchedule() {
         stop = false;
         isRunning = false;
     }
-    private void startSchedule()
-    {
+
+    private void startSchedule() {
         isRunning = true;
     }
+
     public ScheduleScheduler(ScheduleService scheduleService, AssignmentService assignmentService,
-                             NotificationService notificationService,
-                             StudentRepository studentRepository,
-                             DeadlineRepository deadlineRepository) {
+            NotificationService notificationService, StudentRepository studentRepository,
+            DeadlineRepository deadlineRepository) {
         this.scheduleService = scheduleService;
         this.assignmentService = assignmentService;
         this.notificationService = notificationService;
@@ -74,10 +71,10 @@ public class ScheduleScheduler {
 
             String mssv = s;
             try {
-                List<CourseContentResponse> moodleDeadlines =
-                        scheduleService.fetchCourseDeadlinesFromMoodle(mssv, currentMonth, currentYear);
-                List<CourseContentResponse> studentTaskDeadlines =
-                        assignmentService.getDeadlineWithMssv(mssv, currentMonth, currentYear);
+                List<CourseContentResponse> moodleDeadlines = scheduleService.fetchCourseDeadlinesFromMoodle(mssv,
+                        currentMonth, currentYear);
+                List<CourseContentResponse> studentTaskDeadlines = assignmentService.getDeadlineWithMssv(mssv,
+                        currentMonth, currentYear);
                 List<CourseContentResponse> allDeadlines = new ArrayList<>(moodleDeadlines);
                 allDeadlines.addAll(studentTaskDeadlines);
 
@@ -103,18 +100,16 @@ public class ScheduleScheduler {
             LocalDateTime dueDateTime = LocalDateTime.of(deadline.getDueDate(), deadline.getDueTime());
             LocalDateTime nearDeadlineTrigger = dueDateTime.minusHours(24);
 
-                if (shouldPushWhenNearOrCrossedThreshold(now, nearDeadlineTrigger)) {
-                log.info("[PUSH NOTI]: User {} has a due soon deadline: {}", deadline.getMssv(), deadline.getDeadlineName());
-                notificationService.createNearDeadlineNotification(
-                        deadline.getMssv(),
+            if (shouldPushWhenNearOrCrossedThreshold(now, nearDeadlineTrigger)) {
+                log.info("[PUSH NOTI]: User {} has a due soon deadline: {}", deadline.getMssv(),
                         deadline.getDeadlineName());
+                notificationService.createNearDeadlineNotification(deadline.getMssv(), deadline.getDeadlineName());
             }
 
-                if (shouldPushWhenNearOrCrossedThreshold(now, dueDateTime)) {
-                log.info("[PUSH NOTI]: User {} has an overdue deadline: {}", deadline.getMssv(), deadline.getDeadlineName());
-                notificationService.createOverdueDeadlineNotification(
-                        deadline.getMssv(),
+            if (shouldPushWhenNearOrCrossedThreshold(now, dueDateTime)) {
+                log.info("[PUSH NOTI]: User {} has an overdue deadline: {}", deadline.getMssv(),
                         deadline.getDeadlineName());
+                notificationService.createOverdueDeadlineNotification(deadline.getMssv(), deadline.getDeadlineName());
                 deadlineRepository.deleteById(deadline.getMssv_deadline());
             }
         }
@@ -127,13 +122,12 @@ public class ScheduleScheduler {
 
         for (String mssv : listMssv) {
             try {
-                List<CourseContentResponse> moodleDeadlines =
-                        scheduleService.fetchCourseDeadlinesFromMoodle(mssv, null, null);
+                List<CourseContentResponse> moodleDeadlines = scheduleService.fetchCourseDeadlinesFromMoodle(mssv, null,
+                        null);
                 int uncompletedCount = countUncompletedDeadlines(moodleDeadlines);
 
                 notificationService.createDeadlineSummaryNotification(mssv, uncompletedCount);
-                log.info("[SUMMARY SCHEDULER] Pushed summary for mssv={}, uncompletedCount={}",
-                        mssv, uncompletedCount);
+                log.info("[SUMMARY SCHEDULER] Pushed summary for mssv={}, uncompletedCount={}", mssv, uncompletedCount);
             } catch (Exception e) {
                 log.error("[SUMMARY SCHEDULER] Failed for mssv={}", mssv, e);
             }
@@ -159,34 +153,29 @@ public class ScheduleScheduler {
             return 0;
         }
 
-        return courses.stream()
-                .flatMap(course -> course.exercises().stream())
-                .map(CourseContentResponse.exercise::status)
-                .filter(status -> status != DeadlineStatus.DONE)
-                .mapToInt(status -> 1)
-                .sum();
+        return courses.stream().flatMap(course -> course.exercises().stream())
+                .map(CourseContentResponse.exercise::status).filter(status -> status != DeadlineStatus.DONE)
+                .mapToInt(status -> 1).sum();
     }
 
-    private void processDeadline(List<CourseContentResponse> courseList, String mssv)
-    {
+    private void processDeadline(List<CourseContentResponse> courseList, String mssv) {
         if (courseList == null || courseList.isEmpty()) {
             return;
         }
 
         LocalDateTime baseTime = LocalDateTime.now();
         List<CompletableFuture<Void>> deadlineTasks = courseList.stream()
-                .flatMap(course -> course.exercises().stream()
-                        .filter(this::isTrackedStatus)
-                .filter(exercise -> shouldSaveToRedis(exercise, baseTime))
-                        .map(exercise -> CompletableFuture.runAsync(
-                    () -> saveDeadlineIfAbsent(mssv, course.courseName(), exercise))))
+                .flatMap(
+                        course -> course.exercises().stream().filter(this::isTrackedStatus)
+                                .filter(exercise -> shouldSaveToRedis(exercise, baseTime))
+                                .map(exercise -> CompletableFuture
+                                        .runAsync(() -> saveDeadlineIfAbsent(mssv, course.courseName(), exercise))))
                 .toList();
         CompletableFuture.allOf(deadlineTasks.toArray(CompletableFuture[]::new)).join();
     }
-    
+
     private boolean isTrackedStatus(CourseContentResponse.exercise exercise) {
-        return exercise.status() == DeadlineStatus.UPCOMING
-                || exercise.status() == DeadlineStatus.NEARDEADLINE;
+        return exercise.status() == DeadlineStatus.UPCOMING || exercise.status() == DeadlineStatus.NEARDEADLINE;
     }
 
     private boolean shouldSaveToRedis(CourseContentResponse.exercise exercise, LocalDateTime baseTime) {
@@ -214,23 +203,15 @@ public class ScheduleScheduler {
         if (deadlineRepository.existsById(deadlineId)) {
             return;
         }
-        Deadline deadline = Deadline.builder()
-                .mssv_deadline(deadlineId)
-                .mssv(mssv)
-                .deadlineName(exercise.exerciseName())
-                .dueDate(exercise.dueDate().toLocalDate())
-                .dueTime(exercise.dueDate().toLocalTime())
-                .build();
+        Deadline deadline = Deadline.builder().mssv_deadline(deadlineId).mssv(mssv)
+                .deadlineName(exercise.exerciseName()).dueDate(exercise.dueDate().toLocalDate())
+                .dueTime(exercise.dueDate().toLocalTime()).build();
         log.info("[SCHEDULER] Push a {} deadline for user with ID {}", exercise.status(), mssv);
         deadlineRepository.save(deadline);
     }
 
     private String buildDeadlineId(String mssv, String courseName, String exerciseName, LocalDateTime dueDate) {
-        String raw = String.join("_",
-                mssv,
-                courseName.trim(),
-                exerciseName.trim(),
-                dueDate.toString());
+        String raw = String.join("_", mssv, courseName.trim(), exerciseName.trim(), dueDate.toString());
         return raw.toLowerCase(Locale.ROOT);
     }
 
