@@ -10,7 +10,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.uit.buddy.constant.CloudinaryConstants;
+import com.uit.buddy.constant.StorageConstants;
 import com.uit.buddy.dto.request.document.CreateFileRequest;
 import com.uit.buddy.dto.request.document.CreateFolderRequest;
 import com.uit.buddy.dto.response.document.DocumentFileResponse;
@@ -30,7 +30,7 @@ import com.uit.buddy.mapper.document.DocumentMapper;
 import com.uit.buddy.repository.document.DocumentRepository;
 import com.uit.buddy.repository.document.FolderRepository;
 import com.uit.buddy.repository.user.StudentRepository;
-import com.uit.buddy.service.cloudinary.CloudinaryService;
+import com.uit.buddy.service.file.FileService;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -55,12 +55,16 @@ class DocumentServiceImplTest {
 
     @Mock
     private FolderRepository folderRepository;
+
     @Mock
     private DocumentRepository documentRepository;
+
     @Mock
     private StudentRepository studentRepository;
+
     @Mock
-    private CloudinaryService cloudinaryService;
+    private FileService fileService;
+
     @Mock
     private DocumentMapper documentMapper;
 
@@ -79,7 +83,7 @@ class DocumentServiceImplTest {
 
         rootFolder = new Folder();
         rootFolder.setId(UUID.randomUUID());
-        rootFolder.setFolderName(CloudinaryConstants.ROOT_FOLDER_NAME);
+        rootFolder.setFolderName(StorageConstants.ROOT_FOLDER_NAME);
     }
 
     @Test
@@ -87,7 +91,7 @@ class DocumentServiceImplTest {
         UUID createdFolderId = UUID.randomUUID();
         CreateFolderRequest request = new CreateFolderRequest("Docs", null);
 
-        when(folderRepository.findFirstByMssvAndParentIsNullAndFolderName(mssv, CloudinaryConstants.ROOT_FOLDER_NAME))
+        when(folderRepository.findFirstByMssvAndParentIsNullAndFolderName(mssv, StorageConstants.ROOT_FOLDER_NAME))
                 .thenReturn(Optional.of(rootFolder));
         when(folderRepository.existsByMssvAndParentIdAndFolderNameIgnoreCase(mssv, rootFolder.getId(), "Docs"))
                 .thenReturn(false);
@@ -132,7 +136,7 @@ class DocumentServiceImplTest {
     void createNewFolder_duplicateName_shouldThrowDocumentException() {
         CreateFolderRequest request = new CreateFolderRequest("Docs", null);
 
-        when(folderRepository.findFirstByMssvAndParentIsNullAndFolderName(mssv, CloudinaryConstants.ROOT_FOLDER_NAME))
+        when(folderRepository.findFirstByMssvAndParentIsNullAndFolderName(mssv, StorageConstants.ROOT_FOLDER_NAME))
                 .thenReturn(Optional.of(rootFolder));
         when(folderRepository.existsByMssvAndParentIdAndFolderNameIgnoreCase(mssv, rootFolder.getId(), "Docs"))
                 .thenReturn(true);
@@ -167,7 +171,7 @@ class DocumentServiceImplTest {
                 1.2f, FileSizeUnit.MB, FileType.WORD);
 
         when(folderRepository.findByIdAndMssv(folderId, mssv)).thenReturn(Optional.of(folder));
-        when(cloudinaryService.uploadMultipleDocuments(request.files())).thenReturn(uploads);
+        when(fileService.uploadMultipleDocuments(request.files())).thenReturn(uploads);
         when(studentRepository.getReferenceById(mssv)).thenReturn(student);
         when(documentRepository.save(any(Document.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(documentMapper.toDocumentFileResponse(any(Document.class))).thenReturn(mapped);
@@ -197,7 +201,7 @@ class DocumentServiceImplTest {
                 new DocumentUploadResult("https://b", 2.0f, FileType.PPT));
 
         when(folderRepository.findByIdAndMssv(folderId, mssv)).thenReturn(Optional.of(folder));
-        when(cloudinaryService.uploadMultipleDocuments(request.files())).thenReturn(uploads);
+        when(fileService.uploadMultipleDocuments(request.files())).thenReturn(uploads);
         when(studentRepository.getReferenceById(mssv)).thenReturn(student);
         when(documentRepository.save(any(Document.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(documentMapper.toDocumentFileResponse(any(Document.class))).thenAnswer(invocation -> {

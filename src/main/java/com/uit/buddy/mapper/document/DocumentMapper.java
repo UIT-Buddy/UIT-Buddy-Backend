@@ -1,6 +1,6 @@
 package com.uit.buddy.mapper.document;
 
-import com.uit.buddy.constant.CloudinaryConstants;
+import com.uit.buddy.constant.StorageConstants;
 import com.uit.buddy.dto.response.document.DocumentFileResponse;
 import com.uit.buddy.dto.response.document.DocumentSearchResult;
 import com.uit.buddy.dto.response.document.ViewFolderDetailResponse.FileResponse;
@@ -69,7 +69,7 @@ public interface DocumentMapper {
     default String buildFileLocation(Document document) {
         Folder folder = document.getFolder();
         if (folder == null) {
-            return CloudinaryConstants.ROOT_FOLDER_NAME;
+            return StorageConstants.ROOT_FOLDER_NAME;
         }
         return buildFolderPath(folder);
     }
