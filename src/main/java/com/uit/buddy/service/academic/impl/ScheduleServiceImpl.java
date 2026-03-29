@@ -140,6 +140,13 @@ public class ScheduleServiceImpl implements ScheduleService {
     }
 
     @Override
+    public List<String> fetchStudyingClassCodes(String mssv) {
+        studentRepository.findById(mssv).orElseThrow(() -> new UserException(UserErrorCode.STUDENT_NOT_FOUND));
+        return studentSubjectClassRepository.findDistinctClassCodesByStudentAndStatus(mssv, StudentClassStatus.STUDYING)
+                .stream().filter(classCode -> classCode != null && !classCode.isBlank()).sorted().toList();
+    }
+
+    @Override
     public CreateDeadlineResponse createDeadline(String mssv, CreateDeadlineRequest request) {
         String classCode = request.classCode();
         if (request.exerciseName() == null)
