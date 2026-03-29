@@ -180,7 +180,6 @@ public class ScheduleServiceImpl implements ScheduleService {
         if (request.dueDate() == null)
             throw new ScheduleException(ScheduleErrorCode.INVALID_DUE_TIME);
 
-
         StudentTask studentTask = studentTaskRepository.findByIdAndMssv(request.studentTaskId(), mssv)
                 .orElseThrow(() -> new ScheduleException(ScheduleErrorCode.ASSIGNMENT_NOT_EXIST));
 

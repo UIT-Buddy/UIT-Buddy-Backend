@@ -11,7 +11,7 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface StudentTaskRepository extends JpaRepository<StudentTask, UUID> {
-        Optional<StudentTask> findByIdAndMssv(UUID id, String mssv);
+    Optional<StudentTask> findByIdAndMssv(UUID id, String mssv);
 
     @Query("SELECT st FROM StudentTask st LEFT JOIN FETCH st.subjectClass sc LEFT JOIN FETCH sc.course "
             + "WHERE st.mssv = :mssv AND st.reminderAt IS NOT NULL " + "AND MONTH(st.reminderAt) = :month "
