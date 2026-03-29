@@ -1,0 +1,141 @@
+package com.uit.buddy.scheduler;
+
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+import com.uit.buddy.dto.response.schedule.CourseContentResponse;
+import com.uit.buddy.entity.redis.Deadline;
+import com.uit.buddy.enums.DeadlineStatus;
+import com.uit.buddy.repository.learning.DeadlineRepository;
+import com.uit.buddy.repository.user.StudentRepository;
+import com.uit.buddy.service.academic.ScheduleService;
+import com.uit.buddy.service.learning.AssignmentService;
+import com.uit.buddy.service.notification.NotificationService;
+import java.time.LocalDateTime;
+import java.util.List;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+@ExtendWith(MockitoExtension.class)
+class ScheduleSchedulerTest {
+
+    @Mock
+    private ScheduleService scheduleService;
+    @Mock
+    private AssignmentService assignmentService;
+    @Mock
+    private NotificationService notificationService;
+    @Mock
+    private StudentRepository studentRepository;
+    @Mock
+    private DeadlineRepository deadlineRepository;
+
+    private ScheduleScheduler scheduler;
+
+    @BeforeEach
+    void setUp() {
+        scheduler = new ScheduleScheduler(scheduleService, assignmentService, notificationService, studentRepository,
+                deadlineRepository);
+        ScheduleScheduler.stop = false;
+        ScheduleScheduler.isRunning = true;
+    }
+
+    @Test
+    void zeroStudents_shouldNotFetchAnyDeadline() {
+        when(studentRepository.findMssvAll()).thenReturn(List.of());
+
+        scheduler.scrapeAllDeadlineOfStudent();
+
+        verify(scheduleService, never()).fetchCourseDeadlinesFromMoodle(any(), any(), any());
+        verify(assignmentService, never()).getDeadlineWithMssv(any(), any(), any());
+        verify(deadlineRepository, never()).save(any());
+    }
+
+    @Test
+    void oneStudent_upcomingWithin10Minutes_shouldSaveToRedis() {
+        String mssv = "24521784";
+        when(studentRepository.findMssvAll()).thenReturn(List.of(mssv));
+        when(scheduleService.fetchCourseDeadlinesFromMoodle(eq(mssv), any(), any())).thenReturn(List
+                .of(course("CSE101", exercise("Lab 1", LocalDateTime.now().plusMinutes(5), DeadlineStatus.UPCOMING))));
+        when(assignmentService.getDeadlineWithMssv(eq(mssv), any(), any())).thenReturn(List.of());
+
+        scheduler.scrapeAllDeadlineOfStudent();
+
+        verify(deadlineRepository, times(1)).save(any(Deadline.class));
+    }
+
+    @Test
+    void manyStudents_shouldFetchDeadlinesForEachStudent() {
+        List<String> students = List.of("24521784", "24521785", "24521786");
+        when(studentRepository.findMssvAll()).thenReturn(students);
+        when(scheduleService.fetchCourseDeadlinesFromMoodle(any(), any(), any())).thenReturn(List.of());
+        when(assignmentService.getDeadlineWithMssv(any(), any(), any())).thenReturn(List.of());
+
+        scheduler.scrapeAllDeadlineOfStudent();
+
+        verify(scheduleService, times(3)).fetchCourseDeadlinesFromMoodle(any(), any(), any());
+        verify(assignmentService, times(3)).getDeadlineWithMssv(any(), any(), any());
+    }
+
+    @Test
+    void boundaryNearDeadlineTriggerUnder30Seconds_shouldPushNearNotification() {
+        Deadline redisDeadline = Deadline.builder().mssv_deadline("id-1").mssv("24521784").deadlineName("Midterm")
+                .dueDate(LocalDateTime.now().plusHours(24).plusSeconds(20).toLocalDate())
+                .dueTime(LocalDateTime.now().plusHours(24).plusSeconds(20).toLocalTime()).build();
+        when(deadlineRepository.findAll()).thenReturn(List.of(redisDeadline));
+
+        scheduler.pushNotiForDeadline();
+
+        verify(notificationService, times(1)).createNearDeadlineNotification("24521784", "Midterm");
+    }
+
+    @Test
+    void interfaceSummaryScheduler_shouldPublishUncompletedCount() {
+        String mssv = "24521784";
+        List<CourseContentResponse> moodleDeadlines = List.of(
+                course("CSE101", exercise("Done 1", LocalDateTime.now().plusDays(1), DeadlineStatus.DONE)),
+                course("CSE102", exercise("Todo 1", LocalDateTime.now().plusDays(2), DeadlineStatus.UPCOMING)),
+                course("CSE103", exercise("Todo 2", LocalDateTime.now().plusDays(3), DeadlineStatus.NEARDEADLINE)));
+
+        when(studentRepository.findMssvAll()).thenReturn(List.of(mssv));
+        when(scheduleService.fetchCourseDeadlinesFromMoodle(mssv, null, null)).thenReturn(moodleDeadlines);
+
+        scheduler.pingMoodleAndPushDeadlineSummary();
+
+        verify(notificationService).createDeadlineSummaryNotification(mssv, 2);
+    }
+
+    @Test
+    void exceptionOnFirstStudent_shouldContinueToSecondStudent() {
+        String first = "24521784";
+        String second = "24521785";
+        when(studentRepository.findMssvAll()).thenReturn(List.of(first, second));
+
+        when(scheduleService.fetchCourseDeadlinesFromMoodle(eq(first), any(), any()))
+                .thenThrow(new RuntimeException("moodle error"));
+        when(scheduleService.fetchCourseDeadlinesFromMoodle(eq(second), any(), any())).thenReturn(List
+                .of(course("CSE101", exercise("Final", LocalDateTime.now().plusMinutes(5), DeadlineStatus.UPCOMING))));
+        when(assignmentService.getDeadlineWithMssv(eq(second), any(), any())).thenReturn(List.of());
+
+        scheduler.scrapeAllDeadlineOfStudent();
+
+        verify(scheduleService).fetchCourseDeadlinesFromMoodle(eq(first), any(), any());
+        verify(scheduleService).fetchCourseDeadlinesFromMoodle(eq(second), any(), any());
+        verify(deadlineRepository, times(1)).save(any(Deadline.class));
+    }
+
+    private CourseContentResponse course(String courseName, CourseContentResponse.exercise... exercises) {
+        return new CourseContentResponse(courseName, List.of(exercises));
+    }
+
+    private CourseContentResponse.exercise exercise(String name, LocalDateTime dueDate, DeadlineStatus status) {
+        return new CourseContentResponse.exercise(name, dueDate, null, status, false);
+    }
+}

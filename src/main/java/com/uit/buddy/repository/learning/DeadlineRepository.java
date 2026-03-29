@@ -8,4 +8,5 @@ import org.springframework.stereotype.Repository;
 public interface DeadlineRepository extends CrudRepository<Deadline, String> {
 
     boolean existsById(String mssv_deadline);
+
 }

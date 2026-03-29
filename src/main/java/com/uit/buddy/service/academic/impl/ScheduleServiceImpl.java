@@ -35,12 +35,14 @@ import com.uit.buddy.repository.academic.StudentSubjectClassRepository;
 import com.uit.buddy.repository.academic.SubjectClassRepository;
 import com.uit.buddy.repository.learning.StudentTaskRepository;
 import com.uit.buddy.repository.user.StudentRepository;
+import com.uit.buddy.scheduler.ScheduleScheduler;
 import com.uit.buddy.service.academic.ScheduleService;
 import com.uit.buddy.service.learning.AssignmentService;
 import com.uit.buddy.util.EncryptionUtils;
 import com.uit.buddy.util.IcsParser;
 import com.uit.buddy.util.IcsParser.IcsEvent;
 import com.uit.buddy.util.IcsParser.ParseResult;
+import io.lettuce.core.ScriptOutputType;
 import java.io.IOException;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -140,6 +142,13 @@ public class ScheduleServiceImpl implements ScheduleService {
     }
 
     @Override
+    public List<String> fetchStudyingClassCodes(String mssv) {
+        studentRepository.findById(mssv).orElseThrow(() -> new UserException(UserErrorCode.STUDENT_NOT_FOUND));
+        return studentSubjectClassRepository.findDistinctClassCodesByStudentAndStatus(mssv, StudentClassStatus.STUDYING)
+                .stream().filter(classCode -> classCode != null && !classCode.isBlank()).sorted().toList();
+    }
+
+    @Override
     public CreateDeadlineResponse createDeadline(String mssv, CreateDeadlineRequest request) {
         String classCode = request.classCode();
         if (request.exerciseName() == null)
@@ -151,7 +160,7 @@ public class ScheduleServiceImpl implements ScheduleService {
         StudentSubjectClass studentSubjectClass = null;
         if (request.classCode() != null) {
             studentSubjectClass = studentSubjectClassRepository.findSubjectByClassCode(mssv, request.classCode());
-            if (studentSubjectClass == null)
+            if (studentSubjectClass == null & !request.classCode().isEmpty())
                 throw new ScheduleException(ScheduleErrorCode.CLASS_NOT_FOUND);
         }
         TaskType taskType = studentSubjectClass == null ? TaskType.PERSONAL : TaskType.ASSIGNMENT;

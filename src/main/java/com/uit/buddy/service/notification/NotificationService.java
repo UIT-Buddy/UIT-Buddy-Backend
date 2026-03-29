@@ -23,6 +23,12 @@ public interface NotificationService {
 
     void createCommentLikeNotification(CommentLikedEvent event);
 
+    void createNearDeadlineNotification(String mssv, String deadlineName);
+
+    void createOverdueDeadlineNotification(String mssv, String deadlineName);
+
+    void createDeadlineSummaryNotification(String mssv, int uncompletedCount);
+
     List<NotificationResponse> getNotifications(String mssv, String cursor, int limit);
 
     void markAsRead(UUID notificationId, String mssv);

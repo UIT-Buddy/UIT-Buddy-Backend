@@ -1,6 +1,7 @@
 package com.uit.buddy.repository.academic;
 
 import com.uit.buddy.entity.academic.StudentSubjectClass;
+import com.uit.buddy.enums.StudentClassStatus;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -38,5 +39,10 @@ public interface StudentSubjectClassRepository extends CrudRepository<StudentSub
 
     @Query("SELECT ssc FROM StudentSubjectClass ssc WHERE ssc.subjectClass.classCode = :classCode AND ssc.student.mssv = :mssv")
     StudentSubjectClass findSubjectByClassCode(@Param("mssv") String mssv, @Param("classCode") String classCode);
+
+    @Query("SELECT DISTINCT ssc.subjectClass.classCode FROM StudentSubjectClass ssc "
+            + "WHERE ssc.student.mssv = :mssv AND ssc.status = :status")
+    List<String> findDistinctClassCodesByStudentAndStatus(@Param("mssv") String mssv,
+            @Param("status") StudentClassStatus status);
 
 }

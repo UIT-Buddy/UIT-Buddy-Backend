@@ -5,11 +5,11 @@ import com.uit.buddy.dto.base.SingleResponse;
 import com.uit.buddy.dto.request.schedule.CreateDeadlineRequest;
 import com.uit.buddy.dto.request.schedule.UploadScheduleRequest;
 import com.uit.buddy.dto.response.schedule.CourseCalendarResponse;
-import com.uit.buddy.dto.response.schedule.CourseContentResponse;
 import com.uit.buddy.dto.response.schedule.CreateDeadlineResponse;
 import com.uit.buddy.dto.response.schedule.DeadlineResponse;
 import com.uit.buddy.exception.schedule.ScheduleErrorCode;
 import com.uit.buddy.exception.schedule.ScheduleException;
+import com.uit.buddy.scheduler.ScheduleScheduler;
 import com.uit.buddy.service.academic.ScheduleService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -62,6 +62,14 @@ public class ScheduleController extends AbstractBaseController {
         return successSingle(exercise, "Deadline created successfully");
     }
 
+    @GetMapping("/deadline/class-codes/studying")
+    @Operation(summary = "Fetch studying class codes", description = "Fetch classCode list for current user where status is STUDYING")
+    public ResponseEntity<SingleResponse<List<String>>> fetchStudyingClassCodes(@AuthenticationPrincipal String mssv) {
+        log.info("[Schedule Controller] Fetching studying class codes for student: {}", mssv);
+        List<String> classCodes = scheduleService.fetchStudyingClassCodes(mssv);
+        return successSingle(classCodes, "Studying class codes fetched successfully");
+    }
+
     @GetMapping("/deadline")
     @Operation(summary = "Fetch deadlines", description = "Fetch assignment deadlines from Moodle and StudentTask")
     public ResponseEntity<SingleResponse<DeadlineResponse>> fetchDeadlinesFromMoodle(
@@ -70,6 +78,7 @@ public class ScheduleController extends AbstractBaseController {
             @RequestParam(defaultValue = "created_at") String sortBy,
             @RequestParam(name = "month", required = false) Integer month,
             @RequestParam(name = "year", required = false) Integer year, @AuthenticationPrincipal String mssv) {
+        ScheduleScheduler.stopSchedule();
         log.info("[Schedule Controller] Fetching deadlines for student: {}", mssv);
         if (month != null && (month < 1 || month > 12)) {
             throw new ScheduleException(ScheduleErrorCode.INVALID_MONTH);
