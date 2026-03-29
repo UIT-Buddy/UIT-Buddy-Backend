@@ -54,7 +54,7 @@ public class ScheduleScheduler {
         this.deadlineRepository = deadlineRepository;
     }
 
-    @Scheduled(fixedDelay = 60000)
+    @Scheduled(fixedDelay = 600000)
     public void scrapeAllDeadlineOfStudent() {
         LocalDate now = LocalDate.now();
         Integer currentMonth = now.getMonthValue();
