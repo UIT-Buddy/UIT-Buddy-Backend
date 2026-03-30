@@ -168,7 +168,8 @@ public class ScheduleServiceImpl implements ScheduleService {
 
         StudentSubjectClass studentSubjectClass = resolveStudentSubjectClass(mssv, request.classCode());
         TaskType taskType = studentSubjectClass == null ? TaskType.PERSONAL : TaskType.ASSIGNMENT;
-        SubjectClass subjectClass = subjectClassRepository.findByClassCodeAndStudentMssv(student.getMssv(), request.classCode());
+        SubjectClass subjectClass = subjectClassRepository.findByClassCodeAndStudentMssv(student.getMssv(),
+                request.classCode());
 
         log.info("[SCHEDULE SERVICE]: Create task for user with id {}", mssv);
         StudentTask studentTask = StudentTask.builder().student(student).taskType(taskType).subjectClass(subjectClass)
