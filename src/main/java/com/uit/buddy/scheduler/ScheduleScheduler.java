@@ -111,13 +111,14 @@ public class ScheduleScheduler {
             if (shouldPushWhenNearOrCrossedThreshold(now, nearDeadlineTrigger)) {
                 log.info("[PUSH NOTI]: User {} has a due soon deadline: {}", deadline.getMssv(),
                         deadline.getDeadlineName());
-                notificationService.createNearDeadlineNotification(deadline.getMssv(), deadline.getDeadlineName());
+                notificationService.createNearDeadlineNotification(deadline.getMssv(), deadline.getDeadlineName(), "");
             }
 
             if (shouldPushWhenNearOrCrossedThreshold(now, dueDateTime)) {
                 log.info("[PUSH NOTI]: User {} has an overdue deadline: {}", deadline.getMssv(),
                         deadline.getDeadlineName());
-                notificationService.createOverdueDeadlineNotification(deadline.getMssv(), deadline.getDeadlineName());
+                notificationService.createOverdueDeadlineNotification(deadline.getMssv(), deadline.getDeadlineName(),
+                        "");
                 deadlineRepository.deleteById(deadline.getMssv_deadline());
             }
         }
@@ -132,7 +133,7 @@ public class ScheduleScheduler {
                 List<TemporaryDeadline> newDeadlines = scheduleService.getUpcomingDeadlines(mssv);
 
                 for (TemporaryDeadline deadline : newDeadlines) {
-                    notificationService.createNewDeadlineNotification(mssv, deadline.getDeadlineName());
+                    notificationService.createNewDeadlineNotification(mssv, deadline.getDeadlineName(), "");
                 }
 
                 log.info("[PING MOODLE SCHEDULER] Sync complete for mssv={}, TaskCount={}", mssv, newDeadlines.size());

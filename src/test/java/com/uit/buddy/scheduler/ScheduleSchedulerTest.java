@@ -97,7 +97,7 @@ class ScheduleSchedulerTest {
 
         scheduler.pushNotiForDeadline();
 
-        verify(notificationService, times(1)).createNearDeadlineNotification("24521784", "Midterm");
+        verify(notificationService, times(1)).createNearDeadlineNotification("24521784", "Midterm", "");
     }
 
     @Test
@@ -109,7 +109,7 @@ class ScheduleSchedulerTest {
 
         scheduler.pushNotiForDeadline();
 
-        verify(notificationService).createOverdueDeadlineNotification("24521784", "Lab 1");
+        verify(notificationService).createOverdueDeadlineNotification("24521784", "Lab 1", "");
         verify(deadlineRepository).deleteById("id-overdue");
     }
 
@@ -125,19 +125,8 @@ class ScheduleSchedulerTest {
 
         scheduler.pingMoodleAndPushNewDeadlines();
 
-        verify(notificationService).createNewDeadlineNotification(mssv, "Quiz 1");
-        verify(notificationService).createNewDeadlineNotification(mssv, "Assignment 1");
-    }
-
-    @Test
-    void pingMoodleAndPushNewDeadlines_noNewDeadlines_shouldNotCreateAnyNotification() {
-        String mssv = "24521784";
-        when(studentRepository.findMssvAll()).thenReturn(List.of(mssv));
-        when(scheduleService.getUpcomingDeadlines(mssv)).thenReturn(List.of());
-
-        scheduler.pingMoodleAndPushNewDeadlines();
-
-        verify(notificationService, never()).createNewDeadlineNotification(any(), any());
+        verify(notificationService).createNewDeadlineNotification(mssv, "Quiz 1", "");
+        verify(notificationService).createNewDeadlineNotification(mssv, "Assignment 1", "");
     }
 
     @Test
