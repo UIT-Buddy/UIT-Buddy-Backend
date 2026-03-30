@@ -1,34 +1,10 @@
 package com.uit.buddy.service.academic.impl;
 
-import java.io.IOException;
-import java.time.Instant;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Executor;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
-
-import com.uit.buddy.dto.request.schedule.UpdateDeadlineRequest;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.data.domain.Pageable;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.multipart.MultipartFile;
-
 import com.uit.buddy.client.UitClient;
 import com.uit.buddy.constant.IcsConstants;
 import com.uit.buddy.constant.ScheduleConstant;
 import com.uit.buddy.dto.request.schedule.CreateDeadlineRequest;
+import com.uit.buddy.dto.request.schedule.UpdateDeadlineRequest;
 import com.uit.buddy.dto.request.schedule.UploadScheduleRequest;
 import com.uit.buddy.dto.response.client.AssignmentDetailResponse;
 import com.uit.buddy.dto.response.client.CourseDetailResponse;
@@ -70,8 +46,29 @@ import com.uit.buddy.util.EncryptionUtils;
 import com.uit.buddy.util.IcsParser;
 import com.uit.buddy.util.IcsParser.IcsEvent;
 import com.uit.buddy.util.IcsParser.ParseResult;
-
+import java.io.IOException;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 @Service
 @Slf4j
@@ -99,8 +96,7 @@ public class ScheduleServiceImpl implements ScheduleService {
             CourseRepository courseRepository, CurriculumCourseRepository curriculumCourseRepository,
             AssignmentService assignmentService, SemesterRepository semesterRepository,
             TemporaryDeadlineRepository temporaryDeadlineRepository, NotificationService notificationService,
-            UitClient uitClient,
-            EncryptionUtils encryptionUtils, StudentTaskRepository studentTaskRepository,
+            UitClient uitClient, EncryptionUtils encryptionUtils, StudentTaskRepository studentTaskRepository,
             @Qualifier("uploadExecutor") Executor executor, ScheduleMapper scheduleMapper) {
         this.icsParser = icsParser;
         this.studentRepository = studentRepository;
@@ -172,7 +168,7 @@ public class ScheduleServiceImpl implements ScheduleService {
 
         StudentSubjectClass studentSubjectClass = resolveStudentSubjectClass(mssv, request.classCode());
         TaskType taskType = studentSubjectClass == null ? TaskType.PERSONAL : TaskType.ASSIGNMENT;
-        SubjectClass subjectClass = studentSubjectClass == null ? null : studentSubjectClass.getSubjectClass();
+        SubjectClass subjectClass = subjectClassRepository.findByClassCodeAndStudentMssv(student.getMssv(), request.classCode());
 
         log.info("[SCHEDULE SERVICE]: Create task for user with id {}", mssv);
         StudentTask studentTask = StudentTask.builder().student(student).taskType(taskType).subjectClass(subjectClass)
@@ -204,6 +200,7 @@ public class ScheduleServiceImpl implements ScheduleService {
         List<CourseContentResponse> pagedCourseContents = paginateDeadlines(joinedTask, pageable);
         return new DeadlineResponse(totalDeadlines, pagedCourseContents);
     }
+
     @Override
     public CreateDeadlineResponse updateDeadline(String mssv, UpdateDeadlineRequest request) {
         if (request.exerciseName() == null || request.exerciseName().isBlank())
@@ -220,13 +217,14 @@ public class ScheduleServiceImpl implements ScheduleService {
 
         return scheduleMapper.toCreateDeadlineResponse(studentTask);
     }
+
     private String buildTemporaryDeadlineKey(TemporaryDeadline deadline) {
         return buildTemporaryDeadlineKey(deadline.getClassCode(), deadline.getDeadlineName(), deadline.getDueDate());
     }
 
     private String buildTemporaryDeadlineKey(String classCode, String deadlineName, LocalDateTime dueDate) {
-        return String.format("%s|%s|%s", normalizeDeadlineKeyPart(classCode),
-                normalizeDeadlineKeyPart(deadlineName), dueDate);
+        return String.format("%s|%s|%s", normalizeDeadlineKeyPart(classCode), normalizeDeadlineKeyPart(deadlineName),
+                dueDate);
     }
 
     private String resolveClassCode(CourseContentResponse courseContent) {
@@ -460,8 +458,7 @@ public class ScheduleServiceImpl implements ScheduleService {
         List<TemporaryDeadline> allUpcomingDeadlines = new ArrayList<>();
         for (CourseContentResponse courseContent : moodleDeadlines) {
             String classCode = courseContent.courseName() == null || courseContent.courseName().isBlank()
-                    ? ScheduleConstant.UNKNOWN_CLASS_CODE
-                    : courseContent.courseName();
+                    ? ScheduleConstant.UNKNOWN_CLASS_CODE : courseContent.courseName();
             for (CourseContentResponse.exercise exercise : courseContent.exercises()) {
                 if (exercise.dueDate() != null && exercise.exerciseName() != null
                         && !exercise.exerciseName().isBlank()) {
@@ -539,8 +536,9 @@ public class ScheduleServiceImpl implements ScheduleService {
                 if (module.dates() == null) {
                     continue;
                 }
-                String dueTimestamp = module.dates().stream().filter(d -> ScheduleConstant.DUE_DATE_LABEL.equalsIgnoreCase(d.label())).map(
-                        CourseDetailResponse.CourseDetailModuleResponse.CourseDetailModuleDatesResonponse::timestamp)
+                String dueTimestamp = module.dates().stream()
+                        .filter(d -> ScheduleConstant.DUE_DATE_LABEL.equalsIgnoreCase(d.label()))
+                        .map(CourseDetailResponse.CourseDetailModuleResponse.CourseDetailModuleDatesResonponse::timestamp)
                         .findFirst().orElse(null);
 
                 if (dueTimestamp != null) {

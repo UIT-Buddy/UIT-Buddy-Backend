@@ -1,16 +1,5 @@
 package com.uit.buddy.scheduler;
 
-import java.time.Duration;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Locale;
-import java.util.concurrent.CompletableFuture;
-
-import org.springframework.scheduling.annotation.Scheduled;
-import org.springframework.stereotype.Service;
-
 import com.uit.buddy.constant.ScheduleConstant;
 import com.uit.buddy.dto.response.schedule.CourseContentResponse;
 import com.uit.buddy.entity.learning.TemporaryDeadline;
@@ -22,8 +11,16 @@ import com.uit.buddy.repository.user.StudentRepository;
 import com.uit.buddy.service.academic.ScheduleService;
 import com.uit.buddy.service.learning.AssignmentService;
 import com.uit.buddy.service.notification.NotificationService;
-
+import java.time.Duration;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
+import java.util.concurrent.CompletableFuture;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.stereotype.Service;
 
 @Service
 @Slf4j
@@ -37,7 +34,9 @@ public class ScheduleScheduler {
     private final TemporaryDeadlineRepository temporaryDeadlineRepository;
     public static Boolean stop = false;
     public static Boolean isRunning = true;
-    // This method can be called from outside to signal the scheduler to stop after the current cycle, avoid the risk of interrupting the schedule in the middle of processing a student
+
+    // This method can be called from outside to signal the scheduler to stop after the current cycle, avoid the risk of
+    // interrupting the schedule in the middle of processing a student
     public static void stopSchedule() {
         if (isRunning)
             stop = true;
@@ -131,13 +130,12 @@ public class ScheduleScheduler {
         for (String mssv : listMssv) {
             try {
                 List<TemporaryDeadline> newDeadlines = scheduleService.getUpcomingDeadlines(mssv);
-                
+
                 for (TemporaryDeadline deadline : newDeadlines) {
                     notificationService.createNewDeadlineNotification(mssv, deadline.getDeadlineName());
                 }
-                
-                log.info("[PING MOODLE SCHEDULER] Sync complete for mssv={}, TaskCount={}", mssv,
-                        newDeadlines.size());
+
+                log.info("[PING MOODLE SCHEDULER] Sync complete for mssv={}, TaskCount={}", mssv, newDeadlines.size());
             } catch (Exception e) {
                 log.error("[PING MOODLE SCHEDULER] Failed for mssv={}", mssv, e);
             }

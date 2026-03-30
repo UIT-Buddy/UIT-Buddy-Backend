@@ -15,7 +15,8 @@ public final class ScheduleConstant {
     public static final long SCRAPE_DEADLINE_INTERVAL = 600000; // 10 minutes
     public static final long PUSH_NOTIFICATION_INTERVAL = 30000; // 30 seconds
     public static final long PING_MOODLE_INTERVAL = 900000; // 15 minutes
-    public static final long GAP_PER_STUDENT_PING_MOODLE = 1000; // 1 second gap between processing each student to avoid overwhelming Moodle
+    public static final long GAP_PER_STUDENT_PING_MOODLE = 1000; // 1 second gap between processing each student to
+                                                                 // avoid overwhelming Moodle
     // Time Buffers (in hours and minutes)
     public static final int NEAR_DEADLINE_HOURS = 24; // 24 hours before due
     public static final long NEAR_DEADLINE_BUFFER_MINUTES = NEAR_DEADLINE_HOURS * 60; // 1440 minutes

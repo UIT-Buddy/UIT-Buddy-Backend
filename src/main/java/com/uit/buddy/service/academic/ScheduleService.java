@@ -1,9 +1,5 @@
 package com.uit.buddy.service.academic;
 
-import java.util.List;
-
-import org.springframework.data.domain.Pageable;
-
 import com.uit.buddy.dto.request.schedule.CreateDeadlineRequest;
 import com.uit.buddy.dto.request.schedule.UpdateDeadlineRequest;
 import com.uit.buddy.dto.request.schedule.UploadScheduleRequest;
@@ -12,6 +8,8 @@ import com.uit.buddy.dto.response.schedule.CourseContentResponse;
 import com.uit.buddy.dto.response.schedule.CreateDeadlineResponse;
 import com.uit.buddy.dto.response.schedule.DeadlineResponse;
 import com.uit.buddy.entity.learning.TemporaryDeadline;
+import java.util.List;
+import org.springframework.data.domain.Pageable;
 
 public interface ScheduleService {
     List<CourseCalendarResponse.Course> uploadSchedule(String mssv, UploadScheduleRequest request);

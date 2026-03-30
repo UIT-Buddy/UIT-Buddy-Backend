@@ -104,13 +104,11 @@ public class NotificationServiceImpl implements NotificationService {
         processNotification(mssv, template.getTitle(), "Deadline '" + deadlineName + "' đã quá hạn.", template, null);
     }
 
-
     @Override
     @Transactional
     public void createNewDeadlineNotification(String mssv, String deadlineName) {
         NotificationTemplate template = NotificationTemplate.ACADEMIC;
-        processNotification(mssv, template.getTitle(),
-                "Bạn có deadline mới: '" + deadlineName + "'.", template, null);
+        processNotification(mssv, template.getTitle(), "Bạn có deadline mới: '" + deadlineName + "'.", template, null);
     }
 
     private void processAggregatedNotification(String receiverMssv, String title, String actorName,

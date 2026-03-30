@@ -15,8 +15,8 @@ public interface DocumentRepository extends JpaRepository<Document, UUID> {
     Optional<Document> findByIdAndMssv(UUID id, String mssv);
 
     @Query(value = """
-            SELECT * FROM documents d 
-            WHERE d.mssv = :mssv 
+            SELECT * FROM documents d
+            WHERE d.mssv = :mssv
             AND LOWER(d.file_name) LIKE LOWER(CONCAT('%', :keyword, '%'))
             """, nativeQuery = true)
     Page<Document> findByMssvAndFileNameContainingIgnoreCase(String mssv, String keyword, Pageable pageable);

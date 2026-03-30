@@ -1,19 +1,11 @@
 package com.uit.buddy.scheduler;
 
-import java.time.LocalDateTime;
-import java.util.List;
-
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import org.mockito.Mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.uit.buddy.dto.response.schedule.CourseContentResponse;
 import com.uit.buddy.entity.learning.TemporaryDeadline;
@@ -25,6 +17,13 @@ import com.uit.buddy.repository.user.StudentRepository;
 import com.uit.buddy.service.academic.ScheduleService;
 import com.uit.buddy.service.learning.AssignmentService;
 import com.uit.buddy.service.notification.NotificationService;
+import java.time.LocalDateTime;
+import java.util.List;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class ScheduleSchedulerTest {
@@ -46,13 +45,8 @@ class ScheduleSchedulerTest {
 
     @BeforeEach
     void setUp() {
-        scheduler = new ScheduleScheduler(
-                scheduleService,
-                assignmentService,
-                notificationService,
-                studentRepository,
-                deadlineRepository,
-                temporaryDeadlineRepository);
+        scheduler = new ScheduleScheduler(scheduleService, assignmentService, notificationService, studentRepository,
+                deadlineRepository, temporaryDeadlineRepository);
         ScheduleScheduler.stop = false;
         ScheduleScheduler.isRunning = true;
     }
@@ -72,9 +66,8 @@ class ScheduleSchedulerTest {
     void oneStudent_upcomingWithin10Minutes_shouldSaveToRedis() {
         String mssv = "24521784";
         when(studentRepository.findMssvAll()).thenReturn(List.of(mssv));
-        when(scheduleService.fetchCourseDeadlinesFromMoodle(eq(mssv), any(), any()))
-                .thenReturn(List.of(course("CSE101",
-                        exercise("Lab 1", LocalDateTime.now().plusMinutes(5), DeadlineStatus.UPCOMING))));
+        when(scheduleService.fetchCourseDeadlinesFromMoodle(eq(mssv), any(), any())).thenReturn(List
+                .of(course("CSE101", exercise("Lab 1", LocalDateTime.now().plusMinutes(5), DeadlineStatus.UPCOMING))));
         when(assignmentService.getDeadlineWithMssv(eq(mssv), any(), any())).thenReturn(List.of());
 
         scheduler.scrapeAllDeadlineOfStudent();
@@ -97,13 +90,9 @@ class ScheduleSchedulerTest {
 
     @Test
     void boundaryNearDeadlineTriggerUnder30Seconds_shouldPushNearNotification() {
-        Deadline redisDeadline = Deadline.builder()
-                .mssv_deadline("id-1")
-                .mssv("24521784")
-                .deadlineName("Midterm")
+        Deadline redisDeadline = Deadline.builder().mssv_deadline("id-1").mssv("24521784").deadlineName("Midterm")
                 .dueDate(LocalDateTime.now().plusHours(24).plusSeconds(20).toLocalDate())
-                .dueTime(LocalDateTime.now().plusHours(24).plusSeconds(20).toLocalTime())
-                .build();
+                .dueTime(LocalDateTime.now().plusHours(24).plusSeconds(20).toLocalTime()).build();
         when(deadlineRepository.findAll()).thenReturn(List.of(redisDeadline));
 
         scheduler.pushNotiForDeadline();
@@ -113,13 +102,9 @@ class ScheduleSchedulerTest {
 
     @Test
     void overdueDeadlineCrossedThreshold_shouldDeleteFromRedis() {
-        Deadline overdueDeadline = Deadline.builder()
-                .mssv_deadline("id-overdue")
-                .mssv("24521784")
-                .deadlineName("Lab 1")
+        Deadline overdueDeadline = Deadline.builder().mssv_deadline("id-overdue").mssv("24521784").deadlineName("Lab 1")
                 .dueDate(LocalDateTime.now().minusSeconds(20).toLocalDate())
-                .dueTime(LocalDateTime.now().minusSeconds(20).toLocalTime())
-                .build();
+                .dueTime(LocalDateTime.now().minusSeconds(20).toLocalTime()).build();
         when(deadlineRepository.findAll()).thenReturn(List.of(overdueDeadline));
 
         scheduler.pushNotiForDeadline();
@@ -131,18 +116,10 @@ class ScheduleSchedulerTest {
     @Test
     void pingMoodleAndPushNewDeadlines_shouldCreateNotificationForEachNewDeadline() {
         String mssv = "24521784";
-        TemporaryDeadline td1 = TemporaryDeadline.builder()
-                .mssv(mssv)
-                .classCode("CSE101")
-                .deadlineName("Quiz 1")
-                .dueDate(LocalDateTime.now().plusDays(1))
-                .build();
-        TemporaryDeadline td2 = TemporaryDeadline.builder()
-                .mssv(mssv)
-                .classCode("CSE102")
-                .deadlineName("Assignment 1")
-                .dueDate(LocalDateTime.now().plusDays(2))
-                .build();
+        TemporaryDeadline td1 = TemporaryDeadline.builder().mssv(mssv).classCode("CSE101").deadlineName("Quiz 1")
+                .dueDate(LocalDateTime.now().plusDays(1)).build();
+        TemporaryDeadline td2 = TemporaryDeadline.builder().mssv(mssv).classCode("CSE102").deadlineName("Assignment 1")
+                .dueDate(LocalDateTime.now().plusDays(2)).build();
         when(studentRepository.findMssvAll()).thenReturn(List.of(mssv));
         when(scheduleService.getUpcomingDeadlines(mssv)).thenReturn(List.of(td1, td2));
 
@@ -170,9 +147,8 @@ class ScheduleSchedulerTest {
         when(studentRepository.findMssvAll()).thenReturn(List.of(first, second));
         when(scheduleService.fetchCourseDeadlinesFromMoodle(eq(first), any(), any()))
                 .thenThrow(new RuntimeException("moodle error"));
-        when(scheduleService.fetchCourseDeadlinesFromMoodle(eq(second), any(), any()))
-                .thenReturn(List.of(course("CSE101",
-                        exercise("Final", LocalDateTime.now().plusMinutes(5), DeadlineStatus.UPCOMING))));
+        when(scheduleService.fetchCourseDeadlinesFromMoodle(eq(second), any(), any())).thenReturn(List
+                .of(course("CSE101", exercise("Final", LocalDateTime.now().plusMinutes(5), DeadlineStatus.UPCOMING))));
         when(assignmentService.getDeadlineWithMssv(eq(second), any(), any())).thenReturn(List.of());
 
         scheduler.scrapeAllDeadlineOfStudent();
