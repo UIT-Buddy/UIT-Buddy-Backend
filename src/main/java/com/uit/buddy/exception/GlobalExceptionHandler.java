@@ -1,10 +1,8 @@
 package com.uit.buddy.exception;
 
-import com.uit.buddy.dto.base.ErrorResponse;
-import com.uit.buddy.exception.system.SystemErrorCode;
 import java.util.HashMap;
 import java.util.Map;
-import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.dao.DataAccessException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -18,6 +16,11 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.multipart.MultipartException;
 import org.springframework.web.multipart.support.MissingServletRequestPartException;
 import org.springframework.web.servlet.NoHandlerFoundException;
+
+import com.uit.buddy.dto.base.ErrorResponse;
+import com.uit.buddy.exception.system.SystemErrorCode;
+
+import lombok.extern.slf4j.Slf4j;
 
 @RestControllerAdvice
 @Slf4j
@@ -132,6 +135,16 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleGenericException(Exception ex) {
+        log.error("Unexpected error: ", ex);
+
+        ErrorResponse response = new ErrorResponse(SystemErrorCode.INTERNAL_ERROR.getHttpStatus().value(),
+                SystemErrorCode.INTERNAL_ERROR.getMessage(), SystemErrorCode.INTERNAL_ERROR.getCode());
+
+        return ResponseEntity.status(SystemErrorCode.INTERNAL_ERROR.getHttpStatus()).body(response);
+    }
+
+    @ExceptionHandler(InterruptedException.class)
+    public ResponseEntity<ErrorResponse> handleThreadException(InterruptedException ex) {
         log.error("Unexpected error: ", ex);
 
         ErrorResponse response = new ErrorResponse(SystemErrorCode.INTERNAL_ERROR.getHttpStatus().value(),

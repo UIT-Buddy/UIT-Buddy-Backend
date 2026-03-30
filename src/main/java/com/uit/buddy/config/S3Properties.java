@@ -6,16 +6,18 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
-@ConfigurationProperties(prefix = "cloudinary")
+@ConfigurationProperties(prefix = "aws.s3")
 @Getter
 @Setter
-public class CloudinaryProperties {
+public class S3Properties {
 
+    private String bucketName;
+    private String region;
+    private String accessKey;
+    private String secretKey;
+    private String endpoint;
+    private String publicBaseUrl;
     private String defaultAvatarUrl;
     private String[] allowedImageTypes;
     private String[] allowedVideoTypes;
-    private int avatarSize;
-    private int thumbnailSize;
-    private int postImageWidth;
-    private int postImageHeight;
 }

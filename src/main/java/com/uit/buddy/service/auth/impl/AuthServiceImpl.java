@@ -33,11 +33,11 @@ import com.uit.buddy.repository.auth.RefreshTokenRepository;
 import com.uit.buddy.repository.user.StudentRepository;
 import com.uit.buddy.security.JwtUtils;
 import com.uit.buddy.service.auth.AuthService;
-import com.uit.buddy.service.cloudinary.CloudinaryService;
 import com.uit.buddy.service.cometchat.CometChatService;
 import com.uit.buddy.service.email.EmailService;
 import com.uit.buddy.service.encryption.WsTokenEncryptionService;
 import com.uit.buddy.service.fcm.FcmService;
+import com.uit.buddy.service.file.FileService;
 import com.uit.buddy.util.OtpUtils;
 import java.util.List;
 import java.util.UUID;
@@ -71,7 +71,7 @@ public class AuthServiceImpl implements AuthService {
     private final WsTokenEncryptionService wsTokenEncryptionService;
     private final FcmService fcmService;
     private final OtpUtils otpUtils;
-    private final CloudinaryService cloudinaryService;
+    private final FileService fileService;
     private final CometChatService cometChatService;
 
     @Value("${app.otp.length}")
@@ -150,7 +150,7 @@ public class AuthServiceImpl implements AuthService {
             throw new AuthException(AuthErrorCode.STUDENT_ALREADY_EXISTS);
         }
 
-        String avatarUrl = cloudinaryService.createDefaultAvatar(request.mssv());
+        String avatarUrl = fileService.createDefaultAvatar(request.mssv());
 
         PendingAccount pendingAccount = pendingAccountRepository.findById(request.mssv())
                 .orElseThrow(() -> new AuthException(AuthErrorCode.PENDING_ACCOUNT_NOT_FOUND));
@@ -171,8 +171,9 @@ public class AuthServiceImpl implements AuthService {
                     "Invalid account data. Please validate your token again.");
         }
 
-        createCometChatUser(request.mssv(), pendingAccount.getFullName(), avatarUrl);
-        String cometAuthToken = createCometChatAuthToken(request.mssv());
+        // createCometChatUser(request.mssv(), pendingAccount.getFullName(), avatarUrl);
+        // String cometAuthToken = createCometChatAuthToken(request.mssv());
+        String cometAuthToken = "";
 
         String homeClassCode = pendingAccount.getHomeClassCode();
         ensureHomeClassExists(homeClassCode, request.mssv());
@@ -208,12 +209,12 @@ public class AuthServiceImpl implements AuthService {
                 log.error("Failed to rollback CometChat user for MSSV: {}", request.mssv(), ex);
             }
 
-            // Rollback Cloudinary avatar
+            // Rollback avatar object
             try {
-                cloudinaryService.deleteAvatar(request.mssv());
-                log.info("Successfully rolled back Cloudinary avatar for MSSV: {}", request.mssv());
+                fileService.deleteAvatar(request.mssv());
+                log.info("Successfully rolled back avatar for MSSV: {}", request.mssv());
             } catch (Exception ex) {
-                log.error("Failed to rollback Cloudinary avatar for MSSV: {}", request.mssv(), ex);
+                log.error("Failed to rollback avatar for MSSV: {}", request.mssv(), ex);
             }
 
             throw new AuthException(AuthErrorCode.EXTERNAL_SERVICE_ERROR,
@@ -492,7 +493,6 @@ public class AuthServiceImpl implements AuthService {
             return courses.stream()
                     .filter(course -> course.fullName() != null && course.fullName().toUpperCase().contains("CVHT"))
                     .map(EnrolledCourseResponse::shortName).findFirst().orElse(null);
-
         } catch (ExternalClientException | RestClientException e) {
             log.error("[Auth Service] Moodle API error for MSSV: {}. Error: {}", mssv, e.getMessage());
             throw new AuthException(AuthErrorCode.EXTERNAL_SERVICE_ERROR,

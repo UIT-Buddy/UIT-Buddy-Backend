@@ -89,6 +89,30 @@ public class NotificationServiceImpl implements NotificationService {
                 event.commentId().toString(), "thích");
     }
 
+    @Override
+    @Transactional
+    public void createNearDeadlineNotification(String mssv, String deadlineName) {
+        NotificationTemplate template = NotificationTemplate.REMINDER;
+        processNotification(mssv, template.getTitle(), "Deadline '" + deadlineName + "' sẽ đến hạn trong vòng 24 giờ.",
+                template, null);
+    }
+
+    @Override
+    @Transactional
+    public void createOverdueDeadlineNotification(String mssv, String deadlineName) {
+        NotificationTemplate template = NotificationTemplate.ACADEMIC;
+        processNotification(mssv, template.getTitle(), "Deadline '" + deadlineName + "' đã quá hạn.", template, null);
+    }
+
+
+    @Override
+    @Transactional
+    public void createNewDeadlineNotification(String mssv, String deadlineName) {
+        NotificationTemplate template = NotificationTemplate.ACADEMIC;
+        processNotification(mssv, template.getTitle(),
+                "Bạn có deadline mới: '" + deadlineName + "'.", template, null);
+    }
+
     private void processAggregatedNotification(String receiverMssv, String title, String actorName,
             NotificationTemplate type, String dataId, String action) {
 

@@ -1,6 +1,6 @@
 package com.uit.buddy.service.document.impl;
 
-import com.uit.buddy.constant.CloudinaryConstants;
+import com.uit.buddy.constant.StorageConstants;
 import com.uit.buddy.dto.request.document.CreateFileRequest;
 import com.uit.buddy.dto.request.document.CreateFolderRequest;
 import com.uit.buddy.dto.response.document.DocumentFileResponse;
@@ -18,8 +18,8 @@ import com.uit.buddy.mapper.document.DocumentMapper;
 import com.uit.buddy.repository.document.DocumentRepository;
 import com.uit.buddy.repository.document.FolderRepository;
 import com.uit.buddy.repository.user.StudentRepository;
-import com.uit.buddy.service.cloudinary.CloudinaryService;
 import com.uit.buddy.service.document.DocumentService;
+import com.uit.buddy.service.file.FileService;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -39,7 +39,7 @@ public class DocumentServiceImpl implements DocumentService {
     private final FolderRepository folderRepository;
     private final DocumentRepository documentRepository;
     private final StudentRepository studentRepository;
-    private final CloudinaryService cloudinaryService;
+    private final FileService fileService;
     private final DocumentMapper documentMapper;
 
     @Override
@@ -72,7 +72,7 @@ public class DocumentServiceImpl implements DocumentService {
 
         Folder folder = resolveTargetFolder(mssv, request.folderId());
 
-        List<DocumentUploadResult> uploadResults = cloudinaryService.uploadMultipleDocuments(request.files());
+        List<DocumentUploadResult> uploadResults = fileService.uploadMultipleDocuments(request.files());
 
         List<DocumentFileResponse> responses = new ArrayList<>();
         int fileIndex = 0;
@@ -81,7 +81,7 @@ public class DocumentServiceImpl implements DocumentService {
                 throw new UserException(UserErrorCode.FILE_EMPTY);
             }
 
-            String fileName = CloudinaryConstants.normalizeFileName(file.getOriginalFilename());
+            String fileName = StorageConstants.normalizeFileName(file.getOriginalFilename());
             DocumentUploadResult uploadResult = uploadResults.get(fileIndex);
 
             Document document = Document.builder().owner(studentRepository.getReferenceById(mssv)).folder(folder)
@@ -137,7 +137,7 @@ public class DocumentServiceImpl implements DocumentService {
         if (folder.getParent() == null) {
             return folder.getFolderName();
         }
-        return buildFolderPath(folder.getParent()) + "/" + folder.getFolderName();
+        return (buildFolderPath(folder.getParent()) + "/" + folder.getFolderName());
     }
 
     private Folder findOwnedFolder(String mssv, UUID folderId) {
@@ -150,9 +150,8 @@ public class DocumentServiceImpl implements DocumentService {
             return findOwnedFolder(mssv, folderId);
         }
 
-        return folderRepository.findFirstByMssvAndParentIsNullAndFolderName(mssv, CloudinaryConstants.ROOT_FOLDER_NAME)
+        return folderRepository.findFirstByMssvAndParentIsNullAndFolderName(mssv, StorageConstants.ROOT_FOLDER_NAME)
                 .orElseGet(() -> folderRepository.save(Folder.builder().owner(studentRepository.getReferenceById(mssv))
-                        .folderName(CloudinaryConstants.ROOT_FOLDER_NAME).parent(null).build()));
+                        .folderName(StorageConstants.ROOT_FOLDER_NAME).parent(null).build()));
     }
-
 }

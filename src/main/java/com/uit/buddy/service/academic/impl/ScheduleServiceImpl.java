@@ -1,46 +1,5 @@
 package com.uit.buddy.service.academic.impl;
 
-import com.uit.buddy.client.UitClient;
-import com.uit.buddy.constant.IcsConstants;
-import com.uit.buddy.dto.request.schedule.CreateDeadlineRequest;
-import com.uit.buddy.dto.request.schedule.UploadScheduleRequest;
-import com.uit.buddy.dto.response.client.AssignmentDetailResponse;
-import com.uit.buddy.dto.response.client.CourseDetailResponse;
-import com.uit.buddy.dto.response.client.EnrolledCourseResponse;
-import com.uit.buddy.dto.response.client.SiteInfoResponse;
-import com.uit.buddy.dto.response.schedule.CourseCalendarResponse;
-import com.uit.buddy.dto.response.schedule.CourseContentResponse;
-import com.uit.buddy.dto.response.schedule.CreateDeadlineResponse;
-import com.uit.buddy.dto.response.schedule.DeadlineResponse;
-import com.uit.buddy.entity.academic.Course;
-import com.uit.buddy.entity.academic.Semester;
-import com.uit.buddy.entity.academic.StudentSubjectClass;
-import com.uit.buddy.entity.academic.SubjectClass;
-import com.uit.buddy.entity.learning.StudentTask;
-import com.uit.buddy.entity.user.Student;
-import com.uit.buddy.enums.DeadlineStatus;
-import com.uit.buddy.enums.StudentClassStatus;
-import com.uit.buddy.enums.TaskType;
-import com.uit.buddy.exception.schedule.ScheduleErrorCode;
-import com.uit.buddy.exception.schedule.ScheduleException;
-import com.uit.buddy.exception.system.SystemErrorCode;
-import com.uit.buddy.exception.system.SystemException;
-import com.uit.buddy.exception.user.UserErrorCode;
-import com.uit.buddy.exception.user.UserException;
-import com.uit.buddy.mapper.schedule.ScheduleMapper;
-import com.uit.buddy.repository.academic.CourseRepository;
-import com.uit.buddy.repository.academic.CurriculumCourseRepository;
-import com.uit.buddy.repository.academic.SemesterRepository;
-import com.uit.buddy.repository.academic.StudentSubjectClassRepository;
-import com.uit.buddy.repository.academic.SubjectClassRepository;
-import com.uit.buddy.repository.learning.StudentTaskRepository;
-import com.uit.buddy.repository.user.StudentRepository;
-import com.uit.buddy.service.academic.ScheduleService;
-import com.uit.buddy.service.learning.AssignmentService;
-import com.uit.buddy.util.EncryptionUtils;
-import com.uit.buddy.util.IcsParser;
-import com.uit.buddy.util.IcsParser.IcsEvent;
-import com.uit.buddy.util.IcsParser.ParseResult;
 import java.io.IOException;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -58,12 +17,60 @@ import java.util.concurrent.Executor;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
+
+import com.uit.buddy.client.UitClient;
+import com.uit.buddy.constant.IcsConstants;
+import com.uit.buddy.constant.ScheduleConstant;
+import com.uit.buddy.dto.request.schedule.CreateDeadlineRequest;
+import com.uit.buddy.dto.request.schedule.UploadScheduleRequest;
+import com.uit.buddy.dto.response.client.AssignmentDetailResponse;
+import com.uit.buddy.dto.response.client.CourseDetailResponse;
+import com.uit.buddy.dto.response.client.EnrolledCourseResponse;
+import com.uit.buddy.dto.response.client.SiteInfoResponse;
+import com.uit.buddy.dto.response.schedule.CourseCalendarResponse;
+import com.uit.buddy.dto.response.schedule.CourseContentResponse;
+import com.uit.buddy.dto.response.schedule.CreateDeadlineResponse;
+import com.uit.buddy.dto.response.schedule.DeadlineResponse;
+import com.uit.buddy.entity.academic.Course;
+import com.uit.buddy.entity.academic.Semester;
+import com.uit.buddy.entity.academic.StudentSubjectClass;
+import com.uit.buddy.entity.academic.SubjectClass;
+import com.uit.buddy.entity.learning.StudentTask;
+import com.uit.buddy.entity.learning.TemporaryDeadline;
+import com.uit.buddy.entity.user.Student;
+import com.uit.buddy.enums.DeadlineStatus;
+import com.uit.buddy.enums.StudentClassStatus;
+import com.uit.buddy.enums.TaskType;
+import com.uit.buddy.exception.schedule.ScheduleErrorCode;
+import com.uit.buddy.exception.schedule.ScheduleException;
+import com.uit.buddy.exception.system.SystemErrorCode;
+import com.uit.buddy.exception.system.SystemException;
+import com.uit.buddy.exception.user.UserErrorCode;
+import com.uit.buddy.exception.user.UserException;
+import com.uit.buddy.mapper.schedule.ScheduleMapper;
+import com.uit.buddy.repository.academic.CourseRepository;
+import com.uit.buddy.repository.academic.CurriculumCourseRepository;
+import com.uit.buddy.repository.academic.SemesterRepository;
+import com.uit.buddy.repository.academic.StudentSubjectClassRepository;
+import com.uit.buddy.repository.academic.SubjectClassRepository;
+import com.uit.buddy.repository.learning.StudentTaskRepository;
+import com.uit.buddy.repository.learning.TemporaryDeadlineRepository;
+import com.uit.buddy.repository.user.StudentRepository;
+import com.uit.buddy.service.academic.ScheduleService;
+import com.uit.buddy.service.learning.AssignmentService;
+import com.uit.buddy.service.notification.NotificationService;
+import com.uit.buddy.util.EncryptionUtils;
+import com.uit.buddy.util.IcsParser;
+import com.uit.buddy.util.IcsParser.IcsEvent;
+import com.uit.buddy.util.IcsParser.ParseResult;
+
+import lombok.extern.slf4j.Slf4j;
 
 @Service
 @Slf4j
@@ -76,8 +83,10 @@ public class ScheduleServiceImpl implements ScheduleService {
     private final CourseRepository courseRepository;
     private final CurriculumCourseRepository curriculumCourseRepository;
     private final StudentTaskRepository studentTaskRepository;
+    private final TemporaryDeadlineRepository temporaryDeadlineRepository;
     private final SemesterRepository semesterRepository;
     private final AssignmentService assignmentService;
+    private final NotificationService notificationService;
     private final UitClient uitClient;
     private final EncryptionUtils encryptionUtils;
     private final Executor executor;
@@ -87,7 +96,9 @@ public class ScheduleServiceImpl implements ScheduleService {
     public ScheduleServiceImpl(IcsParser icsParser, StudentRepository studentRepository,
             SubjectClassRepository subjectClassRepository, StudentSubjectClassRepository studentSubjectClassRepository,
             CourseRepository courseRepository, CurriculumCourseRepository curriculumCourseRepository,
-            AssignmentService assignmentService, SemesterRepository semesterRepository, UitClient uitClient,
+            AssignmentService assignmentService, SemesterRepository semesterRepository,
+            TemporaryDeadlineRepository temporaryDeadlineRepository, NotificationService notificationService,
+            UitClient uitClient,
             EncryptionUtils encryptionUtils, StudentTaskRepository studentTaskRepository,
             @Qualifier("uploadExecutor") Executor executor, ScheduleMapper scheduleMapper) {
         this.icsParser = icsParser;
@@ -97,6 +108,8 @@ public class ScheduleServiceImpl implements ScheduleService {
         this.courseRepository = courseRepository;
         this.curriculumCourseRepository = curriculumCourseRepository;
         this.semesterRepository = semesterRepository;
+        this.temporaryDeadlineRepository = temporaryDeadlineRepository;
+        this.notificationService = notificationService;
         this.uitClient = uitClient;
         this.encryptionUtils = encryptionUtils;
         this.executor = executor;
@@ -116,7 +129,7 @@ public class ScheduleServiceImpl implements ScheduleService {
 
         try {
             ParseResult result = icsParser.parseIcsFile(request.icsFile().getInputStream());
-            result.setEvents(removeDuplicateSchedule(mssv, result.getEvents()));
+            result.setEvents(removeDuplicateSchedule(result.getEvents()));
             if (result.getStudentId() != null && !result.getStudentId().equals(mssv)) {
                 throw new ScheduleException(ScheduleErrorCode.INVALID_OWNER);
             }
@@ -148,26 +161,36 @@ public class ScheduleServiceImpl implements ScheduleService {
 
     @Override
     public CreateDeadlineResponse createDeadline(String mssv, CreateDeadlineRequest request) {
-        String classCode = request.classCode();
         if (request.exerciseName() == null)
             throw new ScheduleException(ScheduleErrorCode.INVALID_EXERCISE_NAME);
         if (request.dueDate() == null)
             throw new ScheduleException(ScheduleErrorCode.INVALID_DUE_TIME);
+
         Student student = studentRepository.findById(mssv)
                 .orElseThrow(() -> new UserException(UserErrorCode.STUDENT_NOT_FOUND));
-        StudentSubjectClass studentSubjectClass = null;
-        if (request.classCode() != null) {
-            studentSubjectClass = studentSubjectClassRepository.findSubjectByClassCode(mssv, request.classCode());
-            if (studentSubjectClass == null)
-                throw new ScheduleException(ScheduleErrorCode.CLASS_NOT_FOUND);
-        }
+
+        StudentSubjectClass studentSubjectClass = resolveStudentSubjectClass(mssv, request.classCode());
         TaskType taskType = studentSubjectClass == null ? TaskType.PERSONAL : TaskType.ASSIGNMENT;
-        SubjectClass subjectClass = subjectClassRepository.findByClassCodeAndStudentMssv(mssv, request.classCode());
+        SubjectClass subjectClass = studentSubjectClass == null ? null : studentSubjectClass.getSubjectClass();
+
         log.info("[SCHEDULE SERVICE]: Create task for user with id {}", mssv);
         StudentTask studentTask = StudentTask.builder().student(student).taskType(taskType).subjectClass(subjectClass)
                 .personalTitle(request.exerciseName()).reminderAt(request.dueDate()).build();
         studentTaskRepository.save(studentTask);
         return scheduleMapper.toCreateDeadlineResponse(studentTask);
+    }
+
+    private StudentSubjectClass resolveStudentSubjectClass(String mssv, String classCode) {
+        if (classCode == null || classCode.isBlank()) {
+            return null;
+        }
+
+        StudentSubjectClass studentSubjectClass = studentSubjectClassRepository.findSubjectByClassCode(mssv, classCode);
+        if (studentSubjectClass == null) {
+            throw new ScheduleException(ScheduleErrorCode.CLASS_NOT_FOUND);
+        }
+
+        return studentSubjectClass;
     }
 
     @Override
@@ -176,10 +199,29 @@ public class ScheduleServiceImpl implements ScheduleService {
         List<CourseContentResponse> studentTasks = assignmentService.getDeadlineWithMssv(mssv, month, year);
         List<CourseContentResponse> joinedTask = new ArrayList<>(moodleTask);
         joinedTask.addAll(studentTasks);
-
         int totalDeadlines = joinedTask.stream().mapToInt(c -> c.exercises().size()).sum();
         List<CourseContentResponse> pagedCourseContents = paginateDeadlines(joinedTask, pageable);
         return new DeadlineResponse(totalDeadlines, pagedCourseContents);
+    }
+
+    private String buildTemporaryDeadlineKey(TemporaryDeadline deadline) {
+        return buildTemporaryDeadlineKey(deadline.getClassCode(), deadline.getDeadlineName(), deadline.getDueDate());
+    }
+
+    private String buildTemporaryDeadlineKey(String classCode, String deadlineName, LocalDateTime dueDate) {
+        return String.format("%s|%s|%s", normalizeDeadlineKeyPart(classCode),
+                normalizeDeadlineKeyPart(deadlineName), dueDate);
+    }
+
+    private String resolveClassCode(CourseContentResponse courseContent) {
+        if (courseContent == null || courseContent.courseName() == null || courseContent.courseName().isBlank()) {
+            return ScheduleConstant.UNKNOWN_CLASS_CODE;
+        }
+        return courseContent.courseName();
+    }
+
+    private String normalizeDeadlineKeyPart(String value) {
+        return value == null ? "" : value.trim().toLowerCase();
     }
 
     @Override
@@ -258,8 +300,7 @@ public class ScheduleServiceImpl implements ScheduleService {
         if (!classesToUpdate.isEmpty()) {
             subjectClassRepository.saveAll(classesToUpdate);
         }
-        StudentClassStatus classStatus = semester == getActiveSemester() ? StudentClassStatus.STUDYING
-                : StudentClassStatus.COMPLETED;
+        StudentClassStatus classStatus = resolveClassStatus(semester);
         List<StudentSubjectClass> finalMappings = newEventsForStudent.values().stream()
                 .map(event -> StudentSubjectClass.builder().student(student)
                         .subjectClass(classMap.get(event.getClassCode())).status(classStatus).build())
@@ -270,6 +311,13 @@ public class ScheduleServiceImpl implements ScheduleService {
                 student.getMssv());
 
         return finalMappings;
+    }
+
+    private StudentClassStatus resolveClassStatus(Semester semester) {
+        Semester activeSemester = getActiveSemester();
+        boolean isActiveSemester = semester != null && activeSemester != null
+                && java.util.Objects.equals(semester.getSemesterCode(), activeSemester.getSemesterCode());
+        return isActiveSemester ? StudentClassStatus.STUDYING : StudentClassStatus.COMPLETED;
     }
 
     private SubjectClass buildSubjectClassEntity(IcsEvent event, Semester semester, Map<String, Course> courseCache) {
@@ -385,6 +433,46 @@ public class ScheduleServiceImpl implements ScheduleService {
         return deadlines;
     }
 
+    @Override
+    public List<TemporaryDeadline> getUpcomingDeadlines(String mssv) {
+        LocalDate now = LocalDate.now();
+        Integer currentMonth = now.getMonthValue();
+        Integer currentYear = now.getYear();
+        List<CourseContentResponse> moodleDeadlines = fetchCourseDeadlinesFromMoodle(mssv, currentMonth, currentYear);
+
+        // Build list of all upcoming deadlines from Moodle
+        List<TemporaryDeadline> allUpcomingDeadlines = new ArrayList<>();
+        for (CourseContentResponse courseContent : moodleDeadlines) {
+            String classCode = courseContent.courseName() == null || courseContent.courseName().isBlank()
+                    ? ScheduleConstant.UNKNOWN_CLASS_CODE
+                    : courseContent.courseName();
+            for (CourseContentResponse.exercise exercise : courseContent.exercises()) {
+                if (exercise.dueDate() != null && exercise.exerciseName() != null
+                        && !exercise.exerciseName().isBlank()) {
+                    allUpcomingDeadlines.add(TemporaryDeadline.builder().mssv(mssv).classCode(classCode)
+                            .deadlineName(exercise.exerciseName()).dueDate(exercise.dueDate()).build());
+                }
+            }
+        }
+
+        Set<String> existingKeys = temporaryDeadlineRepository.findByMssv(mssv).stream()
+                .map(this::buildTemporaryDeadlineKey).collect(Collectors.toSet());
+
+        List<TemporaryDeadline> newDeadlines = new ArrayList<>();
+        for (TemporaryDeadline deadline : allUpcomingDeadlines) {
+            String key = buildTemporaryDeadlineKey(deadline);
+            if (!existingKeys.contains(key)) {
+                newDeadlines.add(deadline);
+            }
+        }
+
+        if (!newDeadlines.isEmpty()) {
+            temporaryDeadlineRepository.saveAll(newDeadlines);
+        }
+
+        return newDeadlines;
+    }
+
     private Map<String, List<CourseDetailResponse>> getCourseContents(String wstoken) {
         SiteInfoResponse siteInfo = uitClient.fetchSiteInfo(wstoken);
         Long userId = siteInfo.userid();
@@ -435,7 +523,7 @@ public class ScheduleServiceImpl implements ScheduleService {
                 if (module.dates() == null) {
                     continue;
                 }
-                String dueTimestamp = module.dates().stream().filter(d -> "Due:".equalsIgnoreCase(d.label())).map(
+                String dueTimestamp = module.dates().stream().filter(d -> ScheduleConstant.DUE_DATE_LABEL.equalsIgnoreCase(d.label())).map(
                         CourseDetailResponse.CourseDetailModuleResponse.CourseDetailModuleDatesResonponse::timestamp)
                         .findFirst().orElse(null);
 
@@ -520,7 +608,7 @@ public class ScheduleServiceImpl implements ScheduleService {
         for (var module : detail.moduleResponse()) {
             if (module.dates() != null) {
                 for (var date : module.dates()) {
-                    if ("Due:".equalsIgnoreCase(date.label())) {
+                    if (ScheduleConstant.DUE_DATE_LABEL.equalsIgnoreCase(date.label())) {
                         return false;
                     }
                 }
@@ -547,7 +635,7 @@ public class ScheduleServiceImpl implements ScheduleService {
         if (dueDate.isBefore(now)) {
             return DeadlineStatus.OVERDUE;
         }
-        if (dueDate.isBefore(now.plusHours(24))) {
+        if (dueDate.isBefore(now.plusHours(ScheduleConstant.NEAR_DEADLINE_HOURS))) {
             return DeadlineStatus.NEARDEADLINE;
         }
         return DeadlineStatus.UPCOMING;
@@ -562,17 +650,23 @@ public class ScheduleServiceImpl implements ScheduleService {
             return false;
         }
 
-        return "submitted".equalsIgnoreCase(assignmentDetail.lastAttempt().submission().status());
+        return ScheduleConstant.SUBMITTED_STATUS.equalsIgnoreCase(assignmentDetail.lastAttempt().submission().status());
     }
 
-    private List<IcsEvent> removeDuplicateSchedule(String mssv, List<IcsEvent> icsEventList) {
-        List<IcsEvent> refinedDuplicatedCourse = new ArrayList<>();
-        for (IcsEvent icsEvent : icsEventList) {
-            if (studentSubjectClassRepository.findSubjectByClassCode(mssv, icsEvent.getClassCode()) == null) {
-                refinedDuplicatedCourse.add(icsEvent);
-            }
+    private List<IcsEvent> removeDuplicateSchedule(List<IcsEvent> icsEventList) {
+        if (icsEventList == null || icsEventList.isEmpty()) {
+            return List.of();
         }
-        return refinedDuplicatedCourse;
+
+        Map<String, IcsEvent> uniqueEventsByClassCode = new LinkedHashMap<>();
+        for (IcsEvent icsEvent : icsEventList) {
+            if (icsEvent == null || icsEvent.getClassCode() == null || icsEvent.getClassCode().isBlank()) {
+                continue;
+            }
+            uniqueEventsByClassCode.putIfAbsent(icsEvent.getClassCode(), icsEvent);
+        }
+
+        return new ArrayList<>(uniqueEventsByClassCode.values());
     }
 
     private void setCreditsForSubjectClass(Student student, List<StudentSubjectClass> classesToUpdate) {
@@ -622,7 +716,7 @@ public class ScheduleServiceImpl implements ScheduleService {
                 dotCount++;
             }
         }
-        return dotCount >= 2;
+        return dotCount >= ScheduleConstant.DOT_COUNT_FOR_LAB_CLASS;
     }
 
     private String resolveMajorCode(Student student) {

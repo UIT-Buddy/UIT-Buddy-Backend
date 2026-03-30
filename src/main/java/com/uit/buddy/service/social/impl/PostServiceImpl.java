@@ -14,7 +14,7 @@ import com.uit.buddy.exception.user.UserException;
 import com.uit.buddy.mapper.social.PostMapper;
 import com.uit.buddy.repository.social.PostRepository;
 import com.uit.buddy.repository.user.StudentRepository;
-import com.uit.buddy.service.cloudinary.CloudinaryService;
+import com.uit.buddy.service.file.FileService;
 import com.uit.buddy.service.social.PostService;
 import com.uit.buddy.util.CursorUtils;
 import java.time.LocalDateTime;
@@ -37,7 +37,7 @@ public class PostServiceImpl implements PostService {
     private final PostRepository postRepository;
     private final StudentRepository studentRepository;
     private final PostMapper postMapper;
-    private final CloudinaryService cloudinaryService;
+    private final FileService fileService;
 
     @Value("${post.limit-upload-images}")
     private int limitNumberOfImages;
@@ -52,7 +52,7 @@ public class PostServiceImpl implements PostService {
         if (!studentRepository.existsById(mssv)) {
             throw new UserException(UserErrorCode.STUDENT_NOT_FOUND);
         }
-        List<PostMedia> medias = cloudinaryService.uploadMultiMedia(request.images(), request.videos());
+        List<PostMedia> medias = fileService.uploadMultiMedia(request.images(), request.videos());
         saveToDb(mssv, title, content, medias);
     }
 
@@ -113,10 +113,10 @@ public class PostServiceImpl implements PostService {
         Post post = getPostAndValidateOwner(postId, mssv);
         List<PostMedia> medias = post.getMedias();
         if (medias != null && !medias.isEmpty()) {
-            cloudinaryService.deletePostMedia(medias);
+            fileService.deletePostMedia(medias);
         }
         postRepository.delete(post);
-        log.info("[Post Service] Successfully deleted post {} and its cloud media", postId);
+        log.info("[Post Service] Successfully deleted post {} and its stored media", postId);
     }
 
     @Override
