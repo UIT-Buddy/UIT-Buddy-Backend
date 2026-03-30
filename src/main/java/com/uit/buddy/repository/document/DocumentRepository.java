@@ -15,21 +15,9 @@ public interface DocumentRepository extends JpaRepository<Document, UUID> {
     Optional<Document> findByIdAndMssv(UUID id, String mssv);
 
     @Query(value = """
-            SELECT d.*,
-                   ts_rank(
-                       to_tsvector('simple', coalesce(d.file_name,'')),
-                       websearch_to_tsquery('simple', :keyword)
-                   ) AS rank
-            FROM documents d
-            JOIN students s ON d.mssv = s.mssv
-            WHERE to_tsvector('simple', coalesce(d.file_name,''))
-                  @@ websearch_to_tsquery('simple', :keyword)
-            ORDER BY rank DESC
-            """, countQuery = """
-            SELECT count(*)
-            FROM documents d
-            WHERE to_tsvector('simple', coalesce(d.file_name,''))
-                  @@ websearch_to_tsquery('simple', :keyword)
+            SELECT * FROM documents d
+            WHERE d.mssv = :mssv
+            AND LOWER(d.file_name) LIKE LOWER(CONCAT('%', :keyword, '%'))
             """, nativeQuery = true)
     Page<Document> findByMssvAndFileNameContainingIgnoreCase(String mssv, String keyword, Pageable pageable);
 

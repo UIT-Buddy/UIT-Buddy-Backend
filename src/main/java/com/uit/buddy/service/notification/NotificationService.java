@@ -27,7 +27,7 @@ public interface NotificationService {
 
     void createOverdueDeadlineNotification(String mssv, String deadlineName);
 
-    void createDeadlineSummaryNotification(String mssv, int uncompletedCount);
+    void createNewDeadlineNotification(String mssv, String deadlineName);
 
     List<NotificationResponse> getNotifications(String mssv, String cursor, int limit);
 

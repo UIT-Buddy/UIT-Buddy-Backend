@@ -3,6 +3,7 @@ package com.uit.buddy.controller.academic;
 import com.uit.buddy.controller.AbstractBaseController;
 import com.uit.buddy.dto.base.SingleResponse;
 import com.uit.buddy.dto.request.schedule.CreateDeadlineRequest;
+import com.uit.buddy.dto.request.schedule.UpdateDeadlineRequest;
 import com.uit.buddy.dto.request.schedule.UploadScheduleRequest;
 import com.uit.buddy.dto.response.schedule.CourseCalendarResponse;
 import com.uit.buddy.dto.response.schedule.CreateDeadlineResponse;
@@ -23,6 +24,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -60,6 +62,15 @@ public class ScheduleController extends AbstractBaseController {
         log.info("[Schedule Controller] Creating deadline for student: {}", mssv);
         CreateDeadlineResponse exercise = scheduleService.createDeadline(mssv, request);
         return successSingle(exercise, "Deadline created successfully");
+    }
+
+    @PatchMapping("/deadline")
+    @Operation(summary = "Update deadline", description = "Update personal or course-linked deadline")
+    public ResponseEntity<SingleResponse<CreateDeadlineResponse>> updateDeadline(
+            @Valid @RequestBody UpdateDeadlineRequest request, @AuthenticationPrincipal String mssv) {
+        log.info("[Schedule Controller] Updating deadline {} for student: {}", request.studentTaskId(), mssv);
+        CreateDeadlineResponse exercise = scheduleService.updateDeadline(mssv, request);
+        return successSingle(exercise, "Deadline updated successfully");
     }
 
     @GetMapping("/deadline/class-codes/studying")

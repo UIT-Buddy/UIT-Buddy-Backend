@@ -106,10 +106,9 @@ public class NotificationServiceImpl implements NotificationService {
 
     @Override
     @Transactional
-    public void createDeadlineSummaryNotification(String mssv, int uncompletedCount) {
+    public void createNewDeadlineNotification(String mssv, String deadlineName) {
         NotificationTemplate template = NotificationTemplate.ACADEMIC;
-        processNotification(mssv, template.getTitle(),
-                "Bạn hiện có " + uncompletedCount + " deadline chưa hoàn thành trên Moodle.", template, null);
+        processNotification(mssv, template.getTitle(), "Bạn có deadline mới: '" + deadlineName + "'.", template, null);
     }
 
     private void processAggregatedNotification(String receiverMssv, String title, String actorName,

@@ -8,9 +8,11 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.uit.buddy.dto.response.schedule.CourseContentResponse;
+import com.uit.buddy.entity.learning.TemporaryDeadline;
 import com.uit.buddy.entity.redis.Deadline;
 import com.uit.buddy.enums.DeadlineStatus;
 import com.uit.buddy.repository.learning.DeadlineRepository;
+import com.uit.buddy.repository.learning.TemporaryDeadlineRepository;
 import com.uit.buddy.repository.user.StudentRepository;
 import com.uit.buddy.service.academic.ScheduleService;
 import com.uit.buddy.service.learning.AssignmentService;
@@ -36,13 +38,15 @@ class ScheduleSchedulerTest {
     private StudentRepository studentRepository;
     @Mock
     private DeadlineRepository deadlineRepository;
+    @Mock
+    private TemporaryDeadlineRepository temporaryDeadlineRepository;
 
     private ScheduleScheduler scheduler;
 
     @BeforeEach
     void setUp() {
         scheduler = new ScheduleScheduler(scheduleService, assignmentService, notificationService, studentRepository,
-                deadlineRepository);
+                deadlineRepository, temporaryDeadlineRepository);
         ScheduleScheduler.stop = false;
         ScheduleScheduler.isRunning = true;
     }
@@ -97,19 +101,43 @@ class ScheduleSchedulerTest {
     }
 
     @Test
-    void interfaceSummaryScheduler_shouldPublishUncompletedCount() {
+    void overdueDeadlineCrossedThreshold_shouldDeleteFromRedis() {
+        Deadline overdueDeadline = Deadline.builder().mssv_deadline("id-overdue").mssv("24521784").deadlineName("Lab 1")
+                .dueDate(LocalDateTime.now().minusSeconds(20).toLocalDate())
+                .dueTime(LocalDateTime.now().minusSeconds(20).toLocalTime()).build();
+        when(deadlineRepository.findAll()).thenReturn(List.of(overdueDeadline));
+
+        scheduler.pushNotiForDeadline();
+
+        verify(notificationService).createOverdueDeadlineNotification("24521784", "Lab 1");
+        verify(deadlineRepository).deleteById("id-overdue");
+    }
+
+    @Test
+    void pingMoodleAndPushNewDeadlines_shouldCreateNotificationForEachNewDeadline() {
         String mssv = "24521784";
-        List<CourseContentResponse> moodleDeadlines = List.of(
-                course("CSE101", exercise("Done 1", LocalDateTime.now().plusDays(1), DeadlineStatus.DONE)),
-                course("CSE102", exercise("Todo 1", LocalDateTime.now().plusDays(2), DeadlineStatus.UPCOMING)),
-                course("CSE103", exercise("Todo 2", LocalDateTime.now().plusDays(3), DeadlineStatus.NEARDEADLINE)));
-
+        TemporaryDeadline td1 = TemporaryDeadline.builder().mssv(mssv).classCode("CSE101").deadlineName("Quiz 1")
+                .dueDate(LocalDateTime.now().plusDays(1)).build();
+        TemporaryDeadline td2 = TemporaryDeadline.builder().mssv(mssv).classCode("CSE102").deadlineName("Assignment 1")
+                .dueDate(LocalDateTime.now().plusDays(2)).build();
         when(studentRepository.findMssvAll()).thenReturn(List.of(mssv));
-        when(scheduleService.fetchCourseDeadlinesFromMoodle(mssv, null, null)).thenReturn(moodleDeadlines);
+        when(scheduleService.getUpcomingDeadlines(mssv)).thenReturn(List.of(td1, td2));
 
-        scheduler.pingMoodleAndPushDeadlineSummary();
+        scheduler.pingMoodleAndPushNewDeadlines();
 
-        verify(notificationService).createDeadlineSummaryNotification(mssv, 2);
+        verify(notificationService).createNewDeadlineNotification(mssv, "Quiz 1");
+        verify(notificationService).createNewDeadlineNotification(mssv, "Assignment 1");
+    }
+
+    @Test
+    void pingMoodleAndPushNewDeadlines_noNewDeadlines_shouldNotCreateAnyNotification() {
+        String mssv = "24521784";
+        when(studentRepository.findMssvAll()).thenReturn(List.of(mssv));
+        when(scheduleService.getUpcomingDeadlines(mssv)).thenReturn(List.of());
+
+        scheduler.pingMoodleAndPushNewDeadlines();
+
+        verify(notificationService, never()).createNewDeadlineNotification(any(), any());
     }
 
     @Test
@@ -117,7 +145,6 @@ class ScheduleSchedulerTest {
         String first = "24521784";
         String second = "24521785";
         when(studentRepository.findMssvAll()).thenReturn(List.of(first, second));
-
         when(scheduleService.fetchCourseDeadlinesFromMoodle(eq(first), any(), any()))
                 .thenThrow(new RuntimeException("moodle error"));
         when(scheduleService.fetchCourseDeadlinesFromMoodle(eq(second), any(), any())).thenReturn(List
