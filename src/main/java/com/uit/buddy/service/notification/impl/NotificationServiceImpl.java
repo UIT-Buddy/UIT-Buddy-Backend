@@ -91,24 +91,25 @@ public class NotificationServiceImpl implements NotificationService {
 
     @Override
     @Transactional
-    public void createNearDeadlineNotification(String mssv, String deadlineName) {
+    public void createNearDeadlineNotification(String mssv, String deadlineName, String dataId) {
         NotificationTemplate template = NotificationTemplate.REMINDER;
         processNotification(mssv, template.getTitle(), "Deadline '" + deadlineName + "' sẽ đến hạn trong vòng 24 giờ.",
-                template, null);
+                template, dataId);
     }
 
     @Override
     @Transactional
-    public void createOverdueDeadlineNotification(String mssv, String deadlineName) {
+    public void createOverdueDeadlineNotification(String mssv, String deadlineName, String dataId) {
         NotificationTemplate template = NotificationTemplate.ACADEMIC;
-        processNotification(mssv, template.getTitle(), "Deadline '" + deadlineName + "' đã quá hạn.", template, null);
+        processNotification(mssv, template.getTitle(), "Deadline '" + deadlineName + "' đã quá hạn.", template, dataId);
     }
 
     @Override
     @Transactional
-    public void createNewDeadlineNotification(String mssv, String deadlineName) {
+    public void createNewDeadlineNotification(String mssv, String deadlineName, String dataId) {
         NotificationTemplate template = NotificationTemplate.ACADEMIC;
-        processNotification(mssv, template.getTitle(), "Bạn có deadline mới: '" + deadlineName + "'.", template, null);
+        processNotification(mssv, template.getTitle(), "Bạn có deadline mới: '" + deadlineName + "'.", template,
+                dataId);
     }
 
     private void processAggregatedNotification(String receiverMssv, String title, String actorName,
