@@ -1,13 +1,5 @@
 package com.uit.buddy.scheduler;
 
-import com.uit.buddy.dto.response.schedule.CourseContentResponse;
-import com.uit.buddy.entity.redis.Deadline;
-import com.uit.buddy.enums.DeadlineStatus;
-import com.uit.buddy.repository.learning.DeadlineRepository;
-import com.uit.buddy.repository.user.StudentRepository;
-import com.uit.buddy.service.academic.ScheduleService;
-import com.uit.buddy.service.learning.AssignmentService;
-import com.uit.buddy.service.notification.NotificationService;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -15,21 +7,37 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.CompletableFuture;
-import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+
+import com.uit.buddy.constant.ScheduleConstant;
+import com.uit.buddy.dto.response.schedule.CourseContentResponse;
+import com.uit.buddy.entity.learning.TemporaryDeadline;
+import com.uit.buddy.entity.redis.Deadline;
+import com.uit.buddy.enums.DeadlineStatus;
+import com.uit.buddy.repository.learning.DeadlineRepository;
+import com.uit.buddy.repository.learning.TemporaryDeadlineRepository;
+import com.uit.buddy.repository.user.StudentRepository;
+import com.uit.buddy.service.academic.ScheduleService;
+import com.uit.buddy.service.learning.AssignmentService;
+import com.uit.buddy.service.notification.NotificationService;
+
+import lombok.extern.slf4j.Slf4j;
 
 @Service
 @Slf4j
 public class ScheduleScheduler {
+
     private final ScheduleService scheduleService;
     private final AssignmentService assignmentService;
     private final NotificationService notificationService;
     private final StudentRepository studentRepository;
     private final DeadlineRepository deadlineRepository;
+    private final TemporaryDeadlineRepository temporaryDeadlineRepository;
     public static Boolean stop = false;
     public static Boolean isRunning = true;
-
+    // This method can be called from outside to signal the scheduler to stop after the current cycle, avoid the risk of interrupting the schedule in the middle of processing a student
     public static void stopSchedule() {
         if (isRunning)
             stop = true;
@@ -46,15 +54,16 @@ public class ScheduleScheduler {
 
     public ScheduleScheduler(ScheduleService scheduleService, AssignmentService assignmentService,
             NotificationService notificationService, StudentRepository studentRepository,
-            DeadlineRepository deadlineRepository) {
+            DeadlineRepository deadlineRepository, TemporaryDeadlineRepository temporaryDeadlineRepository) {
         this.scheduleService = scheduleService;
         this.assignmentService = assignmentService;
         this.notificationService = notificationService;
         this.studentRepository = studentRepository;
         this.deadlineRepository = deadlineRepository;
+        this.temporaryDeadlineRepository = temporaryDeadlineRepository;
     }
 
-    @Scheduled(fixedDelay = 600000)
+    @Scheduled(fixedDelay = ScheduleConstant.SCRAPE_DEADLINE_INTERVAL)
     public void scrapeAllDeadlineOfStudent() {
         LocalDate now = LocalDate.now();
         Integer currentMonth = now.getMonthValue();
@@ -79,7 +88,7 @@ public class ScheduleScheduler {
                 allDeadlines.addAll(studentTaskDeadlines);
 
                 processDeadline(allDeadlines, mssv);
-                Thread.sleep(1000);
+                Thread.sleep(ScheduleConstant.GAP_PER_STUDENT_PING_MOODLE);
             } catch (Exception e) {
                 log.error("Failed to fetch deadline for mssv={}", mssv, e);
             }
@@ -87,7 +96,7 @@ public class ScheduleScheduler {
         refreshSchedule();
     }
 
-    @Scheduled(fixedDelay = 30000)
+    @Scheduled(fixedDelay = ScheduleConstant.PUSH_NOTIFICATION_INTERVAL)
     public void pushNotiForDeadline() {
         LocalDateTime now = LocalDateTime.now();
         List<Deadline> deadlines = getAllDeadlinesFromRedis();
@@ -98,7 +107,7 @@ public class ScheduleScheduler {
             }
 
             LocalDateTime dueDateTime = LocalDateTime.of(deadline.getDueDate(), deadline.getDueTime());
-            LocalDateTime nearDeadlineTrigger = dueDateTime.minusHours(24);
+            LocalDateTime nearDeadlineTrigger = dueDateTime.minusHours(ScheduleConstant.NEAR_DEADLINE_HOURS);
 
             if (shouldPushWhenNearOrCrossedThreshold(now, nearDeadlineTrigger)) {
                 log.info("[PUSH NOTI]: User {} has a due soon deadline: {}", deadline.getMssv(),
@@ -115,21 +124,22 @@ public class ScheduleScheduler {
         }
     }
 
-    @Scheduled(cron = "0 0 0 ? * MON,WED,FRI,SUN")
-    public void pingMoodleAndPushDeadlineSummary() {
-        log.info("[SUMMARY SCHEDULER] Start Moodle deadline summary job");
+    @Scheduled(fixedDelay = ScheduleConstant.PING_MOODLE_INTERVAL)
+    public void pingMoodleAndPushNewDeadlines() {
         List<String> listMssv = studentRepository.findMssvAll();
 
         for (String mssv : listMssv) {
             try {
-                List<CourseContentResponse> moodleDeadlines = scheduleService.fetchCourseDeadlinesFromMoodle(mssv, null,
-                        null);
-                int uncompletedCount = countUncompletedDeadlines(moodleDeadlines);
-
-                notificationService.createDeadlineSummaryNotification(mssv, uncompletedCount);
-                log.info("[SUMMARY SCHEDULER] Pushed summary for mssv={}, uncompletedCount={}", mssv, uncompletedCount);
+                List<TemporaryDeadline> newDeadlines = scheduleService.getUpcomingDeadlines(mssv);
+                
+                for (TemporaryDeadline deadline : newDeadlines) {
+                    notificationService.createNewDeadlineNotification(mssv, deadline.getDeadlineName());
+                }
+                
+                log.info("[PING MOODLE SCHEDULER] Sync complete for mssv={}, TaskCount={}", mssv,
+                        newDeadlines.size());
             } catch (Exception e) {
-                log.error("[SUMMARY SCHEDULER] Failed for mssv={}", mssv, e);
+                log.error("[PING MOODLE SCHEDULER] Failed for mssv={}", mssv, e);
             }
         }
     }
@@ -146,16 +156,6 @@ public class ScheduleScheduler {
         boolean lessThanThirtySecondsBefore = secondsUntilTarget >= 0 && secondsUntilTarget < 30;
         boolean crossedThresholdRecently = secondsUntilTarget < 0 && Math.abs(secondsUntilTarget) < 30;
         return lessThanThirtySecondsBefore || crossedThresholdRecently;
-    }
-
-    private int countUncompletedDeadlines(List<CourseContentResponse> courses) {
-        if (courses == null || courses.isEmpty()) {
-            return 0;
-        }
-
-        return courses.stream().flatMap(course -> course.exercises().stream())
-                .map(CourseContentResponse.exercise::status).filter(status -> status != DeadlineStatus.DONE)
-                .mapToInt(status -> 1).sum();
     }
 
     private void processDeadline(List<CourseContentResponse> courseList, String mssv) {
@@ -179,8 +179,8 @@ public class ScheduleScheduler {
     }
 
     private boolean shouldSaveToRedis(CourseContentResponse.exercise exercise, LocalDateTime baseTime) {
-        long nearDeadlineBufferMinutes = 24 * 60; // 24 hours + 10 minutes buffer
-        long overdueBufferMinutes = 12;
+        long nearDeadlineBufferMinutes = ScheduleConstant.NEAR_DEADLINE_BUFFER_MINUTES;
+        long overdueBufferMinutes = ScheduleConstant.OVERDUE_BUFFER_MINUTES;
         LocalDateTime dueDate = exercise.dueDate();
         if (dueDate == null) {
             return false;

@@ -1,0 +1,9 @@
+CREATE TABLE IF NOT EXISTS temporary_deadline (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    mssv VARCHAR(12) NOT NULL,
+    class_code VARCHAR(255) NOT NULL,
+    deadline_name VARCHAR(255) NOT NULL,
+    due_date TIMESTAMP NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
