@@ -105,6 +105,13 @@ thread:
   thread-queue-capacity: ${THREAD_QUEUE_CAPACITY}
 schedule:
   core-thread-pool-size: ${CORE_SCHEDULE_THREAD_POOL_SIZE}
+moodle:
+  max-concurrent-requests: ${MOODLE_MAX_CONCURRENT_REQUESTS:5}
+  requests-per-second: ${MOODLE_REQUESTS_PER_SECOND:5}
+  retry:
+    max-attempts: ${MOODLE_RETRY_MAX_ATTEMPTS:3}
+    delay-ms: ${MOODLE_RETRY_DELAY_MS:1000}
+    multiplier: ${MOODLE_RETRY_MULTIPLIER:2}
 scalar:
   path: ${SCALAR_PATH:/docs}
   url: ${SCALAR_URL:/v3/api-docs}

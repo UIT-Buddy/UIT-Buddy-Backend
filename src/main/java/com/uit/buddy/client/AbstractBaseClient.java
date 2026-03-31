@@ -140,6 +140,7 @@ public abstract class AbstractBaseClient {
         case 401 -> ExternalClientErrorCode.UNAUTHORIZED_REQUEST;
         case 403 -> ExternalClientErrorCode.FORBIDDEN_REQUEST;
         case 404 -> ExternalClientErrorCode.NOT_FOUND;
+        case 429 -> ExternalClientErrorCode.RATE_LIMITED;
         default -> ExternalClientErrorCode.EXTERNAL_SERVICE_ERROR;
         };
         return new ExternalClientException(errorCode, message);

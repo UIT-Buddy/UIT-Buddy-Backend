@@ -23,4 +23,8 @@ public class ExternalClientException extends BaseException {
         super(errorCode.getCode(), customMessage, errorCode.getHttpStatus());
         initCause(cause);
     }
+
+    public boolean isRateLimited() {
+        return getCode().equals(ExternalClientErrorCode.RATE_LIMITED.getCode());
+    }
 }
