@@ -6,7 +6,6 @@ import com.uit.buddy.entity.learning.TemporaryDeadline;
 import com.uit.buddy.entity.redis.Deadline;
 import com.uit.buddy.enums.DeadlineStatus;
 import com.uit.buddy.repository.learning.DeadlineRepository;
-import com.uit.buddy.repository.learning.TemporaryDeadlineRepository;
 import com.uit.buddy.repository.user.StudentRepository;
 import com.uit.buddy.service.academic.ScheduleService;
 import com.uit.buddy.service.learning.AssignmentService;
@@ -31,7 +30,6 @@ public class ScheduleScheduler {
     private final NotificationService notificationService;
     private final StudentRepository studentRepository;
     private final DeadlineRepository deadlineRepository;
-    private final TemporaryDeadlineRepository temporaryDeadlineRepository;
     public static Boolean stop = false;
     public static Boolean isRunning = true;
 
@@ -53,13 +51,12 @@ public class ScheduleScheduler {
 
     public ScheduleScheduler(ScheduleService scheduleService, AssignmentService assignmentService,
             NotificationService notificationService, StudentRepository studentRepository,
-            DeadlineRepository deadlineRepository, TemporaryDeadlineRepository temporaryDeadlineRepository) {
+            DeadlineRepository deadlineRepository) {
         this.scheduleService = scheduleService;
         this.assignmentService = assignmentService;
         this.notificationService = notificationService;
         this.studentRepository = studentRepository;
         this.deadlineRepository = deadlineRepository;
-        this.temporaryDeadlineRepository = temporaryDeadlineRepository;
     }
 
     @Scheduled(fixedDelay = ScheduleConstant.SCRAPE_DEADLINE_INTERVAL)
