@@ -49,10 +49,7 @@ public class UitClientImpl extends AbstractBaseClient implements UitClient {
         moodleResponseValidator.validate(response);
     }
 
-    @Retryable(
-            retryFor = ExternalClientException.class,
-            maxAttemptsExpression = "${moodle.retry.max-attempts:3}",
-            backoff = @Backoff(delayExpression = "${moodle.retry.delay-ms:1000}", multiplierExpression = "${moodle.retry.multiplier:2}"))
+    @Retryable(retryFor = ExternalClientException.class, maxAttemptsExpression = "${moodle.retry.max-attempts:3}", backoff = @Backoff(delayExpression = "${moodle.retry.delay-ms:1000}", multiplierExpression = "${moodle.retry.multiplier:2}"))
     @Override
     public SiteInfoResponse fetchSiteInfo(String wstoken) {
         try {
@@ -67,10 +64,7 @@ public class UitClientImpl extends AbstractBaseClient implements UitClient {
         }
     }
 
-    @Retryable(
-            retryFor = ExternalClientException.class,
-            maxAttemptsExpression = "${moodle.retry.max-attempts:3}",
-            backoff = @Backoff(delayExpression = "${moodle.retry.delay-ms:1000}", multiplierExpression = "${moodle.retry.multiplier:2}"))
+    @Retryable(retryFor = ExternalClientException.class, maxAttemptsExpression = "${moodle.retry.max-attempts:3}", backoff = @Backoff(delayExpression = "${moodle.retry.delay-ms:1000}", multiplierExpression = "${moodle.retry.multiplier:2}"))
     @Override
     public List<EnrolledCourseResponse> getUserCourses(String wstoken, Long userId) {
         try {
@@ -78,8 +72,8 @@ public class UitClientImpl extends AbstractBaseClient implements UitClient {
             Map<String, String> queryParams = buildBaseParams(wstoken, MoodleApiConstants.FUNCTION_GET_USERS_COURSES);
             queryParams.put(MoodleApiConstants.PARAM_USERID, String.valueOf(userId));
 
-            return getList(moodleServerPath, new ParameterizedTypeReference<List<EnrolledCourseResponse>>() {},
-                    queryParams, null);
+            return getList(moodleServerPath, new ParameterizedTypeReference<List<EnrolledCourseResponse>>() {
+            }, queryParams, null);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new RuntimeException("Interrupted while waiting for rate limiter permit", e);
@@ -88,17 +82,14 @@ public class UitClientImpl extends AbstractBaseClient implements UitClient {
         }
     }
 
-    @Retryable(
-            retryFor = ExternalClientException.class,
-            maxAttemptsExpression = "${moodle.retry.max-attempts:3}",
-            backoff = @Backoff(delayExpression = "${moodle.retry.delay-ms:1000}", multiplierExpression = "${moodle.retry.multiplier:2}"))
+    @Retryable(retryFor = ExternalClientException.class, maxAttemptsExpression = "${moodle.retry.max-attempts:3}", backoff = @Backoff(delayExpression = "${moodle.retry.delay-ms:1000}", multiplierExpression = "${moodle.retry.multiplier:2}"))
     @Override
     public List<CourseDetailResponse> getAllCourseDetail(String wstoken, String courseId) {
         try {
             rateLimiter.acquire();
             Map<String, String> queryParams = buildCourseContentsParams(wstoken, courseId);
-            return getList(moodleServerPath, new ParameterizedTypeReference<List<CourseDetailResponse>>() {},
-                    queryParams, null);
+            return getList(moodleServerPath, new ParameterizedTypeReference<List<CourseDetailResponse>>() {
+            }, queryParams, null);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new RuntimeException("Interrupted while waiting for rate limiter permit", e);
@@ -107,10 +98,7 @@ public class UitClientImpl extends AbstractBaseClient implements UitClient {
         }
     }
 
-    @Retryable(
-            retryFor = ExternalClientException.class,
-            maxAttemptsExpression = "${moodle.retry.max-attempts:3}",
-            backoff = @Backoff(delayExpression = "${moodle.retry.delay-ms:1000}", multiplierExpression = "${moodle.retry.multiplier:2}"))
+    @Retryable(retryFor = ExternalClientException.class, maxAttemptsExpression = "${moodle.retry.max-attempts:3}", backoff = @Backoff(delayExpression = "${moodle.retry.delay-ms:1000}", multiplierExpression = "${moodle.retry.multiplier:2}"))
     @Override
     public AssignmentDetailResponse getCourseAssignments(String wstoken, String assignmentId) {
         try {
@@ -138,7 +126,8 @@ public class UitClientImpl extends AbstractBaseClient implements UitClient {
     }
 
     @Recover
-    public List<CourseDetailResponse> recoverGetAllCourseDetail(ExternalClientException e, String wstoken, String courseId) {
+    public List<CourseDetailResponse> recoverGetAllCourseDetail(ExternalClientException e, String wstoken,
+            String courseId) {
         log.warn("[UitClient] All retries exhausted for getAllCourseDetail: {}", e.getMessage());
         throw e;
     }
