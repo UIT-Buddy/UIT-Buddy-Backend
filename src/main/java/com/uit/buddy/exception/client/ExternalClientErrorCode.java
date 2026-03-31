@@ -23,8 +23,11 @@ public enum ExternalClientErrorCode {
     RESPONSE_PARSING_ERROR("CLIENT_009", "Failed to parse response from external service", HttpStatus.BAD_GATEWAY),
 
     // Generic errors
-    EXTERNAL_SERVICE_ERROR("CLIENT_010", "External service error", HttpStatus.BAD_GATEWAY), UNKNOWN_ERROR("CLIENT_011",
-            "Unknown error occurred while calling external service", HttpStatus.INTERNAL_SERVER_ERROR);
+    EXTERNAL_SERVICE_ERROR("CLIENT_010", "External service error", HttpStatus.BAD_GATEWAY),
+    RATE_LIMITED("CLIENT_011", "Too many requests to external service, please try again later",
+            HttpStatus.TOO_MANY_REQUESTS),
+    UNKNOWN_ERROR("CLIENT_012", "Unknown error occurred while calling external service",
+            HttpStatus.INTERNAL_SERVER_ERROR);
 
     private final String code;
     private final String message;
