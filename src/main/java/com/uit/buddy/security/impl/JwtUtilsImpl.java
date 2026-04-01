@@ -91,7 +91,7 @@ public class JwtUtilsImpl implements JwtUtils {
                     Collections.singletonList(RedisConstants.REFRESH_TOKEN_KEY_PATTERN), mssv);
             log.info("All sessions revoked for MSSV: {} (deleted {} tokens)", mssv, deletedCount);
         } catch (Exception e) {
-            log.error("Failed to revoke sessions using Lua script for MSSV: {}, falling back to repository", mssv, e);
+            log.warn("Failed to revoke sessions using Lua script for MSSV: {}, falling back to repository", mssv, e);
             refreshTokenRepository.deleteByMssv(mssv);
         }
     }
@@ -112,7 +112,7 @@ public class JwtUtilsImpl implements JwtUtils {
             Jwts.parserBuilder().setSigningKey(secretKey).build().parseClaimsJws(token);
             return true;
         } catch (JwtException | IllegalArgumentException e) {
-            log.error("JWT validation error: {}", e.getMessage());
+            log.warn("JWT validation error: {}", e.getMessage());
             return false;
         }
     }

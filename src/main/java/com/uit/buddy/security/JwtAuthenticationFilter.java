@@ -40,7 +40,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 log.debug("Set authentication for MSSV: {}", mssv);
             }
         } catch (Exception e) {
-            log.error("Authentication binding failed: {}", e.getMessage());
+            log.warn("Authentication binding failed: {}", e.getMessage());
             request.setAttribute("auth_error", e.getMessage());
         }
 

@@ -43,7 +43,7 @@ public class PostController extends AbstractBaseController {
             @RequestParam(required = false) String cursor, @RequestParam(defaultValue = "10") int limit,
             @AuthenticationPrincipal String mssv) {
 
-        log.info("[Post Controller] Getting post feed with cursor: {}, limit: {}", cursor, limit);
+        log.info("[GET /api/posts] Getting post feed with cursor: {}, limit: {}", cursor, limit);
 
         List<PostFeedResponse> postList = postService.getPostFeed(mssv, cursor, limit);
 
@@ -55,7 +55,7 @@ public class PostController extends AbstractBaseController {
     @Operation(summary = "Get post detail", description = "Get detailed post information with comments and reactions")
     public ResponseEntity<SingleResponse<PostDetailResponse>> getPostDetail(@PathVariable UUID postId,
             @AuthenticationPrincipal String mssv) {
-        log.info("[Post Controller] Getting post detail: {}", postId);
+        log.info("[GET /api/posts/{postId}] Getting post detail: {}", postId);
         PostDetailResponse response = postService.getPostDetail(postId, mssv);
         return successSingle(response, "Post detail retrieved successfully");
     }
@@ -64,7 +64,7 @@ public class PostController extends AbstractBaseController {
     @Operation(summary = "Update a post", description = "Update post title and content (files cannot be updated)")
     public ResponseEntity<SuccessResponse> updatePost(@PathVariable UUID postId,
             @Valid @RequestBody UpdatePostRequest request, @AuthenticationPrincipal String mssv) {
-        log.info("[Post Controller] Updating post: {} by mssv: {}", postId, mssv);
+        log.info("[PUT /api/posts/{postId}] Updating post: {} by mssv: {}", postId, mssv);
         postService.updatePost(postId, mssv, request);
         return success("Post updated successfully");
     }
@@ -73,7 +73,7 @@ public class PostController extends AbstractBaseController {
     @Operation(summary = "Delete a post", description = "Delete a post and its associated media")
     public ResponseEntity<SuccessResponse> deletePost(@PathVariable UUID postId, @AuthenticationPrincipal String mssv) {
 
-        log.info("[Post Controller] Deleting post: {} by mssv: {}", postId, mssv);
+        log.info("[DELETE /api/posts/{postId}] Deleting post: {} by mssv: {}", postId, mssv);
 
         postService.deletePost(postId, mssv);
         return success("Post deleted successfully");
@@ -86,6 +86,7 @@ public class PostController extends AbstractBaseController {
             @RequestParam(defaultValue = "desc") String sortType,
             @RequestParam(defaultValue = "createdAt") String sortBy, @RequestParam(required = false) String keyword,
             @AuthenticationPrincipal String mssv) {
+        log.info("[GET /api/posts/search] Searching posts for mssv: {} with keyword: {}", mssv, keyword);
         Pageable pageable = createPageable(page, limit, sortType, sortBy);
         Page<PostFeedResponse> responses = postService.searchPost(keyword, mssv, pageable);
         return paging(responses, "Search posts with keyword and filter successfully");
@@ -97,6 +98,7 @@ public class PostController extends AbstractBaseController {
             @RequestParam("title") @NotBlank(message = "Title is required") @Size(min = 1, max = 255, message = "Title must not exceed 255 characters and at least 1 character") String title,
             @RequestParam("content") @NotBlank(message = "Content is required") @Size(max = 500, message = "Content must not exceed 500 characters") String content,
             @ModelAttribute CreatePostRequest request, @AuthenticationPrincipal String mssv) {
+        log.info("[POST /api/posts] Creating post for mssv: {} with title: {}", mssv, title);
         postService.createPost(mssv, title, content, request);
         return created("Upload posts successfully with multimedia");
     }
@@ -107,7 +109,8 @@ public class PostController extends AbstractBaseController {
             @RequestParam(required = false) String cursor, @RequestParam(defaultValue = "10") int limit,
             @AuthenticationPrincipal String currentMssv) {
 
-        log.info("[Post Controller] Getting posts for user: {} with cursor: {}, limit: {}", mssv, cursor, limit);
+        log.info("[GET /api/posts/user/{mssv}] Getting posts for user: {} with cursor: {}, limit: {}", mssv, cursor,
+                limit);
 
         List<PostFeedResponse> postList = postService.getUserPosts(mssv, currentMssv, cursor, limit);
 
@@ -121,7 +124,7 @@ public class PostController extends AbstractBaseController {
             @RequestParam(required = false) String cursor, @RequestParam(defaultValue = "10") int limit,
             @AuthenticationPrincipal String mssv) {
 
-        log.info("[Post Controller] Getting my posts with cursor: {}, limit: {}", cursor, limit);
+        log.info("[GET /api/posts/me] Getting my posts with cursor: {}, limit: {}", cursor, limit);
 
         List<PostFeedResponse> postList = postService.getUserPosts(mssv, mssv, cursor, limit);
 

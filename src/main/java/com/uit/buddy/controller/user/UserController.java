@@ -43,7 +43,7 @@ public class UserController extends AbstractBaseController {
     @GetMapping("/me")
     @Operation(summary = "Get current user profile", description = "Fetch detailed information of the currently authenticated student")
     public ResponseEntity<SingleResponse<UserResponse>> getMyProfile(@AuthenticationPrincipal String mssv) {
-        log.info("[User Controller] Fetching profile for the current authenticated user");
+        log.info("[GET /api/user/me] Fetching profile for the current authenticated user");
         UserResponse response = userService.getMyProfile(mssv);
         return successSingle(response, "User profile retrieved successfully");
     }
@@ -52,7 +52,7 @@ public class UserController extends AbstractBaseController {
     @Operation(summary = "Update user profile", description = "Update specific fields of the user profile such as nickname, avatar, or bio")
     public ResponseEntity<SingleResponse<UserResponse>> updateProfile(@AuthenticationPrincipal String mssv,
             @Valid @RequestBody UpdateUserRequest request) {
-        log.info("[User Controller] Request to update profile received");
+        log.info("[PATCH /api/user/update] Request to update profile received");
         UserResponse response = userService.updateProfile(mssv, request);
         return successSingle(response, "Profile updated successfully!");
     }
@@ -61,7 +61,7 @@ public class UserController extends AbstractBaseController {
     @Operation(summary = "Upload user avatar", description = "Upload a new avatar image for the authenticated user")
     public ResponseEntity<SingleResponse<String>> uploadAvatar(@RequestParam("file") MultipartFile file,
             @AuthenticationPrincipal String mssv) {
-        log.info("[User Controller] Request to upload avatar received");
+        log.info("[POST /api/user/avatar] Request to upload avatar received");
         String avatarUrl = userService.uploadAvatar(mssv, file);
         return successSingle(avatarUrl, "Avatar uploaded successfully!");
     }
@@ -70,7 +70,7 @@ public class UserController extends AbstractBaseController {
     @Operation(summary = "Get other student profile", description = "Fetch detailed information of other student")
     public ResponseEntity<SingleResponse<UserResponse>> getOtherStudentProfile(@PathVariable String mssv,
             @AuthenticationPrincipal String currentUserMssv) {
-        log.info("[User Controller] Fetching profile for student has mssv: {}", mssv);
+        log.info("[GET /api/user/{mssv}] Fetching profile for student has mssv: {}", mssv);
         UserResponse response = userService.getOtherUserProfile(mssv, currentUserMssv);
         return successSingle(response, "User profile retrieved successfully");
     }
@@ -82,6 +82,7 @@ public class UserController extends AbstractBaseController {
             @RequestParam(defaultValue = "desc") String sortType,
             @RequestParam(defaultValue = "created_at") String sortBy, @RequestParam(required = false) String keyword,
             @AuthenticationPrincipal String currentUserMssv) {
+        log.info("[GET /api/user/search] Searching students for mssv: {} with keyword: {}", currentUserMssv, keyword);
         Pageable pageable = createPageable(page, limit, sortType, sortBy);
         Page<FoundUserResponse> responses = userService.searchStudentByKeyword(keyword, currentUserMssv, pageable);
         return paging(responses, "Search user with keyword and filter successfully");
@@ -90,6 +91,7 @@ public class UserController extends AbstractBaseController {
     @DeleteMapping("/delete")
     @Operation(summary = "Delete Account", description = "Permanently delete user's account and all associated data")
     public ResponseEntity<SuccessResponse> deleteAccount(@AuthenticationPrincipal String mssv) {
+        log.info("[DELETE /api/user/delete] Deleting account for mssv: {}", mssv);
         userService.deleteStudentAccount(mssv);
         return success("Account deleted successfully! We're sorry to see you go.");
     }
@@ -97,7 +99,7 @@ public class UserController extends AbstractBaseController {
     @GetMapping("/settings")
     @Operation(summary = "Get user settings", description = "Get notification and reminder settings")
     public ResponseEntity<SingleResponse<UserSettingResponse>> getUserSettings(@AuthenticationPrincipal String mssv) {
-        log.info("[User Controller] Getting settings for mssv: {}", mssv);
+        log.info("[GET /api/user/settings] Getting settings for mssv: {}", mssv);
         UserSettingResponse response = userService.getUserSettings(mssv);
         return successSingle(response, "User settings retrieved successfully");
     }
@@ -106,7 +108,7 @@ public class UserController extends AbstractBaseController {
     @Operation(summary = "Update user settings", description = "Update notification and reminder settings")
     public ResponseEntity<SuccessResponse> updateUserSettings(@AuthenticationPrincipal String mssv,
             @Valid @RequestBody UpdateUserSettingRequest request) {
-        log.info("[User Controller] Updating settings for mssv: {}", mssv);
+        log.info("[PATCH /api/user/settings] Updating settings for mssv: {}", mssv);
         userService.updateUserSettings(mssv, request);
         return success("User settings updated successfully");
     }

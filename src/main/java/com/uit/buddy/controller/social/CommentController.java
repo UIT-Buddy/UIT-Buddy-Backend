@@ -34,7 +34,7 @@ public class CommentController extends AbstractBaseController {
     public ResponseEntity<CreatedResponse<Void>> createComment(@PathVariable UUID postId,
             @Valid @RequestBody CreateCommentRequest request, @AuthenticationPrincipal String mssv) {
 
-        log.info("[Comment Controller] Creating comment on post: {} by mssv: {}", postId, mssv);
+        log.info("[POST /api/comments/{postId}] Creating comment on post: {} by mssv: {}", postId, mssv);
 
         commentService.createComment(postId, mssv, request);
         return created("Comment created successfully");
@@ -46,7 +46,9 @@ public class CommentController extends AbstractBaseController {
             @RequestParam(required = false) String cursor, @RequestParam(defaultValue = "10") int limit,
             @AuthenticationPrincipal String mssv) {
 
-        log.info("[Post Controller] Getting comments for post: {} with cursor: {}, limit: {}", postId, cursor, limit);
+        log.info("[GET /api/comments/{postId}/comments] Getting comments for post: {} with cursor: {}, limit: {}",
+                postId,
+                cursor, limit);
 
         List<CommentResponse> comments = commentService.getPostComments(postId, mssv, cursor, limit);
 
@@ -59,7 +61,7 @@ public class CommentController extends AbstractBaseController {
     public ResponseEntity<CreatedResponse<Void>> replyToComment(@PathVariable UUID commentId,
             @Valid @RequestBody CreateCommentRequest request, @AuthenticationPrincipal String mssv) {
 
-        log.info("[Comment Controller] Creating reply to comment: {} by mssv: {}", commentId, mssv);
+        log.info("[POST /api/comments/{commentId}/replies] Creating reply to comment: {} by mssv: {}", commentId, mssv);
 
         commentService.replyToComment(commentId, mssv, request);
         return created("Reply created successfully");
@@ -70,7 +72,7 @@ public class CommentController extends AbstractBaseController {
     public ResponseEntity<SuccessResponse> updateComment(@PathVariable UUID commentId,
             @Valid @RequestBody UpdateCommentRequest request, @AuthenticationPrincipal String mssv) {
 
-        log.info("[Comment Controller] Updating comment: {} by mssv: {}", commentId, mssv);
+        log.info("[PUT /api/comments/{commentId}] Updating comment: {} by mssv: {}", commentId, mssv);
 
         commentService.updateComment(commentId, mssv, request);
         return success("Comment updated successfully");
@@ -82,7 +84,7 @@ public class CommentController extends AbstractBaseController {
             @RequestParam(required = false) String cursor, @RequestParam(defaultValue = "5") int limit,
             @AuthenticationPrincipal String mssv) {
 
-        log.info("[Comment] Getting replies for comment: {}", commentId);
+        log.info("[GET /api/comments/comments/{commentId}/replies] Getting replies for comment: {}", commentId);
 
         List<CommentResponse> replies = commentService.getCommentReplies(commentId, mssv, cursor, limit);
 
@@ -95,7 +97,7 @@ public class CommentController extends AbstractBaseController {
     public ResponseEntity<SuccessResponse> deleteComment(@PathVariable UUID commentId,
             @AuthenticationPrincipal String mssv) {
 
-        log.info("[Comment Controller] Deleting comment: {} by mssv: {}", commentId, mssv);
+        log.info("[DELETE /api/comments/{commentId}] Deleting comment: {} by mssv: {}", commentId, mssv);
 
         commentService.deleteComment(commentId, mssv);
         return success("Comment deleted successfully");
@@ -106,7 +108,7 @@ public class CommentController extends AbstractBaseController {
     public ResponseEntity<SuccessResponse> toggleCommentLike(@PathVariable UUID commentId,
             @AuthenticationPrincipal String mssv) {
 
-        log.info("[Comment Controller] Toggling like on comment: {} by mssv: {}", commentId, mssv);
+        log.info("[POST /api/comments/{commentId}/like] Toggling like on comment: {} by mssv: {}", commentId, mssv);
 
         boolean isLiked = commentService.toggleCommentLike(commentId, mssv);
         String message = isLiked ? "Comment liked successfully" : "Comment unliked successfully";
