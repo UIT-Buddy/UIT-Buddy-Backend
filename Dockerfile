@@ -21,4 +21,4 @@ COPY --from=builder /app/application/ ./
 COPY opentelemetry-javaagent.jar /otel/opentelemetry-javaagent.jar
 EXPOSE 8000
 
-ENTRYPOINT ["java", "org.springframework.boot.loader.launch.JarLauncher"]
+ENTRYPOINT ["java", "-javaagent:/otel/opentelemetry-javaagent.jar", "org.springframework.boot.loader.launch.JarLauncher"]
