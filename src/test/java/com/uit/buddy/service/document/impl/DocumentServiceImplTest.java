@@ -235,8 +235,8 @@ class DocumentServiceImplTest {
         Pageable pageable = PageRequest.of(0, 15);
 
         when(folderRepository.findById(folderId)).thenReturn(Optional.of(folder));
-        when(folderRepository.findByParentId(folderId, pageable)).thenReturn(Page.empty(pageable));
-        when(documentRepository.findByFolderId(folderId, pageable)).thenReturn(Page.empty(pageable));
+        when(folderRepository.findByParentId(folderId)).thenReturn(List.of());
+        when(documentRepository.findByFolderId(folderId)).thenReturn(List.of());
 
         ViewFolderDetailResponse result = documentService.viewFolderDetail(mssv, folderId, pageable);
 
@@ -273,10 +273,8 @@ class DocumentServiceImplTest {
         Pageable pageable = PageRequest.of(0, 15);
 
         when(folderRepository.findById(folderId)).thenReturn(Optional.of(folder));
-        when(folderRepository.findByParentId(folderId, pageable))
-                .thenReturn(new PageImpl<>(List.of(child1, child2), pageable, 2));
-        when(documentRepository.findByFolderId(folderId, pageable))
-                .thenReturn(new PageImpl<>(List.of(doc1, doc2), pageable, 2));
+        when(folderRepository.findByParentId(folderId)).thenReturn(List.of(child1, child2));
+        when(documentRepository.findByFolderId(folderId)).thenReturn(List.of(doc1, doc2));
         when(documentMapper.toFolderResponse(any(Folder.class))).thenAnswer(invocation -> {
             Folder f = invocation.getArgument(0);
             return new ViewFolderDetailResponse.FolderResponse(f.getId(), f.getFolderName(), 0);

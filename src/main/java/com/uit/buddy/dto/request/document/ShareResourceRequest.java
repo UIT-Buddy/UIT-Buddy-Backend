@@ -6,8 +6,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import java.util.UUID;
 
-public record ShareResourceRequest(
-        @NotNull(message = "Resource type is required") DocumentResourceType resourceType,
+public record ShareResourceRequest(@NotNull(message = "Resource type is required") DocumentResourceType resourceType,
         @NotNull(message = "Resource ID is required") UUID resourceId,
         @NotBlank(message = "Target MSSV is required") String targetMssv,
         @NotNull(message = "Access role is required") AccessRole accessRole) {

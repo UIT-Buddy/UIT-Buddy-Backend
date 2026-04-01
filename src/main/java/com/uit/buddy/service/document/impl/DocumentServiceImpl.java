@@ -15,12 +15,12 @@ import com.uit.buddy.entity.document.Document;
 import com.uit.buddy.entity.document.Folder;
 import com.uit.buddy.entity.document.ShareDocument;
 import com.uit.buddy.entity.document.ShareFolder;
+import com.uit.buddy.enums.AccessRole;
+import com.uit.buddy.enums.DocumentResourceType;
 import com.uit.buddy.exception.document.DocumentErrorCode;
 import com.uit.buddy.exception.document.DocumentException;
 import com.uit.buddy.exception.user.UserErrorCode;
 import com.uit.buddy.exception.user.UserException;
-import com.uit.buddy.enums.AccessRole;
-import com.uit.buddy.enums.DocumentResourceType;
 import com.uit.buddy.mapper.document.DocumentMapper;
 import com.uit.buddy.repository.document.DocumentRepository;
 import com.uit.buddy.repository.document.FolderRepository;
@@ -121,22 +121,50 @@ public class DocumentServiceImpl implements DocumentService {
     public ViewFolderDetailResponse viewFolderDetail(String mssv, UUID folderId, Pageable pageable) {
         Folder folder = resolveAccessibleFolder(mssv, folderId);
 
-        Page<Folder> childFolders = folderRepository.findByParentId(folder.getId(), pageable);
-        Page<Document> files = documentRepository.findByFolderId(folder.getId(), pageable);
+        List<Folder> childFolders = folderRepository.findByParentId(folder.getId());
+        List<Document> childFiles = documentRepository.findByFolderId(folder.getId());
 
-        List<ViewFolderDetailResponse.FolderResponse> folderResponses = childFolders.getContent().stream()
-                .map(documentMapper::toFolderResponse).toList();
+        record FolderDetailItem(Folder folderItem, Document fileItem, String name) {
+        }
 
-        List<FileResponse> fileResponses = files.getContent().stream().map(documentMapper::toFileResponse).toList();
+        List<FolderDetailItem> allItems = new ArrayList<>(childFolders.size() + childFiles.size());
+        childFolders.forEach(child -> allItems.add(new FolderDetailItem(child, null, child.getFolderName())));
+        childFiles.forEach(file -> allItems.add(new FolderDetailItem(null, file, file.getFileName())));
 
-        PaginationMeta foldersMeta = new PaginationMeta(pageable.getPageNumber() + 1, pageable.getPageSize(),
-                childFolders.getTotalElements(), childFolders.getTotalPages(), childFolders.hasNext());
-        PaginationMeta filesMeta = new PaginationMeta(pageable.getPageNumber() + 1, pageable.getPageSize(),
-                files.getTotalElements(), files.getTotalPages(), files.hasNext());
+        Sort.Order order = pageable.getSort().stream().findFirst().orElse(Sort.Order.desc("createdAt"));
+        String property = order.getProperty();
+        Comparator<FolderDetailItem> comparator;
+        if ("name".equalsIgnoreCase(property) || "folderName".equalsIgnoreCase(property)
+                || "fileName".equalsIgnoreCase(property)) {
+            comparator = Comparator.comparing(item -> item.name() == null ? "" : item.name().toLowerCase(Locale.ROOT));
+        } else {
+            comparator = Comparator.comparing(item -> item.folderItem() != null ? item.folderItem().getCreatedAt()
+                    : item.fileItem().getCreatedAt(), Comparator.nullsLast(Comparator.naturalOrder()));
+        }
+        if (order.getDirection() == Sort.Direction.DESC) {
+            comparator = comparator.reversed();
+        }
+        allItems.sort(comparator);
+
+        int start = (int) pageable.getOffset();
+        int end = Math.min(start + pageable.getPageSize(), allItems.size());
+        if (start > end) {
+            start = end;
+        }
+
+        List<FolderDetailItem> pagedItems = allItems.subList(start, end);
+        List<ViewFolderDetailResponse.FolderResponse> folderResponses = pagedItems.stream()
+                .filter(item -> item.folderItem() != null)
+                .map(item -> documentMapper.toFolderResponse(item.folderItem())).toList();
+        List<FileResponse> fileResponses = pagedItems.stream().filter(item -> item.fileItem() != null)
+                .map(item -> documentMapper.toFileResponse(item.fileItem())).toList();
+
+        PageImpl<FolderDetailItem> pagedResult = new PageImpl<>(pagedItems, pageable, allItems.size());
+        PaginationMeta paging = new PaginationMeta(pageable.getPageNumber() + 1, pageable.getPageSize(),
+                pagedResult.getTotalElements(), pagedResult.getTotalPages());
 
         return new ViewFolderDetailResponse(folder.getId(), folder.getFolderName(), buildFolderPath(folder),
-                folder.getParent() != null ? folder.getParent().getId() : null, folderResponses, fileResponses,
-                foldersMeta, filesMeta);
+                folder.getParent() != null ? folder.getParent().getId() : null, folderResponses, fileResponses, paging);
     }
 
     @Override
@@ -213,8 +241,7 @@ public class DocumentServiceImpl implements DocumentService {
         }
 
         List<DocumentSearchResult> content = filteredDocuments.subList(start, end).stream()
-                .map(documentMapper::toSearchResult)
-                .toList();
+                .map(documentMapper::toSearchResult).toList();
         return new PageImpl<>(content, pageable, filteredDocuments.size());
     }
 
@@ -387,8 +414,7 @@ public class DocumentServiceImpl implements DocumentService {
         }
 
         if (accessRole == AccessRole.OWNER) {
-            throw new DocumentException(DocumentErrorCode.INVALID_SHARE_ROLE,
-                    "Cannot assign OWNER role when sharing");
+            throw new DocumentException(DocumentErrorCode.INVALID_SHARE_ROLE, "Cannot assign OWNER role when sharing");
         }
 
         if (!studentRepository.existsById(targetMssv)) {
