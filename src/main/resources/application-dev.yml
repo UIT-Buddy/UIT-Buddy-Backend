@@ -71,7 +71,7 @@ app:
     app-region: ${COMETCHAT_REGION:us}
     app-timezone: ${COMETCHAT_TIMEZONE:Asia/Ho_Chi_Minh}
     app-provider-id: ${COMETCHAT_PROVIDER_ID:uit-buddy}
-    app-platform: ${COMETCHAT_PLATFORM}
+    app-platform: ${COMETCHAT_PLATFORM:android}
 
   jwt:
     secret: ${JWT_SECRET}
@@ -96,17 +96,6 @@ app:
     config-path: ${APP_CONFIG_PATH}
     app-name: ${APP_NAME}
 
-cloudinary:
-  cloud-name: ${CLOUDINARY_CLOUD_NAME}
-  api-key: ${CLOUDINARY_API_KEY}
-  api-secret: ${CLOUDINARY_API_SECRET}
-  default-avatar-url: ${CLOUDINARY_DEFAULT_AVATAR_URL}
-  allowed-image-types: ${CLOUDINARY_ALLOWED_IMAGE_TYPES}
-  allowed-video-types: ${CLOUDINARY_ALLOWED_VIDEO_TYPES}
-  avatar-size: ${CLOUDINARY_AVATAR_SIZE}
-  thumbnail-size: ${CLOUDINARY_THUMBNAIL_SIZE}
-  post-image-width: ${CLOUDINARY_POST_IMAGE_WIDTH}
-  post-image-height: ${CLOUDINARY_POST_IMAGE_HEIGHT}
 post:
   limit-upload-images: ${POST_LIMIT_UPLOAD_IMAGES}
   limit-upload-videos: ${POST_LIMIT_UPLOAD_VIDEOS}
@@ -114,6 +103,15 @@ thread:
   core-thread-pool-size: ${CORE_THREAD_POOL_SIZE}
   max-thread-pool-size: ${MAX_THREAD_POOL_SIZE}
   thread-queue-capacity: ${THREAD_QUEUE_CAPACITY}
+schedule:
+  core-thread-pool-size: ${CORE_SCHEDULE_THREAD_POOL_SIZE}
+moodle:
+  max-concurrent-requests: ${MOODLE_MAX_CONCURRENT_REQUESTS:5}
+  requests-per-second: ${MOODLE_REQUESTS_PER_SECOND:5}
+  retry:
+    max-attempts: ${MOODLE_RETRY_MAX_ATTEMPTS:3}
+    delay-ms: ${MOODLE_RETRY_DELAY_MS:1000}
+    multiplier: ${MOODLE_RETRY_MULTIPLIER:2}
 scalar:
   path: ${SCALAR_PATH:/docs}
   url: ${SCALAR_URL:/v3/api-docs}

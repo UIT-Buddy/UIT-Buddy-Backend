@@ -37,18 +37,6 @@ public class StudentSubjectClass extends AbstractBaseEntity {
     @Column(name = "status", length = 20)
     private StudentClassStatus status;
 
-    @Column(name = "process_grade")
-    private Float processGrade;
-
-    @Column(name = "midterm_grade")
-    private Float midtermGrade;
-
-    @Column(name = "final_grade")
-    private Float finalGrade;
-
-    @Column(name = "lab_grade")
-    private Float labGrade;
-
-    @Column(name = "total_grade")
-    private Float totalGrade;
+    @Column(name = "credits")
+    private Integer credits;
 }

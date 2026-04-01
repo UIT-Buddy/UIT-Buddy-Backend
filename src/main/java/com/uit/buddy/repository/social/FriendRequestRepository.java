@@ -37,4 +37,5 @@ public interface FriendRequestRepository extends JpaRepository<FriendRequest, UU
             + CURSOR_PAGINATION_CONDITION, nativeQuery = true)
     List<FriendRequest> findSentWithCursor(@Param("mssv") String mssv, @Param("status") String status,
             @Param("cursorTime") LocalDateTime cursorTime, @Param("cursorId") UUID cursorId, @Param("limit") int limit);
+
 }

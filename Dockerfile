@@ -18,6 +18,7 @@ COPY --from=builder /app/spring-boot-loader/ ./
 COPY --from=builder /app/snapshot-dependencies/ ./
 COPY --from=builder /app/application/ ./
 
+COPY opentelemetry-javaagent.jar /otel/opentelemetry-javaagent.jar
 EXPOSE 8000
 
 ENTRYPOINT ["java", "org.springframework.boot.loader.launch.JarLauncher"]

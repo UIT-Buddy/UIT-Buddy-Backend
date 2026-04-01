@@ -2,8 +2,10 @@ package com.uit.buddy.controller.social;
 
 import com.uit.buddy.controller.AbstractBaseController;
 import com.uit.buddy.dto.base.CursorPageResponse;
+import com.uit.buddy.dto.base.SingleResponse;
 import com.uit.buddy.dto.base.SuccessResponse;
 import com.uit.buddy.dto.request.social.SharePostRequest;
+import com.uit.buddy.dto.response.social.ShareTargetResponse;
 import com.uit.buddy.dto.response.social.UserShareResponse;
 import com.uit.buddy.enums.ShareType;
 import com.uit.buddy.service.social.ShareService;
@@ -52,5 +54,17 @@ public class ShareController extends AbstractBaseController {
 
         return cursorPaging("Post shares retrieved successfully", shares, limit,
                 share -> CursorUtils.encode(share.sharedAt(), UUID.fromString(share.user().mssv())));
+    }
+
+    @GetMapping("/targets")
+    @Operation(summary = "Get share targets", description = "Get list of friends and groups that can be shared to, sorted by recent activity")
+    public ResponseEntity<SingleResponse<List<ShareTargetResponse>>> getShareTargets(
+            @AuthenticationPrincipal String mssv) {
+
+        log.info("[Share Controller] Getting share targets for mssv: {}", mssv);
+
+        var targets = shareService.getShareTargets(mssv);
+
+        return successSingle(targets, "Share targets retrieved successfully");
     }
 }

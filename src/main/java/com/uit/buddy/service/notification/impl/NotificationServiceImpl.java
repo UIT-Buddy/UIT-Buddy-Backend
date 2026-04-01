@@ -3,7 +3,6 @@ package com.uit.buddy.service.notification.impl;
 import com.uit.buddy.dto.response.notification.NotificationResponse;
 import com.uit.buddy.entity.notification.Notification;
 import com.uit.buddy.enums.NotificationTemplate;
-import com.uit.buddy.enums.NotificationType;
 import com.uit.buddy.event.social.CommentLikedEvent;
 import com.uit.buddy.event.social.FriendRequestAcceptedEvent;
 import com.uit.buddy.event.social.FriendRequestReceivedEvent;
@@ -46,7 +45,7 @@ public class NotificationServiceImpl implements NotificationService {
     @Transactional
     public void createPostLikeNotification(PostLikedEvent event) {
         NotificationTemplate template = NotificationTemplate.POST_LIKE;
-        processAggregatedNotification(event.receiverMssv(), template.getTitle(), event.actorName(), template.getType(),
+        processAggregatedNotification(event.receiverMssv(), template.getTitle(), event.actorName(), template,
                 event.postId().toString(), "thích");
     }
 
@@ -55,15 +54,14 @@ public class NotificationServiceImpl implements NotificationService {
     public void createPostCommentNotification(PostCommentedEvent event) {
         NotificationTemplate template = NotificationTemplate.POST_COMMENT;
         processNotification(event.receiverMssv(), template.getTitle(),
-                template.formatContent(event.actorName(), event.commentContent()), template.getType(),
-                event.postId().toString());
+                template.formatContent(event.actorName(), event.commentContent()), template, event.postId().toString());
     }
 
     @Override
     @Transactional
     public void createPostShareNotification(PostSharedEvent event) {
         NotificationTemplate template = NotificationTemplate.POST_SHARE;
-        processAggregatedNotification(event.receiverMssv(), template.getTitle(), event.actorName(), template.getType(),
+        processAggregatedNotification(event.receiverMssv(), template.getTitle(), event.actorName(), template,
                 event.originalPostId().toString(), "chia sẻ");
     }
 
@@ -72,7 +70,7 @@ public class NotificationServiceImpl implements NotificationService {
     public void createFriendRequestNotification(FriendRequestReceivedEvent event) {
         NotificationTemplate template = NotificationTemplate.FRIEND_REQUEST_RECEIVED;
         processNotification(event.receiverMssv(), template.getTitle(), template.formatContent(event.senderName()),
-                template.getType(), event.requestId().toString());
+                template, event.requestId().toString());
     }
 
     @Override
@@ -80,19 +78,42 @@ public class NotificationServiceImpl implements NotificationService {
     public void createFriendRequestAcceptedNotification(FriendRequestAcceptedEvent event) {
         NotificationTemplate template = NotificationTemplate.FRIEND_REQUEST_ACCEPTED;
         processNotification(event.senderMssv(), template.getTitle(), template.formatContent(event.accepterName()),
-                template.getType(), event.requestId().toString());
+                template, event.requestId().toString());
     }
 
     @Override
     @Transactional
     public void createCommentLikeNotification(CommentLikedEvent event) {
         NotificationTemplate template = NotificationTemplate.COMMENT_LIKE;
-        processAggregatedNotification(event.receiverMssv(), template.getTitle(), event.actorName(), template.getType(),
+        processAggregatedNotification(event.receiverMssv(), template.getTitle(), event.actorName(), template,
                 event.commentId().toString(), "thích");
     }
 
-    private void processAggregatedNotification(String receiverMssv, String title, String actorName, String type,
-            String dataId, String action) {
+    @Override
+    @Transactional
+    public void createNearDeadlineNotification(String mssv, String deadlineName, String dataId) {
+        NotificationTemplate template = NotificationTemplate.REMINDER;
+        processNotification(mssv, template.getTitle(), "Deadline '" + deadlineName + "' sẽ đến hạn trong vòng 24 giờ.",
+                template, dataId);
+    }
+
+    @Override
+    @Transactional
+    public void createOverdueDeadlineNotification(String mssv, String deadlineName, String dataId) {
+        NotificationTemplate template = NotificationTemplate.ACADEMIC;
+        processNotification(mssv, template.getTitle(), "Deadline '" + deadlineName + "' đã quá hạn.", template, dataId);
+    }
+
+    @Override
+    @Transactional
+    public void createNewDeadlineNotification(String mssv, String deadlineName, String dataId) {
+        NotificationTemplate template = NotificationTemplate.ACADEMIC;
+        processNotification(mssv, template.getTitle(), "Bạn có deadline mới: '" + deadlineName + "'.", template,
+                dataId);
+    }
+
+    private void processAggregatedNotification(String receiverMssv, String title, String actorName,
+            NotificationTemplate type, String dataId, String action) {
 
         Notification existingNotification = notificationRepository.findByMssvAndTypeAndDataId(receiverMssv, type,
                 dataId);
@@ -110,22 +131,24 @@ public class NotificationServiceImpl implements NotificationService {
 
             notificationRepository.save(existingNotification);
             log.info("[Notification Service] Updated aggregated notification for receiver: {}, type: {}, count: {}",
-                    receiverMssv, type, newCount);
+                    receiverMssv, type.name(), newCount);
 
-            sendFcmIfEnabled(receiverMssv, existingNotification.getId().toString(), title, content, type, dataId);
+            sendFcmIfEnabled(receiverMssv, existingNotification.getId().toString(), title, content, type.name(),
+                    dataId);
         } else {
             content = String.format(NotificationTemplate.MSG_SINGLE, actorName, action);
             processNotification(receiverMssv, title, content, type, dataId);
         }
     }
 
-    private void processNotification(String receiverMssv, String title, String content, String type, String dataId) {
+    private void processNotification(String receiverMssv, String title, String content, NotificationTemplate type,
+            String dataId) {
 
         Notification notification = Notification.builder().student(studentRepository.getReferenceById(receiverMssv))
-                .title(title).content(content).type(NotificationType.SOCIAL).dataId(dataId).isRead(false).build();
+                .title(title).content(content).type(type).dataId(dataId).isRead(false).build();
         notificationRepository.save(notification);
 
-        sendFcmIfEnabled(receiverMssv, notification.getId().toString(), title, content, type, dataId);
+        sendFcmIfEnabled(receiverMssv, notification.getId().toString(), title, content, type.name(), dataId);
     }
 
     private void sendFcmIfEnabled(String mssv, String notificationId, String title, String content, String type,

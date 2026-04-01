@@ -1,6 +1,13 @@
 package com.uit.buddy.service.fcm.impl;
 
-import com.google.firebase.messaging.*;
+import com.google.firebase.messaging.BatchResponse;
+import com.google.firebase.messaging.FirebaseMessaging;
+import com.google.firebase.messaging.FirebaseMessagingException;
+import com.google.firebase.messaging.Message;
+import com.google.firebase.messaging.MessagingErrorCode;
+import com.google.firebase.messaging.MulticastMessage;
+import com.google.firebase.messaging.Notification;
+import com.google.firebase.messaging.SendResponse;
 import com.uit.buddy.dto.request.fcm.FcmNotificationRequest;
 import com.uit.buddy.exception.fcm.FcmErrorCode;
 import com.uit.buddy.exception.fcm.FcmException;
@@ -47,8 +54,6 @@ public class FcmServiceImpl implements FcmService {
             String response = firebaseMessaging.send(message);
             log.info("[FCM Service] Successfully sent message. ID: {}", response);
         } catch (FirebaseMessagingException e) {
-            log.error("[FCM Service] Failed to send push notification to token: {}. Error: {}", request.targetToken(),
-                    e.getMessage(), e);
             handleFirebaseError(e, request.targetToken());
         }
     }
@@ -73,14 +78,11 @@ public class FcmServiceImpl implements FcmService {
 
             // BEST PRACTICE: Dọn dẹp token rác ngay lập tức nếu gửi thất bại
             if (response.getFailureCount() > 0) {
-                log.warn("[FCM Service] {} notification(s) failed to send. Processing failures...",
-                        response.getFailureCount());
                 handleMulticastFailures(response, tokens);
             }
 
         } catch (FirebaseMessagingException e) {
-            log.error("[FCM Service] Fatal error sending multicast notification. Title: {}, Recipients: {}", title,
-                    tokens.size(), e);
+            log.error("[FCM Service] Fatal error sending multicast notification", e);
         }
     }
 
@@ -94,9 +96,6 @@ public class FcmServiceImpl implements FcmService {
         for (int i = 0; i < responses.size(); i++) {
             if (!responses.get(i).isSuccessful()) {
                 MessagingErrorCode code = responses.get(i).getException().getMessagingErrorCode();
-                String errorMsg = responses.get(i).getException().getMessage();
-                log.error("[FCM Service] Failed to send to token index {}: [{}] {}", i, code, errorMsg);
-
                 // Nếu token không còn hiệu lực (UNREGISTERED) hoặc sai định dạng
                 if (code == MessagingErrorCode.UNREGISTERED || code == MessagingErrorCode.INVALID_ARGUMENT) {
                     invalidTokens.add(tokens.get(i));

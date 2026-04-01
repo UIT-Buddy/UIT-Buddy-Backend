@@ -14,7 +14,7 @@ import com.uit.buddy.exception.user.UserException;
 import com.uit.buddy.mapper.social.PostMapper;
 import com.uit.buddy.repository.social.PostRepository;
 import com.uit.buddy.repository.user.StudentRepository;
-import com.uit.buddy.service.cloudinary.CloudinaryService;
+import com.uit.buddy.service.file.FileService;
 import com.uit.buddy.service.social.PostService;
 import com.uit.buddy.util.CursorUtils;
 import java.time.LocalDateTime;
@@ -37,7 +37,7 @@ public class PostServiceImpl implements PostService {
     private final PostRepository postRepository;
     private final StudentRepository studentRepository;
     private final PostMapper postMapper;
-    private final CloudinaryService cloudinaryService;
+    private final FileService fileService;
 
     @Value("${post.limit-upload-images}")
     private int limitNumberOfImages;
@@ -46,14 +46,13 @@ public class PostServiceImpl implements PostService {
     private int limitNumberOfVideos;
 
     @Override
-    // KHÔNG có @Transactional ở đây
     public void createPost(String mssv, String title, String content, CreatePostRequest request) {
         log.info("[Post Service] Create post for mssv: {}", mssv);
         validateLimitImagesAndVideos(request.images(), request.videos());
         if (!studentRepository.existsById(mssv)) {
             throw new UserException(UserErrorCode.STUDENT_NOT_FOUND);
         }
-        List<PostMedia> medias = cloudinaryService.uploadMultiMedia(request.images(), request.videos());
+        List<PostMedia> medias = fileService.uploadMultiMedia(request.images(), request.videos());
         saveToDb(mssv, title, content, medias);
     }
 
@@ -114,10 +113,10 @@ public class PostServiceImpl implements PostService {
         Post post = getPostAndValidateOwner(postId, mssv);
         List<PostMedia> medias = post.getMedias();
         if (medias != null && !medias.isEmpty()) {
-            cloudinaryService.deletePostMedia(medias);
+            fileService.deletePostMedia(medias);
         }
         postRepository.delete(post);
-        log.info("[Post Service] Successfully deleted post {} and its cloud media", postId);
+        log.info("[Post Service] Successfully deleted post {} and its stored media", postId);
     }
 
     @Override
@@ -127,6 +126,27 @@ public class PostServiceImpl implements PostService {
             return postRepository.findAllPosts(mssv, pageable).map(postMapper::toPostFeedResponse);
         }
         return postRepository.searchPostFull(keyword, mssv, pageable).map(postMapper::toPostFeedResponse);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<PostFeedResponse> getUserPosts(String targetMssv, String currentMssv, String cursor, int limit) {
+        log.info("[Post Service] Getting posts for user: {}", targetMssv);
+
+        if (!studentRepository.existsById(targetMssv)) {
+            throw new UserException(UserErrorCode.STUDENT_NOT_FOUND);
+        }
+
+        LocalDateTime cursorTime = null;
+        UUID cursorId = null;
+        if (cursor != null && !cursor.isBlank()) {
+            CursorUtils.CursorContents contents = CursorUtils.decode(cursor);
+            cursorTime = contents.timestamp();
+            cursorId = contents.id();
+        }
+
+        return postRepository.findUserPosts(targetMssv, currentMssv, cursorTime, cursorId, limit + 1).stream()
+                .map(postMapper::toPostFeedResponse).toList();
     }
 
     private void validateLimitImagesAndVideos(List<MultipartFile> images, List<MultipartFile> videos) {

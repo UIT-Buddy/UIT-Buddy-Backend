@@ -10,6 +10,7 @@ import com.uit.buddy.entity.social.Friendship;
 import com.uit.buddy.entity.user.Student;
 import com.uit.buddy.enums.FriendRequestStatus;
 import com.uit.buddy.enums.FriendResponseAction;
+import com.uit.buddy.enums.FriendStatus;
 import com.uit.buddy.event.social.FriendRequestAcceptedEvent;
 import com.uit.buddy.event.social.FriendRequestReceivedEvent;
 import com.uit.buddy.exception.social.SocialErrorCode;
@@ -64,7 +65,7 @@ public class FriendServiceImpl implements FriendService {
                 log.info("[Friend Service] Cancelled request: {} -> {}", senderMssv, receiverMssv);
                 return false;
             } else {
-                respondToFriendRequest(senderMssv, fr.getId(),
+                respondToFriendRequest(senderMssv, fr.getReceiverMssv(),
                         new RespondFriendRequestRequest(FriendResponseAction.ACCEPT));
                 return true;
             }
@@ -85,12 +86,10 @@ public class FriendServiceImpl implements FriendService {
     }
 
     @Override
-    public void respondToFriendRequest(String receiverMssv, UUID requestId, RespondFriendRequestRequest request) {
-        FriendRequest friendRequest = friendRequestRepository.findById(requestId)
+    public void respondToFriendRequest(String senderMssv, String receiverMssv, RespondFriendRequestRequest request) {
+        FriendRequest friendRequest = friendRequestRepository.findBySenderMssvAndReceiverMssv(senderMssv, receiverMssv)
                 .orElseThrow(() -> new SocialException(SocialErrorCode.FRIEND_REQUEST_NOT_FOUND));
-        if (!friendRequest.getReceiverMssv().equals(receiverMssv)) {
-            throw new SocialException(SocialErrorCode.UNAUTHORIZED);
-        }
+
         if (friendRequest.getStatus() != FriendRequestStatus.PENDING) {
             throw new SocialException(SocialErrorCode.FRIEND_REQUEST_ALREADY_RESPONDED);
         }
@@ -184,6 +183,26 @@ public class FriendServiceImpl implements FriendService {
     public boolean areFriends(String mssv1, String mssv2) {
         String[] sortedMssvs = sortMssvs(mssv1, mssv2);
         return friendshipRepository.existsByUser1MssvAndUser2Mssv(sortedMssvs[0], sortedMssvs[1]);
+    }
+
+    @Override
+    public FriendStatus getFriendStatus(String currentUserMssv, String targetUserMssv) {
+        if (areFriends(currentUserMssv, targetUserMssv)) {
+            return FriendStatus.FRIENDS;
+        }
+        Optional<FriendRequest> pendingRequest = friendRequestRepository.findPendingRequestBetween(currentUserMssv,
+                targetUserMssv);
+
+        if (pendingRequest.isPresent()) {
+            FriendRequest request = pendingRequest.get();
+            if (request.getSenderMssv().equals(currentUserMssv)) {
+                return FriendStatus.PENDING;
+            } else {
+                return FriendStatus.REQUESTED;
+            }
+        }
+
+        return FriendStatus.NONE;
     }
 
     private void createFriendship(String mssv1, String mssv2) {

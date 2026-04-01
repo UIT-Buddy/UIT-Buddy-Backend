@@ -68,9 +68,10 @@ public class UserController extends AbstractBaseController {
 
     @GetMapping("/{mssv}")
     @Operation(summary = "Get other student profile", description = "Fetch detailed information of other student")
-    public ResponseEntity<SingleResponse<UserResponse>> getOtherStudentProfile(@PathVariable String mssv) {
+    public ResponseEntity<SingleResponse<UserResponse>> getOtherStudentProfile(@PathVariable String mssv,
+            @AuthenticationPrincipal String currentUserMssv) {
         log.info("[User Controller] Fetching profile for student has mssv: {}", mssv);
-        UserResponse response = userService.getMyProfile(mssv);
+        UserResponse response = userService.getOtherUserProfile(mssv, currentUserMssv);
         return successSingle(response, "User profile retrieved successfully");
     }
 
@@ -79,9 +80,10 @@ public class UserController extends AbstractBaseController {
     public ResponseEntity<PageResponse<FoundUserResponse>> searchStudentByKeywordAndFilters(
             @RequestParam(defaultValue = "1") int page, @RequestParam(defaultValue = "15") int limit,
             @RequestParam(defaultValue = "desc") String sortType,
-            @RequestParam(defaultValue = "created_at") String sortBy, @RequestParam(required = false) String keyword) {
+            @RequestParam(defaultValue = "created_at") String sortBy, @RequestParam(required = false) String keyword,
+            @AuthenticationPrincipal String currentUserMssv) {
         Pageable pageable = createPageable(page, limit, sortType, sortBy);
-        Page<FoundUserResponse> responses = userService.searchStudentByKeyword(keyword, pageable);
+        Page<FoundUserResponse> responses = userService.searchStudentByKeyword(keyword, currentUserMssv, pageable);
         return paging(responses, "Search user with keyword and filter successfully");
     }
 

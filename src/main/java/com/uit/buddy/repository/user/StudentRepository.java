@@ -1,6 +1,7 @@
 package com.uit.buddy.repository.user;
 
 import com.uit.buddy.entity.user.Student;
+import java.util.List;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -27,4 +28,8 @@ public interface StudentRepository extends JpaRepository<Student, String> {
                 ORDER BY rank DESC
             """, nativeQuery = true)
     Page<Student> searchStudentByKeyword(String keyword, Pageable pageable);
+
+    @Query(value = "SELECT mssv FROM students WHERE mssv like '%52%'", nativeQuery = true)
+    List<String> findMssvAll();
+
 }

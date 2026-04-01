@@ -4,6 +4,7 @@ import com.uit.buddy.entity.AbstractBaseEntity;
 import com.uit.buddy.entity.user.Student;
 import com.uit.buddy.enums.AccessRole;
 import jakarta.persistence.*;
+import java.util.UUID;
 import lombok.*;
 
 @Entity
@@ -19,7 +20,7 @@ import lombok.*;
 public class ShareDocument extends AbstractBaseEntity {
 
     @Column(name = "document_id", length = 50, insertable = false, updatable = false)
-    private String documentId;
+    private UUID documentId;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "document_id", referencedColumnName = "id", foreignKey = @ForeignKey(name = "fk_share_document"))
