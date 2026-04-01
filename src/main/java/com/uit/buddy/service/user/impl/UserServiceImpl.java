@@ -1,7 +1,10 @@
 package com.uit.buddy.service.user.impl;
 
+import com.uit.buddy.client.UitClient;
+import com.uit.buddy.dto.request.user.UpdateWsTokenRequest;
 import com.uit.buddy.dto.request.user.UpdateUserRequest;
 import com.uit.buddy.dto.request.user.UpdateUserSettingRequest;
+import com.uit.buddy.dto.response.client.SiteInfoResponse;
 import com.uit.buddy.dto.response.user.FoundUserResponse;
 import com.uit.buddy.dto.response.user.UserResponse;
 import com.uit.buddy.dto.response.user.UserSettingResponse;
@@ -15,6 +18,7 @@ import com.uit.buddy.mapper.user.UserSettingMapper;
 import com.uit.buddy.repository.user.StudentRepository;
 import com.uit.buddy.repository.user.UserSettingRepository;
 import com.uit.buddy.service.cometchat.CometChatService;
+import com.uit.buddy.service.encryption.WsTokenEncryptionService;
 import com.uit.buddy.service.file.FileService;
 import com.uit.buddy.service.social.FriendService;
 import com.uit.buddy.service.user.UserService;
@@ -24,6 +28,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.multipart.MultipartFile;
 
 @Service
@@ -38,6 +43,8 @@ public class UserServiceImpl implements UserService {
     private final UserSettingRepository userSettingRepository;
     private final UserSettingMapper userSettingMapper;
     private final FriendService friendService;
+    private final UitClient uitClient;
+    private final WsTokenEncryptionService wsTokenEncryptionService;
 
     @Override
     @Transactional(readOnly = true)
@@ -147,5 +154,31 @@ public class UserServiceImpl implements UserService {
         userSetting.setEnableScheduleReminder(request.enableScheduleReminder());
 
         userSettingRepository.save(userSetting);
+    }
+
+    @Override
+    @Transactional
+    public void updateWsToken(String mssv, UpdateWsTokenRequest request) {
+        Student student = studentRepository.findById(mssv)
+                .orElseThrow(() -> new UserException(UserErrorCode.STUDENT_NOT_FOUND));
+
+        SiteInfoResponse siteInfo;
+        try {
+            siteInfo = uitClient.fetchSiteInfo(request.wstoken());
+        } catch (RestClientException e) {
+            log.error("[User Service] Failed to connect Moodle API while updating wstoken for MSSV: {}", mssv, e);
+            throw new UserException(UserErrorCode.INVALID_WSTOKEN, "Failed to validate WsToken");
+        } catch (Exception e) {
+            log.warn("[User Service] Invalid wstoken while updating for MSSV: {}", mssv, e);
+            throw new UserException(UserErrorCode.INVALID_WSTOKEN);
+        }
+
+        if (siteInfo.username() == null || siteInfo.username().isBlank()
+                || !mssv.equalsIgnoreCase(siteInfo.username().trim())) {
+            throw new UserException(UserErrorCode.INVALID_WSTOKEN, "WsToken does not belong to current user");
+        }
+
+        student.setEncryptedWstoken(wsTokenEncryptionService.encryptWstoken(request.wstoken()));
+        studentRepository.save(student);
     }
 }

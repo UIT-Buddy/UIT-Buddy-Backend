@@ -6,6 +6,7 @@ import com.uit.buddy.dto.base.SingleResponse;
 import com.uit.buddy.dto.base.SuccessResponse;
 import com.uit.buddy.dto.request.user.UpdateUserRequest;
 import com.uit.buddy.dto.request.user.UpdateUserSettingRequest;
+import com.uit.buddy.dto.request.user.UpdateWsTokenRequest;
 import com.uit.buddy.dto.response.user.FoundUserResponse;
 import com.uit.buddy.dto.response.user.UserResponse;
 import com.uit.buddy.dto.response.user.UserSettingResponse;
@@ -111,5 +112,14 @@ public class UserController extends AbstractBaseController {
         log.info("[PATCH /api/user/settings] Updating settings for mssv: {}", mssv);
         userService.updateUserSettings(mssv, request);
         return success("User settings updated successfully");
+    }
+
+    @PatchMapping("/wstoken")
+    @Operation(summary = "Update WsToken", description = "Update new WsToken to update new information")
+    public ResponseEntity<SuccessResponse> updateWsToken(@AuthenticationPrincipal String mssv,
+            @Valid @RequestBody UpdateWsTokenRequest request) {
+        log.info("[PATCH /api/user/wstoken] Updating WsToken for mssv: {}", mssv);
+        userService.updateWsToken(mssv, request);
+        return success("WsToken updated successfully");
     }
 }
