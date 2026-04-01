@@ -43,6 +43,7 @@ public class DocumentController extends AbstractBaseController {
     @Operation(summary = "Create a new folder", description = "Create a new folder")
     public ResponseEntity<CreatedResponse<UUID>> createFolder(@AuthenticationPrincipal String mssv,
             @Valid @RequestBody CreateFolderRequest request) {
+        log.info("[POST /api/document/folder] Creating folder for mssv: {}", mssv);
         UUID folderId = documentService.createNewFolder(mssv, request);
         return created(folderId, "Folder created successfully");
     }
@@ -51,6 +52,7 @@ public class DocumentController extends AbstractBaseController {
     @Operation(summary = "Create new files", description = "Create new files and upload to storage")
     public ResponseEntity<CreatedResponse<List<DocumentFileResponse>>> createFile(@AuthenticationPrincipal String mssv,
             @ModelAttribute CreateFileRequest request) {
+        log.info("[POST /api/document/file] Creating files for mssv: {}", mssv);
         List<DocumentFileResponse> response = documentService.createNewFile(mssv, request);
         return created(response, "Files created successfully");
     }
@@ -59,6 +61,7 @@ public class DocumentController extends AbstractBaseController {
     @Operation(summary = "View folder detail", description = "View detail of a folder including children folders and files")
     public ResponseEntity<SingleResponse<ViewFolderDetailResponse>> viewFolderDetail(
             @AuthenticationPrincipal String mssv, @RequestParam(required = false) UUID folderId) {
+        log.info("[GET /api/document/folder] Viewing folder detail for mssv: {} and folderId: {}", mssv, folderId);
         ViewFolderDetailResponse response = documentService.viewFolderDetail(mssv, folderId);
         return successSingle(response, "Folder detail retrieved successfully");
     }
@@ -67,6 +70,8 @@ public class DocumentController extends AbstractBaseController {
     @Operation(summary = "Get download URL", description = "Get file download URL by file ID")
     public ResponseEntity<SingleResponse<String>> getDownloadUrl(@AuthenticationPrincipal String mssv,
             @PathVariable UUID fileId) {
+        log.info("[GET /api/document/download/{fileId}] Getting download URL for mssv: {} and fileId: {}", mssv,
+                fileId);
         String url = documentService.getDownloadUrl(mssv, fileId);
         return successSingle(url, "Download URL retrieved successfully");
     }
@@ -78,7 +83,7 @@ public class DocumentController extends AbstractBaseController {
             @RequestParam(defaultValue = "desc") String sortType,
             @RequestParam(defaultValue = "created_at") String sortBy, @RequestParam(required = false) String keyword) {
         Pageable pageable = createPageable(page, limit, sortType, sortBy);
-        log.info("[Document Controller] Search documents for mssv {} with keyword '{}'", mssv, keyword);
+        log.info("[GET /api/document/search] Search documents for mssv {} with keyword '{}'", mssv, keyword);
         Page<DocumentSearchResult> response = documentService.searchDocuments(mssv, keyword, pageable);
         return paging(response, "Search documents successfully");
     }

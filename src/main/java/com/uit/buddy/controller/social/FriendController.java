@@ -33,7 +33,7 @@ public class FriendController extends AbstractBaseController {
     @Operation(summary = "Toggle friend request", description = "Send a friend request if not sent, or cancel if already sent")
     public ResponseEntity<SuccessResponse> toggleFriendRequest(@Valid @RequestBody SendFriendRequestRequest request,
             @AuthenticationPrincipal String mssv) {
-        log.info("[Friend Controller] Toggling friend request from {} to {}", mssv, request.receiverMssv());
+        log.info("[POST /api/friends/requests] Toggling friend request from {} to {}", mssv, request.receiverMssv());
         boolean isSent = friendService.toggleFriendRequest(mssv, request);
         String message = isSent ? "Friend request sent successfully" : "Friend request cancelled successfully";
         return success(message);
@@ -43,8 +43,8 @@ public class FriendController extends AbstractBaseController {
     @Operation(summary = "Respond to friend request", description = "Accept or reject a friend request from a sender person to me")
     public ResponseEntity<SuccessResponse> respondToFriendRequest(@PathVariable String senderMssv,
             @Valid @RequestBody RespondFriendRequestRequest request, @AuthenticationPrincipal String receiverMssv) {
-        log.info("[Friend Controller] Responding to friend request {} by {} with action: {}", senderMssv, receiverMssv,
-                request.action());
+        log.info("[PUT /api/friends/requests/{senderMssv}] Responding to friend request {} by {} with action: {}",
+                senderMssv, receiverMssv, request.action());
         friendService.respondToFriendRequest(senderMssv, receiverMssv, request);
         return success("Friend request responded successfully");
     }
@@ -53,7 +53,7 @@ public class FriendController extends AbstractBaseController {
     @Operation(summary = "Unfriend", description = "Remove a friend from your friends list")
     public ResponseEntity<SuccessResponse> unfriend(@PathVariable String friendMssv,
             @AuthenticationPrincipal String mssv) {
-        log.info("[Friend Controller] Unfriending {} by {}", friendMssv, mssv);
+        log.info("[DELETE /api/friends/{friendMssv}] Unfriending {} by {}", friendMssv, mssv);
         friendService.unfriend(mssv, friendMssv);
         return success("Unfriended successfully");
     }
@@ -63,7 +63,7 @@ public class FriendController extends AbstractBaseController {
     public ResponseEntity<CursorPageResponse<PendingFriendRequestResponse>> getPendingRequests(
             @RequestParam(required = false) String cursor, @RequestParam(defaultValue = "10") int limit,
             @AuthenticationPrincipal String mssv) {
-        log.info("[Friend Controller] Getting pending requests for {}", mssv);
+        log.info("[GET /api/friends/requests/pending] Getting pending requests for {}", mssv);
         List<PendingFriendRequestResponse> requests = friendService.getPendingRequests(mssv, cursor, limit);
         return cursorPaging("Pending requests retrieved successfully", requests, limit,
                 req -> CursorUtils.encode(req.createdAt(), req.id()));
@@ -74,7 +74,7 @@ public class FriendController extends AbstractBaseController {
     public ResponseEntity<CursorPageResponse<SentFriendRequestResponse>> getSentRequests(
             @RequestParam(required = false) String cursor, @RequestParam(defaultValue = "10") int limit,
             @AuthenticationPrincipal String mssv) {
-        log.info("[Friend Controller] Getting sent requests for {}", mssv);
+        log.info("[GET /api/friends/requests/sent] Getting sent requests for {}", mssv);
         List<SentFriendRequestResponse> requests = friendService.getSentRequests(mssv, cursor, limit);
         return cursorPaging("Sent requests retrieved successfully", requests, limit,
                 req -> CursorUtils.encode(req.createdAt(), req.id()));
@@ -85,7 +85,7 @@ public class FriendController extends AbstractBaseController {
     public ResponseEntity<CursorPageResponse<FriendshipResponse>> getFriends(
             @RequestParam(required = false) String cursor, @RequestParam(defaultValue = "10") int limit,
             @AuthenticationPrincipal String mssv) {
-        log.info("[Friend Controller] Getting friends for {}", mssv);
+        log.info("[GET /api/friends] Getting friends for {}", mssv);
         List<FriendshipResponse> friends = friendService.getFriends(mssv, cursor, limit);
         return cursorPaging("Friends retrieved successfully", friends, limit,
                 friend -> CursorUtils.encode(friend.createdAt(), friend.id()));

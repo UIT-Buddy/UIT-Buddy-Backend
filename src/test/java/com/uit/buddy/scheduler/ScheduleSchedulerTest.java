@@ -1,19 +1,11 @@
 package com.uit.buddy.scheduler;
 
-import java.time.LocalDateTime;
-import java.util.List;
-
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import org.mockito.Mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.uit.buddy.dto.response.schedule.CourseContentResponse;
 import com.uit.buddy.entity.learning.TemporaryDeadline;
@@ -24,6 +16,13 @@ import com.uit.buddy.repository.user.StudentRepository;
 import com.uit.buddy.service.academic.ScheduleService;
 import com.uit.buddy.service.learning.AssignmentService;
 import com.uit.buddy.service.notification.NotificationService;
+import java.time.LocalDateTime;
+import java.util.List;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class ScheduleSchedulerTest {

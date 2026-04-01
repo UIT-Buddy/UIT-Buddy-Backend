@@ -2,6 +2,7 @@ package com.uit.buddy.service.user;
 
 import com.uit.buddy.dto.request.user.UpdateUserRequest;
 import com.uit.buddy.dto.request.user.UpdateUserSettingRequest;
+import com.uit.buddy.dto.request.user.UpdateWsTokenRequest;
 import com.uit.buddy.dto.response.user.FoundUserResponse;
 import com.uit.buddy.dto.response.user.UserResponse;
 import com.uit.buddy.dto.response.user.UserSettingResponse;
@@ -25,4 +26,6 @@ public interface UserService {
     UserSettingResponse getUserSettings(String mssv);
 
     void updateUserSettings(String mssv, UpdateUserSettingRequest request);
+
+    void updateWsToken(String mssv, UpdateWsTokenRequest request);
 }
