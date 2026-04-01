@@ -44,8 +44,7 @@ public class FriendController extends AbstractBaseController {
     public ResponseEntity<SuccessResponse> respondToFriendRequest(@PathVariable String senderMssv,
             @Valid @RequestBody RespondFriendRequestRequest request, @AuthenticationPrincipal String receiverMssv) {
         log.info("[PUT /api/friends/requests/{senderMssv}] Responding to friend request {} by {} with action: {}",
-                senderMssv, receiverMssv,
-                request.action());
+                senderMssv, receiverMssv, request.action());
         friendService.respondToFriendRequest(senderMssv, receiverMssv, request);
         return success("Friend request responded successfully");
     }

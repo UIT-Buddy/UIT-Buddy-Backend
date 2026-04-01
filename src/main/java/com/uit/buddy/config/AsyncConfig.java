@@ -68,10 +68,7 @@ public class AsyncConfig implements AsyncConfigurer {
 
     @Override
     public AsyncUncaughtExceptionHandler getAsyncUncaughtExceptionHandler() {
-        return (ex, method, params) -> log.error("Async error in {} with params {}: {}",
-                method.getName(),
-                params,
-                ex.getMessage(),
-                ex);
+        return (ex, method, params) -> log.error("Async error in {} with params {}: {}", method.getName(), params,
+                ex.getMessage(), ex);
     }
 }

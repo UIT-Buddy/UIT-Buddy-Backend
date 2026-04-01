@@ -47,8 +47,7 @@ public class CommentController extends AbstractBaseController {
             @AuthenticationPrincipal String mssv) {
 
         log.info("[GET /api/comments/{postId}/comments] Getting comments for post: {} with cursor: {}, limit: {}",
-                postId,
-                cursor, limit);
+                postId, cursor, limit);
 
         List<CommentResponse> comments = commentService.getPostComments(postId, mssv, cursor, limit);
 
