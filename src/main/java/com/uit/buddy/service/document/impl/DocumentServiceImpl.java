@@ -14,6 +14,7 @@ import com.uit.buddy.dto.response.document.DocumentSearchResult;
 import com.uit.buddy.dto.response.document.DocumentUploadResult;
 import com.uit.buddy.dto.response.document.SharedFolderResponse;
 import com.uit.buddy.dto.response.document.SharedUserResponse;
+import com.uit.buddy.dto.response.document.UpdateFolderResponse;
 import com.uit.buddy.dto.response.document.ViewFolderDetailResponse;
 import com.uit.buddy.dto.response.document.ViewFolderDetailResponse.FileResponse;
 import com.uit.buddy.dto.response.document.ViewFolderDetailResponse.PaginationMeta;
@@ -56,6 +57,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
+import com.uit.buddy.dto.request.document.UpdateFolderRequest;
 
 @Service
 @RequiredArgsConstructor
@@ -306,6 +308,22 @@ public class DocumentServiceImpl implements DocumentService {
 
         document = documentRepository.save(document);
         return documentMapper.toDocumentFileResponse(document);
+    }
+
+    @Override
+    @Transactional
+    public UpdateFolderResponse updateFolder(String mssv, UUID folderId, UpdateFolderRequest request) {
+        Folder folder = findOwnedFolder(mssv, folderId);
+
+        UUID currentParentId = folder.getParent() != null ? folder.getParent().getId() : null;
+        if (request.parentFolderId() != null && !request.parentFolderId().equals(currentParentId)) {
+            Folder targetFolder = findOwnedFolder(mssv, request.parentFolderId());
+            folder.setParent(targetFolder);
+        }
+
+        folder.setFolderName(request.folderName());
+        folder = folderRepository.save(folder);
+        return documentMapper.toUpdateFolderResponse(folder);
     }
 
     @Override

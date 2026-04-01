@@ -12,7 +12,7 @@ import com.uit.buddy.enums.FileType;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.ReportingPolicy;
-
+import com.uit.buddy.dto.response.document.UpdateFolderResponse;
 @Mapper(componentModel = "spring", unmappedTargetPolicy = ReportingPolicy.IGNORE)
 public interface DocumentMapper {
 
@@ -44,6 +44,11 @@ public interface DocumentMapper {
     @Mapping(target = "documentId", source = "id")
     @Mapping(target = "url", source = "fileUrl")
     DocumentSearchResult toSearchResult(Document document);
+
+    @Mapping(target = "folderId", source = "id")
+    @Mapping(target = "folderName", source = "folderName")
+    @Mapping(target = "folderPath", expression = "java(buildFolderPath(folder))")
+    UpdateFolderResponse toUpdateFolderResponse(Folder folder);
 
     default float toDisplaySizeValue(Float sizeInMb) {
         float safeSizeInMb = sizeInMb == null ? 0f : sizeInMb;
