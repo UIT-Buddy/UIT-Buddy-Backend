@@ -248,7 +248,7 @@ public class DocumentServiceImpl implements DocumentService {
     @Override
     @Transactional
     public void shareResource(String mssv, ShareResourceRequest request) {
-        validateShareTarget(mssv, request.targetMssv(), request.accessRole());
+        validateShareTarget(mssv, request.targetMssv());
 
         if (request.resourceType() == DocumentResourceType.FILE) {
             shareDocument(mssv, request);
@@ -289,7 +289,7 @@ public class DocumentServiceImpl implements DocumentService {
         ShareDocument shareDocument = existingShare.orElseGet(() -> ShareDocument.builder().document(document)
                 .recipient(studentRepository.getReferenceById(request.targetMssv())).build());
 
-        shareDocument.setAccessRole(request.accessRole());
+        shareDocument.setAccessRole(AccessRole.VIEWER);
         shareDocumentRepository.save(shareDocument);
     }
 
@@ -302,7 +302,7 @@ public class DocumentServiceImpl implements DocumentService {
         ShareFolder shareFolder = existingShare.orElseGet(() -> ShareFolder.builder().folder(folder)
                 .recipient(studentRepository.getReferenceById(request.targetMssv())).build());
 
-        shareFolder.setAccessRole(request.accessRole());
+        shareFolder.setAccessRole(AccessRole.VIEWER);
         shareFolderRepository.save(shareFolder);
     }
 
@@ -408,13 +408,9 @@ public class DocumentServiceImpl implements DocumentService {
         return fileName.contains(normalizedKeyword);
     }
 
-    private void validateShareTarget(String ownerMssv, String targetMssv, AccessRole accessRole) {
+    private void validateShareTarget(String ownerMssv, String targetMssv) {
         if (ownerMssv.equalsIgnoreCase(targetMssv)) {
             throw new DocumentException(DocumentErrorCode.CANNOT_SHARE_WITH_SELF);
-        }
-
-        if (accessRole == AccessRole.OWNER) {
-            throw new DocumentException(DocumentErrorCode.INVALID_SHARE_ROLE, "Cannot assign OWNER role when sharing");
         }
 
         if (!studentRepository.existsById(targetMssv)) {
