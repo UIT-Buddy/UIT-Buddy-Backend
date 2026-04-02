@@ -48,7 +48,7 @@ public class ScheduleController extends AbstractBaseController {
         if (!request.isIcsFile()) {
             throw new ScheduleException(ScheduleErrorCode.INVALID_FILE_TYPE);
         }
-        log.info("[Schedule Controller] Uploading schedule for student: {}", mssv);
+        log.info("[POST /api/schedule/upload] Uploading schedule for student: {}", mssv);
 
         List<CourseCalendarResponse.Course> uploadedCourses = scheduleService.uploadSchedule(mssv, request);
 
@@ -59,7 +59,7 @@ public class ScheduleController extends AbstractBaseController {
     @Operation(summary = "Create deadline", description = "Create personal or course-linked deadline")
     public ResponseEntity<SingleResponse<CreateDeadlineResponse>> createDeadline(
             @Valid @RequestBody CreateDeadlineRequest request, @AuthenticationPrincipal String mssv) {
-        log.info("[Schedule Controller] Creating deadline for student: {}", mssv);
+        log.info("[POST /api/schedule/deadline] Creating deadline for student: {}", mssv);
         CreateDeadlineResponse exercise = scheduleService.createDeadline(mssv, request);
         return successSingle(exercise, "Deadline created successfully");
     }
@@ -68,7 +68,7 @@ public class ScheduleController extends AbstractBaseController {
     @Operation(summary = "Update deadline", description = "Update personal or course-linked deadline")
     public ResponseEntity<SingleResponse<CreateDeadlineResponse>> updateDeadline(
             @Valid @RequestBody UpdateDeadlineRequest request, @AuthenticationPrincipal String mssv) {
-        log.info("[Schedule Controller] Updating deadline {} for student: {}", request.studentTaskId(), mssv);
+        log.info("[PATCH /api/schedule/deadline] Updating deadline {} for student: {}", request.studentTaskId(), mssv);
         CreateDeadlineResponse exercise = scheduleService.updateDeadline(mssv, request);
         return successSingle(exercise, "Deadline updated successfully");
     }
@@ -76,7 +76,8 @@ public class ScheduleController extends AbstractBaseController {
     @GetMapping("/deadline/class-codes/studying")
     @Operation(summary = "Fetch studying class codes", description = "Fetch classCode list for current user where status is STUDYING")
     public ResponseEntity<SingleResponse<List<String>>> fetchStudyingClassCodes(@AuthenticationPrincipal String mssv) {
-        log.info("[Schedule Controller] Fetching studying class codes for student: {}", mssv);
+        log.info("[GET /api/schedule/deadline/class-codes/studying] Fetching studying class codes for student: {}",
+                mssv);
         List<String> classCodes = scheduleService.fetchStudyingClassCodes(mssv);
         return successSingle(classCodes, "Studying class codes fetched successfully");
     }
@@ -90,7 +91,7 @@ public class ScheduleController extends AbstractBaseController {
             @RequestParam(name = "month", required = false) Integer month,
             @RequestParam(name = "year", required = false) Integer year, @AuthenticationPrincipal String mssv) {
         ScheduleScheduler.stopSchedule();
-        log.info("[Schedule Controller] Fetching deadlines for student: {}", mssv);
+        log.info("[GET /api/schedule/deadline] Fetching deadlines for student: {}", mssv);
         if (month != null && (month < 1 || month > 12)) {
             throw new ScheduleException(ScheduleErrorCode.INVALID_MONTH);
         }
@@ -107,7 +108,7 @@ public class ScheduleController extends AbstractBaseController {
     public ResponseEntity<SingleResponse<CourseCalendarResponse>> fetchCourseCalendar(
             @RequestParam(name = "year", required = false) String year,
             @RequestParam(name = "semester", required = false) String semester, @AuthenticationPrincipal String mssv) {
-        log.info("[Schedule Controller] Fetching course calendar for student: {}", mssv);
+        log.info("[GET /api/schedule/calendar] Fetching course calendar for student: {}", mssv);
         if (semester != null && year == null || semester == null && year != null) {
             throw new ScheduleException(ScheduleErrorCode.INVALID_FILTER_WITH_CALENDAR);
         }

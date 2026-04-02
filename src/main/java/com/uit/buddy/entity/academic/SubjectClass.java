@@ -2,6 +2,7 @@ package com.uit.buddy.entity.academic;
 
 import com.uit.buddy.constant.IcsConstants;
 import com.uit.buddy.entity.AbstractBaseEntity;
+import com.uit.buddy.constant.IcsConstants;
 import jakarta.persistence.*;
 import java.time.LocalDate;
 import java.time.LocalTime;

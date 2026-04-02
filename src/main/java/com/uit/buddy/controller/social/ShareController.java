@@ -35,7 +35,7 @@ public class ShareController extends AbstractBaseController {
             @RequestParam(defaultValue = "PROFILE") ShareType type,
             @RequestBody(required = false) SharePostRequest request, @AuthenticationPrincipal String mssv) {
 
-        log.info("[Share Controller] Sharing post: {} by mssv: {} with type: {}", postId, mssv, type);
+        log.info("[POST /api/shares/posts/{postId}] Sharing post: {} by mssv: {} with type: {}", postId, mssv, type);
 
         shareService.sharePost(postId, mssv, type, request);
 
@@ -48,7 +48,8 @@ public class ShareController extends AbstractBaseController {
             @RequestParam(required = false) String cursor, @RequestParam(defaultValue = "10") int limit,
             @AuthenticationPrincipal String mssv) {
 
-        log.info("[Post Controller] Getting shares for post: {} with cursor: {}, limit: {}", postId, cursor, limit);
+        log.info("[GET /api/shares/{postId}/shares] Getting shares for post: {} with cursor: {}, limit: {}", postId,
+                cursor, limit);
 
         List<UserShareResponse> shares = shareService.getPostShares(postId, mssv, cursor, limit);
 
@@ -61,7 +62,7 @@ public class ShareController extends AbstractBaseController {
     public ResponseEntity<SingleResponse<List<ShareTargetResponse>>> getShareTargets(
             @AuthenticationPrincipal String mssv) {
 
-        log.info("[Share Controller] Getting share targets for mssv: {}", mssv);
+        log.info("[GET /api/shares/targets] Getting share targets for mssv: {}", mssv);
 
         var targets = shareService.getShareTargets(mssv);
 

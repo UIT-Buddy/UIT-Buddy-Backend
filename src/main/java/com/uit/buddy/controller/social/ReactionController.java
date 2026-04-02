@@ -30,7 +30,7 @@ public class ReactionController extends AbstractBaseController {
     public ResponseEntity<SuccessResponse> togglePostLike(@PathVariable UUID postId,
             @AuthenticationPrincipal String mssv) {
 
-        log.info("[Reaction Controller] Toggling like on post: {} by mssv: {}", postId, mssv);
+        log.info("[POST /api/reactions/posts/{postId}/like] Toggling like on post: {} by mssv: {}", postId, mssv);
 
         boolean isLiked = reactionService.togglePostLike(postId, mssv);
         String message = isLiked ? "Post liked successfully" : "Post unliked successfully";
@@ -43,7 +43,8 @@ public class ReactionController extends AbstractBaseController {
     public ResponseEntity<CursorPageResponse<UserReactionResponse>> getPostReactions(@PathVariable UUID postId,
             @RequestParam(required = false) String cursor, @RequestParam(defaultValue = "10") int limit,
             @AuthenticationPrincipal String mssv) {
-        log.info("[Post Controller] Getting reactions for post: {} with cursor: {}, limit: {}", postId, cursor, limit);
+        log.info("[GET /api/reactions/{postId}/reactions] Getting reactions for post: {} with cursor: {}, limit: {}",
+                postId, cursor, limit);
 
         List<UserReactionResponse> reactions = reactionService.getPostReactions(postId, mssv, cursor, limit);
 

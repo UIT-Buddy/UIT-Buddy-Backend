@@ -33,7 +33,7 @@ public class NotificationController extends AbstractBaseController {
             @RequestParam(required = false) String cursor, @RequestParam(defaultValue = "10") int limit,
             @AuthenticationPrincipal String mssv) {
 
-        log.info("[Notification Controller] Getting notifications with cursor: {}, limit: {}", cursor, limit);
+        log.info("[GET /api/notifications] Getting notifications with cursor: {}, limit: {}", cursor, limit);
 
         List<NotificationResponse> notifications = notificationService.getNotifications(mssv, cursor, limit);
 
@@ -44,7 +44,7 @@ public class NotificationController extends AbstractBaseController {
     @GetMapping("/unread-count")
     @Operation(summary = "Get unread count", description = "Get count of unread notifications")
     public ResponseEntity<SingleResponse<UnreadCountResponse>> getUnreadCount(@AuthenticationPrincipal String mssv) {
-        log.info("[Notification Controller] Getting unread count for mssv: {}", mssv);
+        log.info("[GET /api/notifications/unread-count] Getting unread count for mssv: {}", mssv);
         long count = notificationService.getUnreadCount(mssv);
         UnreadCountResponse response = new UnreadCountResponse(count);
         return successSingle(response, "Unread count retrieved successfully");
@@ -54,7 +54,8 @@ public class NotificationController extends AbstractBaseController {
     @Operation(summary = "Mark as read", description = "Mark a notification as read")
     public ResponseEntity<SuccessResponse> markAsRead(@PathVariable UUID notificationId,
             @AuthenticationPrincipal String mssv) {
-        log.info("[Notification Controller] Marking notification {} as read for mssv: {}", notificationId, mssv);
+        log.info("[PUT /api/notifications/{notificationId}/read] Marking notification {} as read for mssv: {}",
+                notificationId, mssv);
         notificationService.markAsRead(notificationId, mssv);
         return success("Notification marked as read");
     }
@@ -62,7 +63,7 @@ public class NotificationController extends AbstractBaseController {
     @PutMapping("/read-all")
     @Operation(summary = "Mark all as read", description = "Mark all notifications as read")
     public ResponseEntity<SuccessResponse> markAllAsRead(@AuthenticationPrincipal String mssv) {
-        log.info("[Notification Controller] Marking all notifications as read for mssv: {}", mssv);
+        log.info("[PUT /api/notifications/read-all] Marking all notifications as read for mssv: {}", mssv);
         notificationService.markAllAsRead(mssv);
         return success("All notifications marked as read");
     }
@@ -71,7 +72,8 @@ public class NotificationController extends AbstractBaseController {
     @Operation(summary = "Delete notification", description = "Delete a notification")
     public ResponseEntity<SuccessResponse> deleteNotification(@PathVariable UUID notificationId,
             @AuthenticationPrincipal String mssv) {
-        log.info("[Notification Controller] Deleting notification {} for mssv: {}", notificationId, mssv);
+        log.info("[DELETE /api/notifications/{notificationId}] Deleting notification {} for mssv: {}", notificationId,
+                mssv);
         notificationService.deleteNotification(notificationId, mssv);
         return success("Notification deleted successfully");
     }
