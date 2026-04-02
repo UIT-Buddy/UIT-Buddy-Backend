@@ -12,9 +12,13 @@ import com.uit.buddy.dto.response.client.EnrolledCourseResponse;
 import com.uit.buddy.dto.response.client.SiteInfoResponse;
 import com.uit.buddy.exception.client.ExternalClientErrorCode;
 import com.uit.buddy.exception.client.ExternalClientException;
+
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
+
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -35,6 +39,7 @@ public class UitClientImpl extends AbstractBaseClient implements UitClient {
     private final String restFormat;
     private final MoodleResponseValidator moodleResponseValidator;
     private final MoodleRateLimiter rateLimiter;
+    private final AtomicReference<SiteInfoResponse> siteInfoCache = new AtomicReference<>();
 
     public UitClientImpl(@Qualifier("moodleClient") RestClient restClient, ObjectMapper objectMapper,
             @Value("${app.uit.moodle-server-path}") String moodleServerPath,
@@ -54,18 +59,26 @@ public class UitClientImpl extends AbstractBaseClient implements UitClient {
 
     @Retryable(retryFor = { ExternalClientException.class,
             RestClientException.class }, maxAttemptsExpression = "${moodle.retry.max-attempts:3}", backoff = @Backoff(delayExpression = "${moodle.retry.delay-ms:1000}", multiplierExpression = "${moodle.retry.multiplier:2}"))
+    @CircuitBreaker(name = "moodle", fallbackMethod = "fallbackGetSiteInfo")
     @Override
     public SiteInfoResponse fetchSiteInfo(String wstoken) {
         try {
             rateLimiter.acquire();
             Map<String, String> queryParams = buildBaseParams(wstoken, MoodleApiConstants.FUNCTION_GET_SITE_INFO);
-            return get(moodleServerPath, SiteInfoResponse.class, queryParams, null);
+            SiteInfoResponse response = get(moodleServerPath, SiteInfoResponse.class, queryParams, null);
+            siteInfoCache.set(response);
+            return response;
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new RuntimeException("Interrupted while waiting for rate limiter permit", e);
         } finally {
             rateLimiter.release();
         }
+    }
+
+    public SiteInfoResponse fallbackGetSiteInfo(String wstoken, Throwable t) {
+        log.warn("Circuit breaker OPEN for Moodle. Returning stale cache.", t);
+        return siteInfoCache.get();
     }
 
     @Retryable(retryFor = { ExternalClientException.class,

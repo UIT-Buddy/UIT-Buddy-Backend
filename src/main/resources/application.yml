@@ -24,4 +24,15 @@ aws:
     public-base-url: ${AWS_S3_PUBLIC_BASE_URL:}
     default-avatar-url: ${AWS_S3_DEFAULT_AVATAR_URL:https://example.com/avatars/default.png}
     allowed-image-types: ${AWS_S3_ALLOWED_IMAGE_TYPES:image/jpeg,image/jpg,image/png,image/webp}
-    allowed-video-types: ${AWS_S3_ALLOWED_VIDEO_TYPES:video/mp4,video/webm}
+    allowed-video-types: ${AWS_S3_ALLOWED_VIDEO_TYPES:video/mp4,video/webp}
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      moodle:
+        registerHealthIndicator: true
+        slidingWindowSize: 10
+        minimumNumberOfCalls: 5
+        failureRateThreshold: 50
+        waitDurationInOpenState: 20s
+        permittedNumberOfCallsInHalfOpenState: 3
