@@ -16,10 +16,13 @@ import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicReference;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationContext;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.retry.annotation.Backoff;
@@ -38,16 +41,21 @@ public class UitClientImpl extends AbstractBaseClient implements UitClient {
     private final MoodleResponseValidator moodleResponseValidator;
     private final MoodleRateLimiter rateLimiter;
     private final AtomicReference<SiteInfoResponse> siteInfoCache = new AtomicReference<>();
+    private final Executor uploadExecutor;
+    private final ApplicationContext applicationContext;
 
     public UitClientImpl(@Qualifier("moodleClient") RestClient restClient, ObjectMapper objectMapper,
             @Value("${app.uit.moodle-server-path}") String moodleServerPath,
             @Value("${app.uit.rest-format}") String restFormat, MoodleResponseValidator moodleResponseValidator,
-            MoodleRateLimiter rateLimiter) {
+            MoodleRateLimiter rateLimiter, @Qualifier("uploadExecutor") Executor uploadExecutor,
+            ApplicationContext applicationContext) {
         super(restClient, objectMapper);
         this.moodleServerPath = moodleServerPath;
         this.restFormat = restFormat;
         this.moodleResponseValidator = moodleResponseValidator;
         this.rateLimiter = rateLimiter;
+        this.uploadExecutor = uploadExecutor;
+        this.applicationContext = applicationContext;
     }
 
     @Override
@@ -136,6 +144,46 @@ public class UitClientImpl extends AbstractBaseClient implements UitClient {
         log.warn("[UitClient] Circuit breaker OPEN for getCourseAssignments (assignmentId={}): {}", assignmentId,
                 t.getMessage());
         return null;
+    }
+
+    /**
+     * Batch-fetch submission statuses for multiple assignments in parallel. Each call fires independently through the
+     * Spring proxy so @CircuitBreaker + @Retryable interceptors fire per-call. Calls that hit an open circuit or fail
+     * return null so the caller can fall back to date-only inference.
+     */
+    @Override
+    public Map<String, AssignmentDetailResponse> getAssignmentsInfo(String wstoken, List<String> assignmentIds) {
+        if (assignmentIds == null || assignmentIds.isEmpty()) {
+            return Map.of();
+        }
+
+        // Obtain the AOP proxy so interceptors (CircuitBreaker, Retryable) fire on each call
+        UitClient uitClientProxy = applicationContext.getBean(UitClient.class);
+
+        List<CompletableFuture<Map.Entry<String, AssignmentDetailResponse>>> futures = new java.util.ArrayList<>();
+        for (String id : assignmentIds) {
+            String assignmentId = id;
+            CompletableFuture<Map.Entry<String, AssignmentDetailResponse>> f = CompletableFuture.supplyAsync(() -> {
+                AssignmentDetailResponse resp = uitClientProxy.getCourseAssignments(wstoken, assignmentId);
+                return Map.entry(assignmentId, resp);
+            }, uploadExecutor).exceptionally(ex -> {
+                log.debug("[UitClient] getCourseAssignments exception for id={}: {}", assignmentId, ex.getMessage());
+                return Map.entry(assignmentId, (AssignmentDetailResponse) null);
+            });
+            futures.add(f);
+        }
+
+        Map<String, AssignmentDetailResponse> results = new HashMap<>();
+        for (CompletableFuture<Map.Entry<String, AssignmentDetailResponse>> future : futures) {
+            try {
+                Map.Entry<String, AssignmentDetailResponse> entry = future.join();
+                results.put(entry.getKey(), entry.getValue());
+            } catch (Exception e) {
+                // Already handled in exceptionally above; safe to skip
+            }
+        }
+
+        return results;
     }
 
     @Recover

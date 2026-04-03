@@ -118,7 +118,7 @@ public class ScheduleServiceImpl implements ScheduleService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public List<CourseCalendarResponse.Course> uploadSchedule(String mssv, UploadScheduleRequest request) {
-        log.info("[Schedule Service] Processing sync upload for student: {}", mssv);
+        log.info("[Schedule Service] Processing ICS upload for student: {}", mssv);
 
         validateIcsFile(request.icsFile());
         Student student = studentRepository.findById(mssv)
@@ -131,11 +131,10 @@ public class ScheduleServiceImpl implements ScheduleService {
                 throw new ScheduleException(ScheduleErrorCode.INVALID_OWNER);
             }
 
+            // Save schedule from ICS — no Moodle calls here, just fast file parsing + DB write
             List<StudentSubjectClass> savedMappings = saveScheduleData(student, result.getEvents());
-            List<CourseContentResponse> allDeadlines = fetchCourseDeadlinesFromMoodle(mssv, null, null);
-            List<CourseCalendarResponse.Course> courses = scheduleMapper.toListCourseWithDeadlines(savedMappings,
-                    allDeadlines);
-            courses = sortCourseDeadlineByDueDateDesc(courses);
+            List<CourseCalendarResponse.Course> courses = scheduleMapper.toListCourse(savedMappings);
+            courses = sortCoursesByClassCode(courses);
 
             log.info("[Schedule Service] Schedule upload successful for student: {}", mssv);
 
@@ -144,9 +143,59 @@ public class ScheduleServiceImpl implements ScheduleService {
         } catch (ScheduleException e) {
             throw e;
         } catch (IOException e) {
-            log.error("[Schedule Service] IO error during sync upload for student {}: ", mssv, e);
+            log.error("[Schedule Service] IO error during ICS upload for student {}: ", mssv, e);
             throw new SystemException(SystemErrorCode.INTERNAL_ERROR);
         }
+    }
+
+    @Override
+    public List<CourseCalendarResponse.Course> syncAssignments(String mssv, Integer month, Integer year) {
+        log.info("[Schedule Service] Syncing assignments from Moodle for student: {}", mssv);
+
+        Student student = studentRepository.findById(mssv)
+                .orElseThrow(() -> new UserException(UserErrorCode.STUDENT_NOT_FOUND));
+
+        String decryptedWstoken = encryptionUtils.decrypt(student.getEncryptedWstoken());
+        Map<String, List<CourseDetailResponse>> courseContents = getCourseContents(decryptedWstoken);
+        List<CourseContentResponse> deadlines = extractDeadlinesForCourses(courseContents, decryptedWstoken, month,
+                year);
+        List<StudentSubjectClass> savedMappings = studentSubjectClassRepository.findSubjectsByMssv(mssv);
+        List<CourseCalendarResponse.Course> courses = scheduleMapper.toListCourseWithDeadlines(savedMappings,
+                deadlines);
+        courses = sortCourseDeadlineByDueDateDesc(courses);
+
+        log.info("[Schedule Service] Assignment sync complete for student: {} ({} courses with deadlines)", mssv,
+                courses.size());
+
+        return courses;
+    }
+
+    @Override
+    public CourseContentResponse syncCourseAssignments(String mssv, String classId, Integer month, Integer year) {
+        log.info("[Schedule Service] Syncing assignments for classId={} student={}", classId, mssv);
+
+        Student student = studentRepository.findById(mssv)
+                .orElseThrow(() -> new UserException(UserErrorCode.STUDENT_NOT_FOUND));
+
+        String decryptedWstoken = encryptionUtils.decrypt(student.getEncryptedWstoken());
+
+        // Find the Moodle course ID from enrolled courses
+        SiteInfoResponse siteInfo = uitClient.fetchSiteInfo(decryptedWstoken);
+        Long userId = siteInfo.userid();
+        List<EnrolledCourseResponse> enrolledCourses = uitClient.getUserCourses(decryptedWstoken, userId);
+
+        EnrolledCourseResponse targetCourse = enrolledCourses.stream()
+                .filter(c -> c.shortName().equalsIgnoreCase(classId)).findFirst()
+                .orElseThrow(() -> new ScheduleException(ScheduleErrorCode.CLASS_NOT_FOUND));
+
+        // Fetch course detail + batch-fetch submission statuses for this one course
+        List<CourseDetailResponse> details = uitClient.getAllCourseDetail(decryptedWstoken, targetCourse.id());
+        CourseContentResponse deadlines = extractDeadlinesForCourse(classId, details, decryptedWstoken, month, year);
+
+        log.info("[Schedule Service] Assignment sync for classId={} done ({} exercises)", classId,
+                deadlines.exercises().size());
+
+        return deadlines;
     }
 
     @Override
@@ -526,8 +575,8 @@ public class ScheduleServiceImpl implements ScheduleService {
 
     private CourseContentResponse extractDeadlinesForCourse(String courseName, List<CourseDetailResponse> details,
             String decryptedWstoken, Integer month, Integer year) {
-        List<CourseContentResponse.exercise> exercises = new ArrayList<>();
-
+        // ── Pass 1: collect all modules that have deadlines and match the filter ──────
+        List<ModuleWithDate> modulesWithDueDates = new ArrayList<>();
         for (CourseDetailResponse detail : details) {
             if (hasNoDeadline(detail)) {
                 continue;
@@ -542,22 +591,41 @@ public class ScheduleServiceImpl implements ScheduleService {
                         .map(CourseDetailResponse.CourseDetailModuleResponse.CourseDetailModuleDatesResonponse::timestamp)
                         .findFirst().orElse(null);
 
-                if (dueTimestamp != null) {
-                    LocalDateTime dueDate = toLocalDateTime(dueTimestamp);
-                    if (!isMatchedByFilter(dueDate, month, year)) {
-                        continue;
-                    }
-
-                    exercises.add(new CourseContentResponse.exercise(module.name(), dueDate, module.url(),
-                            determineDeadlineStatus(dueDate, decryptedWstoken, module.id()), false));
+                if (dueTimestamp == null) {
+                    continue;
                 }
+
+                LocalDateTime dueDate = toLocalDateTime(dueTimestamp);
+                if (!isMatchedByFilter(dueDate, month, year)) {
+                    continue;
+                }
+
+                modulesWithDueDates.add(new ModuleWithDate(module.id(), module.name(), module.url(), dueDate));
             }
         }
+
+        if (modulesWithDueDates.isEmpty()) {
+            return new CourseContentResponse(courseName, List.of());
+        }
+
+        // ── Pass 2: batch-fetch submission statuses for ALL modules in this course ──
+        List<String> assignmentIds = modulesWithDueDates.stream().map(m -> m.id).toList();
+        Map<String, AssignmentDetailResponse> submissionStatuses = uitClient.getAssignmentsInfo(decryptedWstoken,
+                assignmentIds);
+
+        // ── Pass 3: resolve deadline status using cached results ────────────────────
+        List<CourseContentResponse.exercise> exercises = modulesWithDueDates.stream().map(m -> {
+            DeadlineStatus status = determineDeadlineStatusFromCache(m.dueDate, submissionStatuses.get(m.id));
+            return new CourseContentResponse.exercise(m.name, m.dueDate, m.url, status, false);
+        }).toList();
 
         List<CourseContentResponse.exercise> sortedExercises = exercises.stream()
                 .sorted(Comparator.comparing(CourseContentResponse.exercise::dueDate).reversed()).toList();
 
         return new CourseContentResponse(courseName, sortedExercises);
+    }
+
+    private record ModuleWithDate(String id, String name, String url, LocalDateTime dueDate) {
     }
 
     private boolean isMatchedByFilter(LocalDateTime dueDate, Integer month, Integer year) {
@@ -671,6 +739,38 @@ public class ScheduleServiceImpl implements ScheduleService {
 
     }
 
+    /**
+     * Like {@link #determineDeadlineStatus(LocalDateTime, String, String)} but reads from a pre-fetched map. When the
+     * map entry is null (circuit open or call failed), falls back to date-only inference so no additional HTTP call is
+     * made.
+     */
+    private DeadlineStatus determineDeadlineStatusFromCache(LocalDateTime dueDate,
+            AssignmentDetailResponse assignmentDetail) {
+        LocalDateTime now = LocalDateTime.now();
+
+        if (assignmentDetail == null) {
+            log.debug("[Schedule Service] No submission data for dueDate={}, inferring from date only", dueDate);
+            if (dueDate.isBefore(now)) {
+                return DeadlineStatus.OVERDUE;
+            }
+            if (dueDate.isBefore(now.plusHours(ScheduleConstant.NEAR_DEADLINE_HOURS))) {
+                return DeadlineStatus.NEARDEADLINE;
+            }
+            return DeadlineStatus.UPCOMING;
+        }
+
+        if (isSubmittedAssignment(assignmentDetail, null)) {
+            return DeadlineStatus.DONE;
+        }
+        if (dueDate.isBefore(now)) {
+            return DeadlineStatus.OVERDUE;
+        }
+        if (dueDate.isBefore(now.plusHours(ScheduleConstant.NEAR_DEADLINE_HOURS))) {
+            return DeadlineStatus.NEARDEADLINE;
+        }
+        return DeadlineStatus.UPCOMING;
+    }
+
     private boolean isSubmittedAssignment(AssignmentDetailResponse assignmentDetail, String assignmentId) {
         if (assignmentDetail == null || assignmentDetail.lastAttempt() == null
                 || assignmentDetail.lastAttempt().submission() == null
@@ -766,7 +866,7 @@ public class ScheduleServiceImpl implements ScheduleService {
         if (student.getHomeClass() != null && student.getHomeClass().getAcademicYear() != null) {
             Matcher matcher = YEAR_PATTERN.matcher(student.getHomeClass().getAcademicYear());
             if (matcher.find()) {
-                return Integer.parseInt(matcher.group(1));
+                return Integer.valueOf(matcher.group(1));
             }
         }
 
@@ -796,5 +896,10 @@ public class ScheduleServiceImpl implements ScheduleService {
                     course.isBlendedLearning(), course.endTime(), course.startPeriod(), course.endPeriod(),
                     course.roomCode(), course.startDate(), course.endDate(), course.credits(), sortedDeadline);
         }).toList();
+    }
+
+    private List<CourseCalendarResponse.Course> sortCoursesByClassCode(List<CourseCalendarResponse.Course> courses) {
+        return courses.stream().sorted(Comparator.comparing(CourseCalendarResponse.Course::courseCode,
+                Comparator.nullsLast(Comparator.naturalOrder()))).toList();
     }
 }
