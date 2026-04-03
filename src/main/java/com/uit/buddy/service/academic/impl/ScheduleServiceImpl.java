@@ -644,6 +644,20 @@ public class ScheduleServiceImpl implements ScheduleService {
     private DeadlineStatus determineDeadlineStatus(LocalDateTime dueDate, String wstoken, String assignmentId) {
         AssignmentDetailResponse assignmentDetail = uitClient.getCourseAssignments(wstoken, assignmentId);
         LocalDateTime now = LocalDateTime.now();
+
+        // Circuit breaker open or Moodle unavailable — fall back to date-based inference only
+        if (assignmentDetail == null) {
+            log.debug("[Schedule Service] Moodle unavailable for assignmentId={}, inferring status from due date",
+                    assignmentId);
+            if (dueDate.isBefore(now)) {
+                return DeadlineStatus.OVERDUE;
+            }
+            if (dueDate.isBefore(now.plusHours(ScheduleConstant.NEAR_DEADLINE_HOURS))) {
+                return DeadlineStatus.NEARDEADLINE;
+            }
+            return DeadlineStatus.UPCOMING;
+        }
+
         if (isSubmittedAssignment(assignmentDetail, assignmentId)) {
             return DeadlineStatus.DONE;
         }

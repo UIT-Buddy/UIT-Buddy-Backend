@@ -12,9 +12,7 @@ import com.uit.buddy.dto.response.client.EnrolledCourseResponse;
 import com.uit.buddy.dto.response.client.SiteInfoResponse;
 import com.uit.buddy.exception.client.ExternalClientErrorCode;
 import com.uit.buddy.exception.client.ExternalClientException;
-
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
-
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -119,6 +117,7 @@ public class UitClientImpl extends AbstractBaseClient implements UitClient {
 
     @Retryable(retryFor = { ExternalClientException.class,
             RestClientException.class }, maxAttemptsExpression = "${moodle.retry.max-attempts:3}", backoff = @Backoff(delayExpression = "${moodle.retry.delay-ms:1000}", multiplierExpression = "${moodle.retry.multiplier:2}"))
+    @CircuitBreaker(name = "moodleAssignments", fallbackMethod = "fallbackGetCourseAssignments")
     @Override
     public AssignmentDetailResponse getCourseAssignments(String wstoken, String assignmentId) {
         try {
@@ -131,6 +130,12 @@ public class UitClientImpl extends AbstractBaseClient implements UitClient {
         } finally {
             rateLimiter.release();
         }
+    }
+
+    public AssignmentDetailResponse fallbackGetCourseAssignments(String wstoken, String assignmentId, Throwable t) {
+        log.warn("[UitClient] Circuit breaker OPEN for getCourseAssignments (assignmentId={}): {}", assignmentId,
+                t.getMessage());
+        return null;
     }
 
     @Recover
