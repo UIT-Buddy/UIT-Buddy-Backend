@@ -121,8 +121,8 @@ public class UitClientImpl extends AbstractBaseClient implements UitClient {
     }
 
     /**
-     * Outer wrapper: acquires/releases rate-limiter permit around the entire call so that circuit-open
-     * calls (which bypass the method body entirely) do NOT leak permits.
+     * Outer wrapper: acquires/releases rate-limiter permit around the entire call so that circuit-open calls (which
+     * bypass the method body entirely) do NOT leak permits.
      */
     @Override
     public AssignmentDetailResponse getCourseAssignments(String wstoken, String assignmentId) {
@@ -138,8 +138,8 @@ public class UitClientImpl extends AbstractBaseClient implements UitClient {
     }
 
     /**
-     * Inner method holds the resilience annotations. When the circuit is OPEN the fallback fires
-     * immediately — without running this method body — so acquire() is never called and no permit leaks.
+     * Inner method holds the resilience annotations. When the circuit is OPEN the fallback fires immediately — without
+     * running this method body — so acquire() is never called and no permit leaks.
      */
     @Retryable(retryFor = { ExternalClientException.class,
             RestClientException.class }, maxAttemptsExpression = "${moodle.retry.max-attempts:3}", backoff = @Backoff(delayExpression = "${moodle.retry.delay-ms:1000}", multiplierExpression = "${moodle.retry.multiplier:2}"))

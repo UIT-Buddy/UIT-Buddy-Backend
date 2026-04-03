@@ -1,18 +1,15 @@
 package com.uit.buddy.repository.academic;
 
-import java.util.List;
-import java.util.Optional;
-import java.util.concurrent.TimeUnit;
-
-import org.springframework.data.redis.core.StringRedisTemplate;
-import org.springframework.stereotype.Repository;
-
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.uit.buddy.constant.ScheduleConstant;
 import com.uit.buddy.dto.response.client.EnrolledCourseResponse;
-
+import java.util.List;
+import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.stereotype.Repository;
 
 @Repository
 @Slf4j
