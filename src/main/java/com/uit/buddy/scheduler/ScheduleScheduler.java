@@ -121,7 +121,8 @@ public class ScheduleScheduler {
         }
     }
 
-    @Scheduled(fixedDelay = ScheduleConstant.PING_MOODLE_INTERVAL)
+    // Runs once daily at 12:00 PM
+    @Scheduled(cron = "0 0 12 * * ?")
     public void pingMoodleAndPushNewDeadlines() {
         List<String> listMssv = studentRepository.findMssvAll();
 
