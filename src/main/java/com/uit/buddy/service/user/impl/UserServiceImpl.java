@@ -1,9 +1,9 @@
 package com.uit.buddy.service.user.impl;
 
 import com.uit.buddy.client.UitClient;
-import com.uit.buddy.dto.request.user.UpdateWsTokenRequest;
 import com.uit.buddy.dto.request.user.UpdateUserRequest;
 import com.uit.buddy.dto.request.user.UpdateUserSettingRequest;
+import com.uit.buddy.dto.request.user.UpdateWsTokenRequest;
 import com.uit.buddy.dto.response.client.SiteInfoResponse;
 import com.uit.buddy.dto.response.user.FoundUserResponse;
 import com.uit.buddy.dto.response.user.UserResponse;

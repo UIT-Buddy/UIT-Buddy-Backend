@@ -29,6 +29,8 @@ import com.uit.buddy.exception.user.UserException;
 import com.uit.buddy.mapper.document.DocumentMapper;
 import com.uit.buddy.repository.document.DocumentRepository;
 import com.uit.buddy.repository.document.FolderRepository;
+import com.uit.buddy.repository.document.ShareDocumentRepository;
+import com.uit.buddy.repository.document.ShareFolderRepository;
 import com.uit.buddy.repository.user.StudentRepository;
 import com.uit.buddy.service.file.FileService;
 import java.util.ArrayList;
@@ -61,6 +63,12 @@ class DocumentServiceImplTest {
 
     @Mock
     private StudentRepository studentRepository;
+
+    @Mock
+    private ShareDocumentRepository shareDocumentRepository;
+
+    @Mock
+    private ShareFolderRepository shareFolderRepository;
 
     @Mock
     private FileService fileService;
@@ -222,12 +230,15 @@ class DocumentServiceImplTest {
         Folder folder = new Folder();
         folder.setId(folderId);
         folder.setFolderName("Storage");
+        folder.setMssv(mssv);
 
-        when(folderRepository.findByIdAndMssv(folderId, mssv)).thenReturn(Optional.of(folder));
-        when(folderRepository.findByMssvAndParentId(mssv, folderId)).thenReturn(List.of());
-        when(documentRepository.findByMssvAndFolderId(mssv, folderId)).thenReturn(List.of());
+        Pageable pageable = PageRequest.of(0, 15);
 
-        ViewFolderDetailResponse result = documentService.viewFolderDetail(mssv, folderId);
+        when(folderRepository.findById(folderId)).thenReturn(Optional.of(folder));
+        when(folderRepository.findByParentId(folderId)).thenReturn(List.of());
+        when(documentRepository.findByFolderId(folderId)).thenReturn(List.of());
+
+        ViewFolderDetailResponse result = documentService.viewFolderDetail(mssv, folderId, pageable);
 
         assertThat(result.folderId()).isEqualTo(folderId);
         assertThat(result.folders()).isEmpty();
@@ -243,6 +254,7 @@ class DocumentServiceImplTest {
         folder.setId(folderId);
         folder.setFolderName("Semester");
         folder.setParent(root);
+        folder.setMssv(mssv);
 
         Folder child1 = new Folder();
         child1.setId(UUID.randomUUID());
@@ -258,9 +270,11 @@ class DocumentServiceImplTest {
         doc2.setId(UUID.randomUUID());
         doc2.setFileName("b.ppt");
 
-        when(folderRepository.findByIdAndMssv(folderId, mssv)).thenReturn(Optional.of(folder));
-        when(folderRepository.findByMssvAndParentId(mssv, folderId)).thenReturn(List.of(child1, child2));
-        when(documentRepository.findByMssvAndFolderId(mssv, folderId)).thenReturn(List.of(doc1, doc2));
+        Pageable pageable = PageRequest.of(0, 15);
+
+        when(folderRepository.findById(folderId)).thenReturn(Optional.of(folder));
+        when(folderRepository.findByParentId(folderId)).thenReturn(List.of(child1, child2));
+        when(documentRepository.findByFolderId(folderId)).thenReturn(List.of(doc1, doc2));
         when(documentMapper.toFolderResponse(any(Folder.class))).thenAnswer(invocation -> {
             Folder f = invocation.getArgument(0);
             return new ViewFolderDetailResponse.FolderResponse(f.getId(), f.getFolderName(), 0);
@@ -271,7 +285,7 @@ class DocumentServiceImplTest {
                     FileType.OTHER);
         });
 
-        ViewFolderDetailResponse result = documentService.viewFolderDetail(mssv, folderId);
+        ViewFolderDetailResponse result = documentService.viewFolderDetail(mssv, folderId, pageable);
 
         assertThat(result.folderPath()).isEqualTo("Storage/Semester");
         assertThat(result.folders()).hasSize(2);
@@ -284,8 +298,9 @@ class DocumentServiceImplTest {
         Document document = new Document();
         document.setId(fileId);
         document.setFileUrl("https://download");
+        document.setMssv(mssv);
 
-        when(documentRepository.findByIdAndMssv(fileId, mssv)).thenReturn(Optional.of(document));
+        when(documentRepository.findById(fileId)).thenReturn(Optional.of(document));
 
         String result = documentService.getDownloadUrl(mssv, fileId);
 
@@ -295,7 +310,7 @@ class DocumentServiceImplTest {
     @Test
     void getDownloadUrl_zeroDocument_shouldThrowDocumentException() {
         UUID fileId = UUID.randomUUID();
-        when(documentRepository.findByIdAndMssv(fileId, mssv)).thenReturn(Optional.empty());
+        when(documentRepository.findById(fileId)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> documentService.getDownloadUrl(mssv, fileId)).isInstanceOf(DocumentException.class)
                 .extracting("code").isEqualTo(DocumentErrorCode.FILE_NOT_FOUND.getCode());
