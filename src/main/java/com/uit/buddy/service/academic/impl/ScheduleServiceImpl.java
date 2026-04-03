@@ -304,10 +304,8 @@ public class ScheduleServiceImpl implements ScheduleService {
         if (studentClasses.isEmpty()) {
             throw new ScheduleException(ScheduleErrorCode.ICS_FILE_NOT_FOUND);
         }
-        List<CourseContentResponse> allDeadlines = fetchCourseDeadlinesFromMoodle(mssv, null, null);
-        List<CourseCalendarResponse.Course> courses = scheduleMapper.toListCourseWithDeadlines(studentClasses,
-                allDeadlines);
-        courses = sortCourseDeadlineByDueDateDesc(courses);
+        List<CourseCalendarResponse.Course> courses = scheduleMapper.toListCourse(studentClasses);
+        courses = sortCoursesByClassCode(courses);
         return new CourseCalendarResponse(courses.size(), semester, year, courses);
     }
 

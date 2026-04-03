@@ -17,7 +17,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Executor;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicReference;
 import lombok.extern.slf4j.Slf4j;
@@ -42,20 +41,18 @@ public class UitClientImpl extends AbstractBaseClient implements UitClient {
     private final MoodleResponseValidator moodleResponseValidator;
     private final MoodleRateLimiter rateLimiter;
     private final AtomicReference<SiteInfoResponse> siteInfoCache = new AtomicReference<>();
-    private final Executor uploadExecutor;
     private final ApplicationContext applicationContext;
 
     public UitClientImpl(@Qualifier("moodleClient") RestClient restClient, ObjectMapper objectMapper,
             @Value("${app.uit.moodle-server-path}") String moodleServerPath,
             @Value("${app.uit.rest-format}") String restFormat, MoodleResponseValidator moodleResponseValidator,
-            MoodleRateLimiter rateLimiter, @Qualifier("uploadExecutor") Executor uploadExecutor,
+            MoodleRateLimiter rateLimiter,
             ApplicationContext applicationContext) {
         super(restClient, objectMapper);
         this.moodleServerPath = moodleServerPath;
         this.restFormat = restFormat;
         this.moodleResponseValidator = moodleResponseValidator;
         this.rateLimiter = rateLimiter;
-        this.uploadExecutor = uploadExecutor;
         this.applicationContext = applicationContext;
     }
 
