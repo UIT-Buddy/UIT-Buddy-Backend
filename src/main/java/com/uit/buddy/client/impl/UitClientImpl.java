@@ -46,8 +46,7 @@ public class UitClientImpl extends AbstractBaseClient implements UitClient {
     public UitClientImpl(@Qualifier("moodleClient") RestClient restClient, ObjectMapper objectMapper,
             @Value("${app.uit.moodle-server-path}") String moodleServerPath,
             @Value("${app.uit.rest-format}") String restFormat, MoodleResponseValidator moodleResponseValidator,
-            MoodleRateLimiter rateLimiter,
-            ApplicationContext applicationContext) {
+            MoodleRateLimiter rateLimiter, ApplicationContext applicationContext) {
         super(restClient, objectMapper);
         this.moodleServerPath = moodleServerPath;
         this.restFormat = restFormat;
