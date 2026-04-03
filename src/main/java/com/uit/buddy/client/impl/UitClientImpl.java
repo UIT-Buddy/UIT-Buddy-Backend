@@ -119,6 +119,7 @@ public class UitClientImpl extends AbstractBaseClient implements UitClient {
 
     @Retryable(retryFor = { ExternalClientException.class,
             RestClientException.class }, maxAttemptsExpression = "${moodle.retry.max-attempts:3}", backoff = @Backoff(delayExpression = "${moodle.retry.delay-ms:1000}", multiplierExpression = "${moodle.retry.multiplier:2}"))
+    @CircuitBreaker(name = "moodleAssignments", fallbackMethod = "fallbackGetCourseAssignments")
     @Override
     public AssignmentDetailResponse getCourseAssignments(String wstoken, String assignmentId) {
         try {
@@ -131,6 +132,12 @@ public class UitClientImpl extends AbstractBaseClient implements UitClient {
         } finally {
             rateLimiter.release();
         }
+    }
+
+    public AssignmentDetailResponse fallbackGetCourseAssignments(String wstoken, String assignmentId, Throwable t) {
+        log.warn("[UitClient] Circuit breaker OPEN for getCourseAssignments (assignmentId={}): {}",
+                assignmentId, t.getMessage());
+        return null;
     }
 
     @Recover

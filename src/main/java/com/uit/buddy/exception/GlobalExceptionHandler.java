@@ -1,6 +1,7 @@
 package com.uit.buddy.exception;
 
 import com.uit.buddy.dto.base.ErrorResponse;
+import com.uit.buddy.exception.client.ExternalClientException;
 import com.uit.buddy.exception.system.SystemErrorCode;
 import java.util.HashMap;
 import java.util.Map;
@@ -30,6 +31,35 @@ public class GlobalExceptionHandler {
         ErrorResponse response = new ErrorResponse(ex.getHttpStatus().value(), ex.getMessage(), ex.getCode());
 
         return ResponseEntity.status(ex.getHttpStatus()).body(response);
+    }
+
+    @ExceptionHandler(ExternalClientException.class)
+    public ResponseEntity<ErrorResponse> handleExternalClientException(ExternalClientException ex) {
+        log.warn("[ExternalClient] {} - {}", ex.getCode(), ex.getMessage());
+
+        ErrorResponse response = new ErrorResponse(ex.getHttpStatus().value(), ex.getMessage(), ex.getCode());
+
+        return ResponseEntity.status(ex.getHttpStatus()).body(response);
+    }
+
+    @ExceptionHandler(java.util.concurrent.CompletionException.class)
+    public ResponseEntity<ErrorResponse> handleCompletionException(java.util.concurrent.CompletionException ex) {
+        Throwable cause = ex.getCause();
+        if (cause instanceof BaseException baseEx) {
+            log.warn("[CompletionException] Unwrapped BaseException: {} - {}", baseEx.getCode(),
+                    baseEx.getMessage());
+
+            ErrorResponse response = new ErrorResponse(baseEx.getHttpStatus().value(), baseEx.getMessage(),
+                    baseEx.getCode());
+
+            return ResponseEntity.status(baseEx.getHttpStatus()).body(response);
+        }
+
+        log.error("[CompletionException] Unexpected wrapped exception: ", ex);
+        ErrorResponse response = new ErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR.value(),
+                SystemErrorCode.INTERNAL_ERROR.getMessage(), SystemErrorCode.INTERNAL_ERROR.getCode());
+
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
