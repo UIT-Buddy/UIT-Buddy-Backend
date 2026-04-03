@@ -4,10 +4,16 @@ import com.uit.buddy.entity.document.Folder;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface FolderRepository extends JpaRepository<Folder, UUID> {
     List<Folder> findByMssvAndParentId(String mssv, UUID parentId);
+
+    List<Folder> findByParentId(UUID parentId);
+
+    Page<Folder> findByParentId(UUID parentId, Pageable pageable);
 
     List<Folder> findByMssvAndParentIsNull(String mssv);
 
