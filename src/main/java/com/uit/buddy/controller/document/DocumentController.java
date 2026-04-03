@@ -4,8 +4,11 @@ import com.uit.buddy.controller.AbstractBaseController;
 import com.uit.buddy.dto.base.CreatedResponse;
 import com.uit.buddy.dto.base.PageResponse;
 import com.uit.buddy.dto.base.SingleResponse;
+import com.uit.buddy.dto.base.SuccessResponse;
 import com.uit.buddy.dto.request.document.CreateFileRequest;
 import com.uit.buddy.dto.request.document.CreateFolderRequest;
+import com.uit.buddy.dto.request.document.ShareResourceRequest;
+import com.uit.buddy.dto.request.document.UnshareResourceRequest;
 import com.uit.buddy.dto.response.document.DocumentFileResponse;
 import com.uit.buddy.dto.response.document.DocumentSearchResult;
 import com.uit.buddy.dto.response.document.ViewFolderDetailResponse;
@@ -22,6 +25,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -60,9 +64,13 @@ public class DocumentController extends AbstractBaseController {
     @GetMapping(value = "/folder")
     @Operation(summary = "View folder detail", description = "View detail of a folder including children folders and files")
     public ResponseEntity<SingleResponse<ViewFolderDetailResponse>> viewFolderDetail(
-            @AuthenticationPrincipal String mssv, @RequestParam(required = false) UUID folderId) {
+            @AuthenticationPrincipal String mssv, @RequestParam(required = false) UUID folderId,
+            @RequestParam(defaultValue = "1") int page, @RequestParam(defaultValue = "15") int limit,
+            @RequestParam(defaultValue = "desc") String sortType,
+            @RequestParam(defaultValue = "createdAt") String sortBy) {
         log.info("[GET /api/document/folder] Viewing folder detail for mssv: {} and folderId: {}", mssv, folderId);
-        ViewFolderDetailResponse response = documentService.viewFolderDetail(mssv, folderId);
+        Pageable pageable = createPageable(page, limit, sortType, sortBy);
+        ViewFolderDetailResponse response = documentService.viewFolderDetail(mssv, folderId, pageable);
         return successSingle(response, "Folder detail retrieved successfully");
     }
 
@@ -81,11 +89,44 @@ public class DocumentController extends AbstractBaseController {
     public ResponseEntity<PageResponse<DocumentSearchResult>> searchDocuments(@AuthenticationPrincipal String mssv,
             @RequestParam(defaultValue = "1") int page, @RequestParam(defaultValue = "15") int limit,
             @RequestParam(defaultValue = "desc") String sortType,
-            @RequestParam(defaultValue = "created_at") String sortBy, @RequestParam(required = false) String keyword) {
+            @RequestParam(defaultValue = "createdAt") String sortBy, @RequestParam(required = false) String keyword) {
         Pageable pageable = createPageable(page, limit, sortType, sortBy);
         log.info("[GET /api/document/search] Search documents for mssv {} with keyword '{}'", mssv, keyword);
         Page<DocumentSearchResult> response = documentService.searchDocuments(mssv, keyword, pageable);
         return paging(response, "Search documents successfully");
+    }
+
+    @GetMapping(value = "/shared-with-me")
+    @Operation(summary = "Search documents shared with me", description = "Search by document name across resources shared with current user")
+    public ResponseEntity<PageResponse<DocumentSearchResult>> searchSharedWithMe(@AuthenticationPrincipal String mssv,
+            @RequestParam(defaultValue = "1") int page, @RequestParam(defaultValue = "15") int limit,
+            @RequestParam(defaultValue = "desc") String sortType,
+            @RequestParam(defaultValue = "createdAt") String sortBy, @RequestParam(required = false) String keyword) {
+        Pageable pageable = createPageable(page, limit, sortType, sortBy);
+        log.info("[GET /api/document/shared-with-me] Search shared documents for mssv {} with keyword '{}'", mssv,
+                keyword);
+        Page<DocumentSearchResult> response = documentService.searchSharedWithMe(mssv, keyword, pageable);
+        return paging(response, "Search shared documents successfully");
+    }
+
+    @PostMapping(value = "/share")
+    @Operation(summary = "Share a resource", description = "Share a file or folder with another student")
+    public ResponseEntity<SuccessResponse> shareResource(@AuthenticationPrincipal String mssv,
+            @Valid @RequestBody ShareResourceRequest request) {
+        log.info("[POST /api/document/share] Sharing {} {} by mssv {}", request.resourceType(), request.resourceId(),
+                mssv);
+        documentService.shareResource(mssv, request);
+        return success("Resource shared successfully");
+    }
+
+    @DeleteMapping(value = "/share")
+    @Operation(summary = "Unshare a resource", description = "Revoke shared access to a file or folder for a student")
+    public ResponseEntity<SuccessResponse> unshareResource(@AuthenticationPrincipal String mssv,
+            @Valid @RequestBody UnshareResourceRequest request) {
+        log.info("[DELETE /api/document/share] Unsharing {} {} by mssv {}", request.resourceType(),
+                request.resourceId(), mssv);
+        documentService.unshareResource(mssv, request);
+        return success("Resource unshared successfully");
     }
 
 }
