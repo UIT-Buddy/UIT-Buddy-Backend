@@ -33,6 +33,8 @@ import com.uit.buddy.exception.user.UserException;
 import com.uit.buddy.mapper.schedule.ScheduleMapper;
 import com.uit.buddy.repository.academic.CourseRepository;
 import com.uit.buddy.repository.academic.CurriculumCourseRepository;
+import com.uit.buddy.repository.academic.MoodleEnrollmentCacheRepository;
+import com.uit.buddy.repository.academic.MoodleEnrollmentCacheRepository.CachedEnrollment;
 import com.uit.buddy.repository.academic.SemesterRepository;
 import com.uit.buddy.repository.academic.StudentSubjectClassRepository;
 import com.uit.buddy.repository.academic.SubjectClassRepository;
@@ -85,6 +87,7 @@ public class ScheduleServiceImpl implements ScheduleService {
     private final SemesterRepository semesterRepository;
     private final AssignmentService assignmentService;
     private final NotificationService notificationService;
+    private final MoodleEnrollmentCacheRepository enrollmentCache;
     private final UitClient uitClient;
     private final EncryptionUtils encryptionUtils;
     private final Executor executor;
@@ -96,8 +99,9 @@ public class ScheduleServiceImpl implements ScheduleService {
             CourseRepository courseRepository, CurriculumCourseRepository curriculumCourseRepository,
             AssignmentService assignmentService, SemesterRepository semesterRepository,
             TemporaryDeadlineRepository temporaryDeadlineRepository, NotificationService notificationService,
-            UitClient uitClient, EncryptionUtils encryptionUtils, StudentTaskRepository studentTaskRepository,
-            @Qualifier("uploadExecutor") Executor executor, ScheduleMapper scheduleMapper) {
+            MoodleEnrollmentCacheRepository enrollmentCache, UitClient uitClient, EncryptionUtils encryptionUtils,
+            StudentTaskRepository studentTaskRepository, @Qualifier("uploadExecutor") Executor executor,
+            ScheduleMapper scheduleMapper) {
         this.icsParser = icsParser;
         this.studentRepository = studentRepository;
         this.subjectClassRepository = subjectClassRepository;
@@ -107,6 +111,7 @@ public class ScheduleServiceImpl implements ScheduleService {
         this.semesterRepository = semesterRepository;
         this.temporaryDeadlineRepository = temporaryDeadlineRepository;
         this.notificationService = notificationService;
+        this.enrollmentCache = enrollmentCache;
         this.uitClient = uitClient;
         this.encryptionUtils = encryptionUtils;
         this.executor = executor;
@@ -156,7 +161,7 @@ public class ScheduleServiceImpl implements ScheduleService {
                 .orElseThrow(() -> new UserException(UserErrorCode.STUDENT_NOT_FOUND));
 
         String decryptedWstoken = encryptionUtils.decrypt(student.getEncryptedWstoken());
-        Map<String, List<CourseDetailResponse>> courseContents = getCourseContents(decryptedWstoken);
+        Map<String, List<CourseDetailResponse>> courseContents = getCourseContents(decryptedWstoken, mssv);
         List<CourseContentResponse> deadlines = extractDeadlinesForCourses(courseContents, decryptedWstoken, month,
                 year);
         List<StudentSubjectClass> savedMappings = studentSubjectClassRepository.findSubjectsByMssv(mssv);
@@ -179,10 +184,9 @@ public class ScheduleServiceImpl implements ScheduleService {
 
         String decryptedWstoken = encryptionUtils.decrypt(student.getEncryptedWstoken());
 
-        // Find the Moodle course ID from enrolled courses
-        SiteInfoResponse siteInfo = uitClient.fetchSiteInfo(decryptedWstoken);
-        Long userId = siteInfo.userid();
-        List<EnrolledCourseResponse> enrolledCourses = uitClient.getUserCourses(decryptedWstoken, userId);
+        // Find the Moodle course ID from enrolled courses (cached)
+        EnrolledCoursesResult result = getCachedEnrolledCourses(decryptedWstoken, mssv);
+        List<EnrolledCourseResponse> enrolledCourses = result.enrolledCourses();
 
         EnrolledCourseResponse targetCourse = enrolledCourses.stream()
                 .filter(c -> c.shortName().equalsIgnoreCase(classId)).findFirst()
@@ -489,7 +493,7 @@ public class ScheduleServiceImpl implements ScheduleService {
         Student student = studentRepository.findById(mssv)
                 .orElseThrow(() -> new UserException(UserErrorCode.STUDENT_NOT_FOUND));
         String decryptedWstoken = encryptionUtils.decrypt(student.getEncryptedWstoken());
-        Map<String, List<CourseDetailResponse>> courseContents = getCourseContents(decryptedWstoken);
+        Map<String, List<CourseDetailResponse>> courseContents = getCourseContents(decryptedWstoken, mssv);
         List<CourseContentResponse> deadlines = extractDeadlinesForCourses(courseContents, decryptedWstoken, month,
                 year);
         return deadlines;
@@ -534,10 +538,28 @@ public class ScheduleServiceImpl implements ScheduleService {
         return newDeadlines;
     }
 
-    private Map<String, List<CourseDetailResponse>> getCourseContents(String wstoken) {
-        SiteInfoResponse siteInfo = uitClient.fetchSiteInfo(wstoken);
-        Long userId = siteInfo.userid();
-        List<EnrolledCourseResponse> enrolledCourseResponses = uitClient.getUserCourses(wstoken, userId);
+    /**
+     * Returns (userId, enrolledCourses) from Redis cache if present; otherwise fetches from Moodle and caches for
+     * MOODLE_ENROLLMENT_CACHE_TTL_SECONDS. Falls back to a live Moodle call on any error.
+     */
+    private EnrolledCoursesResult getCachedEnrolledCourses(String decryptedWstoken, String mssv) {
+        return enrollmentCache.findByMssv(mssv)
+                .map(cache -> new EnrolledCoursesResult(cache.userId(), cache.enrolledCourses())).orElseGet(() -> {
+                    log.info("[Schedule Service] Enrollment cache miss for mssv={}, fetching from Moodle", mssv);
+                    SiteInfoResponse siteInfo = uitClient.fetchSiteInfo(decryptedWstoken);
+                    Long userId = siteInfo.userid();
+                    List<EnrolledCourseResponse> enrolledCourses = uitClient.getUserCourses(decryptedWstoken, userId);
+                    enrollmentCache.save(mssv, userId, enrolledCourses);
+                    return new EnrolledCoursesResult(userId, enrolledCourses);
+                });
+    }
+
+    private record EnrolledCoursesResult(Long userId, List<EnrolledCourseResponse> enrolledCourses) {
+    }
+
+    private Map<String, List<CourseDetailResponse>> getCourseContents(String wstoken, String mssv) {
+        EnrolledCoursesResult result = getCachedEnrolledCourses(wstoken, mssv);
+        List<EnrolledCourseResponse> enrolledCourseResponses = result.enrolledCourses();
 
         List<CompletableFuture<Map.Entry<String, List<CourseDetailResponse>>>> futures = new ArrayList<>();
 
