@@ -29,4 +29,16 @@ public interface ScheduleService {
     List<CourseContentResponse> fetchCourseDeadlinesFromMoodle(String mssv, Integer month, Integer year);
 
     List<TemporaryDeadline> getUpcomingDeadlines(String mssv);
+
+    /**
+     * Sync assignment deadlines from Moodle for all enrolled courses. Fetches course contents in parallel, then
+     * batch-fetches submission statuses in parallel. Falls back to date-only inference when Moodle is unavailable.
+     */
+    List<CourseCalendarResponse.Course> syncAssignments(String mssv, Integer month, Integer year);
+
+    /**
+     * Sync assignment deadlines for a single course (identified by classId). Fetches course detail and batch-fetches
+     * submission statuses for its modules in parallel. Used for lazy-loading deadlines per course.
+     */
+    CourseContentResponse syncCourseAssignments(String mssv, String classId, Integer month, Integer year);
 }
