@@ -120,21 +120,33 @@ public class UitClientImpl extends AbstractBaseClient implements UitClient {
         }
     }
 
-    @Retryable(retryFor = { ExternalClientException.class,
-            RestClientException.class }, maxAttemptsExpression = "${moodle.retry.max-attempts:3}", backoff = @Backoff(delayExpression = "${moodle.retry.delay-ms:1000}", multiplierExpression = "${moodle.retry.multiplier:2}"))
-    @CircuitBreaker(name = "moodleAssignments", fallbackMethod = "fallbackGetCourseAssignments")
+    /**
+     * Outer wrapper: acquires/releases rate-limiter permit around the entire call so that circuit-open
+     * calls (which bypass the method body entirely) do NOT leak permits.
+     */
     @Override
     public AssignmentDetailResponse getCourseAssignments(String wstoken, String assignmentId) {
         try {
             rateLimiter.acquire();
-            Map<String, String> queryParams = buildAssignmentSubmissionsParams(wstoken, assignmentId);
-            return get(moodleServerPath, AssignmentDetailResponse.class, queryParams, null);
+            return doGetCourseAssignments(wstoken, assignmentId);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new RuntimeException("Interrupted while waiting for rate limiter permit", e);
         } finally {
             rateLimiter.release();
         }
+    }
+
+    /**
+     * Inner method holds the resilience annotations. When the circuit is OPEN the fallback fires
+     * immediately — without running this method body — so acquire() is never called and no permit leaks.
+     */
+    @Retryable(retryFor = { ExternalClientException.class,
+            RestClientException.class }, maxAttemptsExpression = "${moodle.retry.max-attempts:3}", backoff = @Backoff(delayExpression = "${moodle.retry.delay-ms:1000}", multiplierExpression = "${moodle.retry.multiplier:2}"))
+    @CircuitBreaker(name = "moodleAssignments", fallbackMethod = "fallbackGetCourseAssignments")
+    private AssignmentDetailResponse doGetCourseAssignments(String wstoken, String assignmentId) {
+        Map<String, String> queryParams = buildAssignmentSubmissionsParams(wstoken, assignmentId);
+        return get(moodleServerPath, AssignmentDetailResponse.class, queryParams, null);
     }
 
     public AssignmentDetailResponse fallbackGetCourseAssignments(String wstoken, String assignmentId, Throwable t) {
