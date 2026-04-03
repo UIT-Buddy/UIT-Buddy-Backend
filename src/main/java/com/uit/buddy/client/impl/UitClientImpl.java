@@ -18,6 +18,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
+import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicReference;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -166,7 +167,7 @@ public class UitClientImpl extends AbstractBaseClient implements UitClient {
             CompletableFuture<Map.Entry<String, AssignmentDetailResponse>> f = CompletableFuture.supplyAsync(() -> {
                 AssignmentDetailResponse resp = uitClientProxy.getCourseAssignments(wstoken, assignmentId);
                 return Map.entry(assignmentId, resp);
-            }, uploadExecutor).exceptionally(ex -> {
+            }, ForkJoinPool.commonPool()).exceptionally(ex -> {
                 log.debug("[UitClient] getCourseAssignments exception for id={}: {}", assignmentId, ex.getMessage());
                 return Map.entry(assignmentId, (AssignmentDetailResponse) null);
             });
