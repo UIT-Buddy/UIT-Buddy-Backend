@@ -46,8 +46,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleCompletionException(java.util.concurrent.CompletionException ex) {
         Throwable cause = ex.getCause();
         if (cause instanceof BaseException baseEx) {
-            log.warn("[CompletionException] Unwrapped BaseException: {} - {}", baseEx.getCode(),
-                    baseEx.getMessage());
+            log.warn("[CompletionException] Unwrapped BaseException: {} - {}", baseEx.getCode(), baseEx.getMessage());
 
             ErrorResponse response = new ErrorResponse(baseEx.getHttpStatus().value(), baseEx.getMessage(),
                     baseEx.getCode());

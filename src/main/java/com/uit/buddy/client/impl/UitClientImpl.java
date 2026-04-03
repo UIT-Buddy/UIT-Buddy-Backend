@@ -12,9 +12,7 @@ import com.uit.buddy.dto.response.client.EnrolledCourseResponse;
 import com.uit.buddy.dto.response.client.SiteInfoResponse;
 import com.uit.buddy.exception.client.ExternalClientErrorCode;
 import com.uit.buddy.exception.client.ExternalClientException;
-
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
-
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -135,8 +133,8 @@ public class UitClientImpl extends AbstractBaseClient implements UitClient {
     }
 
     public AssignmentDetailResponse fallbackGetCourseAssignments(String wstoken, String assignmentId, Throwable t) {
-        log.warn("[UitClient] Circuit breaker OPEN for getCourseAssignments (assignmentId={}): {}",
-                assignmentId, t.getMessage());
+        log.warn("[UitClient] Circuit breaker OPEN for getCourseAssignments (assignmentId={}): {}", assignmentId,
+                t.getMessage());
         return null;
     }
 
