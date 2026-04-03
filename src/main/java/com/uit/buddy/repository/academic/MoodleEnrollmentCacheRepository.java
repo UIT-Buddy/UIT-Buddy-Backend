@@ -1,7 +1,6 @@
 package com.uit.buddy.repository.academic;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.uit.buddy.constant.ScheduleConstant;
 import com.uit.buddy.dto.response.client.EnrolledCourseResponse;
