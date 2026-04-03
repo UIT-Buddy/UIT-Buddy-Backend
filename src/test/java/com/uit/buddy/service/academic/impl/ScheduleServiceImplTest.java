@@ -155,11 +155,7 @@ class ScheduleServiceImplTest {
                         "09:00", "1", "3", "A101", "2024-09-01", "2024-12-01", 3, null));
 
         when(studentSubjectClassRepository.findAllByStudentMssvAndSemester(mssv, "2024.2")).thenReturn(classes);
-        when(studentRepository.findById(mssv)).thenReturn(Optional.of(student));
-        when(encryptionUtils.decrypt("encrypted")).thenReturn("ws-token");
-        when(uitClient.fetchSiteInfo("ws-token")).thenReturn(new SiteInfoResponse(1L, "u", "Student"));
-        when(uitClient.getUserCourses("ws-token", 1L)).thenReturn(List.<EnrolledCourseResponse> of());
-        when(scheduleMapper.toListCourseWithDeadlines(classes, List.of())).thenReturn(mappedCourses);
+        when(scheduleMapper.toListCourse(classes)).thenReturn(mappedCourses);
 
         CourseCalendarResponse result = scheduleService.fetchCourseCalendar(mssv, "2024", "2");
 
