@@ -173,8 +173,8 @@ public class AuthServiceImpl implements AuthService {
                     "Invalid account data. Please validate your token again.");
         }
 
-        // createCometChatUser(request.mssv(), pendingAccount.getFullName(), avatarUrl);
-        String cometAuthToken = "";
+        createCometChatUser(request.mssv(), pendingAccount.getFullName(), avatarUrl);
+        String cometAuthToken = createCometChatAuthToken(request.mssv());
 
         String homeClassCode = pendingAccount.getHomeClassCode();
         ensureHomeClassExists(homeClassCode, request.mssv());
