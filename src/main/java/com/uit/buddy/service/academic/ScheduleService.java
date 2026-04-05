@@ -7,7 +7,6 @@ import com.uit.buddy.dto.response.schedule.CourseCalendarResponse;
 import com.uit.buddy.dto.response.schedule.CourseContentResponse;
 import com.uit.buddy.dto.response.schedule.CreateDeadlineResponse;
 import com.uit.buddy.dto.response.schedule.DeadlineResponse;
-import com.uit.buddy.entity.learning.TemporaryDeadline;
 import java.util.List;
 import org.springframework.data.domain.Pageable;
 
@@ -20,15 +19,19 @@ public interface ScheduleService {
 
     CreateDeadlineResponse updateDeadline(String mssv, UpdateDeadlineRequest request);
 
+    /**
+     * Fetch deadlines for a student. Reads from TemporaryDeadline table (Moodle-sourced) and StudentTask table
+     * (personal/course-linked), then merges and paginates.
+     */
     DeadlineResponse fetchDeadline(String mssv, Integer month, Integer year, Pageable pageable);
 
-    DeadlineResponse fetchDeadlinesFromMoodle(String mssv, Integer month, Integer year, Pageable pageable);
-
+    /**
+     * Fetch deadlines from Moodle and sync status into TemporaryDeadline table. Compares fetched deadlines against
+     * existing records and updates status where changed.
+     */
     CourseCalendarResponse fetchCourseCalendar(String mssv, String year, String semester);
 
     List<CourseContentResponse> fetchCourseDeadlinesFromMoodle(String mssv, Integer month, Integer year);
-
-    List<TemporaryDeadline> getUpcomingDeadlines(String mssv);
 
     /**
      * Sync assignment deadlines from Moodle for all enrolled courses. Fetches course contents in parallel, then
@@ -41,4 +44,10 @@ public interface ScheduleService {
      * submission statuses for its modules in parallel. Used for lazy-loading deadlines per course.
      */
     CourseContentResponse syncCourseAssignments(String mssv, String classId, Integer month, Integer year);
+
+    /**
+     * Syncs all Moodle deadlines for the active semester into the TemporaryDeadline table. Called asynchronously after
+     * a user completes signup to pre-populate their deadline cache without blocking the response. Accepts
+     * encryptedWstoken to avoid a DB lookup that would fail because the signup transaction has not yet committed.
+     */
 }

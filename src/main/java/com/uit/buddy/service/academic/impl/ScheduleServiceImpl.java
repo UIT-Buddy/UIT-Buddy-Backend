@@ -34,7 +34,6 @@ import com.uit.buddy.mapper.schedule.ScheduleMapper;
 import com.uit.buddy.repository.academic.CourseRepository;
 import com.uit.buddy.repository.academic.CurriculumCourseRepository;
 import com.uit.buddy.repository.academic.MoodleEnrollmentCacheRepository;
-import com.uit.buddy.repository.academic.MoodleEnrollmentCacheRepository.CachedEnrollment;
 import com.uit.buddy.repository.academic.SemesterRepository;
 import com.uit.buddy.repository.academic.StudentSubjectClassRepository;
 import com.uit.buddy.repository.academic.SubjectClassRepository;
@@ -68,6 +67,7 @@ import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.domain.Pageable;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -162,11 +162,12 @@ public class ScheduleServiceImpl implements ScheduleService {
 
         String decryptedWstoken = encryptionUtils.decrypt(student.getEncryptedWstoken());
         Map<String, List<CourseDetailResponse>> courseContents = getCourseContents(decryptedWstoken, mssv);
-        List<CourseContentResponse> deadlines = extractDeadlinesForCourses(courseContents, decryptedWstoken, month,
-                year);
+        List<CourseContentResponse> deadlines = extractDeadlinesForCourses(mssv, courseContents, decryptedWstoken,
+                month, year);
         List<StudentSubjectClass> savedMappings = studentSubjectClassRepository.findSubjectsByMssv(mssv);
         List<CourseCalendarResponse.Course> courses = scheduleMapper.toListCourseWithDeadlines(savedMappings,
                 deadlines);
+        log.warn("Can not find subject for student: {}", mssv);
         courses = sortCourseDeadlineByDueDateDesc(courses);
 
         log.info("[Schedule Service] Assignment sync complete for student: {} ({} courses with deadlines)", mssv,
@@ -246,13 +247,78 @@ public class ScheduleServiceImpl implements ScheduleService {
 
     @Override
     public DeadlineResponse fetchDeadline(String mssv, Integer month, Integer year, Pageable pageable) {
-        List<CourseContentResponse> moodleTask = fetchCourseDeadlinesFromMoodle(mssv, month, year);
-        List<CourseContentResponse> studentTasks = assignmentService.getDeadlineWithMssv(mssv, month, year);
-        List<CourseContentResponse> joinedTask = new ArrayList<>(moodleTask);
+        Semester semester = getActiveSemester();
+        String semesterCode = semester.getSemesterCode();
+
+        // Read from TemporaryDeadline table scoped to semester and (optionally) month/year
+        List<TemporaryDeadline> savedDeadlines = (month != null && year != null)
+                ? temporaryDeadlineRepository.findByMssvAndSemesterCodeAndMonthAndYear(mssv, semesterCode, month, year)
+                : temporaryDeadlineRepository.findByMssvAndSemesterCodeAll(mssv, semesterCode);
+
+        List<CourseContentResponse> moodleDeadlines = savedDeadlines.stream()
+                .collect(Collectors.groupingBy(TemporaryDeadline::getClassCode)).entrySet().stream()
+                .map(entry -> new CourseContentResponse(entry.getKey(), entry.getValue().stream()
+                        .map(td -> new CourseContentResponse.exercise(td.getDeadlineName(), td.getDueDate(), null,
+                                td.getStatus() != null ? td.getStatus() : DeadlineStatus.UPCOMING, false))
+                        .toList()))
+                .toList();
+
+        // Read from StudentTask (personal/course-linked) scoped to current semester
+        List<CourseContentResponse> studentTasks = getCurrentSemesterDeadlines(mssv, month, year);
+
+        // Merge and paginate
+        List<CourseContentResponse> joinedTask = new ArrayList<>(moodleDeadlines);
         joinedTask.addAll(studentTasks);
         int totalDeadlines = joinedTask.stream().mapToInt(c -> c.exercises().size()).sum();
         List<CourseContentResponse> pagedCourseContents = paginateDeadlines(joinedTask, pageable);
         return new DeadlineResponse(totalDeadlines, pagedCourseContents);
+    }
+
+    /**
+     * Fetches personal/course-linked deadlines from StudentTask table that fall within the given semester's date range.
+     * Delegates to {@link AssignmentService} which uses a proper JOIN FETCH query, avoiding LazyInitializationException
+     * on SubjectClass.
+     */
+    private List<CourseContentResponse> getCurrentSemesterDeadlines(String mssv, Integer month, Integer year) {
+        return assignmentService.getDeadlineWithMssv(mssv, month, year);
+    }
+
+    private void syncDeadlinesToTable(String mssv, List<CourseContentResponse> freshDeadlines) {
+        Semester semester = getActiveSemester();
+        String semesterCode = semester != null ? semester.getSemesterCode() : null;
+
+        List<TemporaryDeadline> existing = temporaryDeadlineRepository.findByMssv(mssv);
+        Map<String, TemporaryDeadline> existingMap = existing.stream().collect(java.util.stream.Collectors
+                .toMap(td -> buildDeadlineKey(td.getClassCode(), td.getDeadlineName(), td.getDueDate()), td -> td));
+
+        List<TemporaryDeadline> toSave = new ArrayList<>();
+        for (CourseContentResponse course : freshDeadlines) {
+            String classCode = course.courseName() == null || course.courseName().isBlank()
+                    ? ScheduleConstant.UNKNOWN_CLASS_CODE : course.courseName();
+            for (CourseContentResponse.exercise exercise : course.exercises()) {
+                if (exercise.dueDate() == null || exercise.exerciseName() == null || exercise.exerciseName().isBlank())
+                    continue;
+                // Always resolve status from due date (mirrors mapDeadlineStatus in ScheduleMapper)
+                String key = buildDeadlineKey(classCode, exercise.exerciseName(), exercise.dueDate());
+                TemporaryDeadline existingTd = existingMap.get(key);
+                if (existingTd == null) {
+                    toSave.add(TemporaryDeadline.builder().mssv(mssv).classCode(classCode)
+                            .deadlineName(exercise.exerciseName()).dueDate(exercise.dueDate()).status(exercise.status())
+                            .semesterCode(semesterCode).build());
+                } else if (!java.util.Objects.equals(existingTd.getStatus(), exercise.status())) {
+                    existingTd.setStatus(exercise.status());
+                    toSave.add(existingTd);
+                }
+            }
+        }
+        if (!toSave.isEmpty()) {
+            temporaryDeadlineRepository.saveAll(toSave);
+        }
+    }
+
+    private String buildDeadlineKey(String classCode, String deadlineName, LocalDateTime dueDate) {
+        return String.format("%s|%s|%s", classCode == null ? "" : classCode.trim().toLowerCase(),
+                deadlineName == null ? "" : deadlineName.trim().toLowerCase(), dueDate);
     }
 
     @Override
@@ -270,26 +336,6 @@ public class ScheduleServiceImpl implements ScheduleService {
         studentTaskRepository.save(studentTask);
 
         return scheduleMapper.toCreateDeadlineResponse(studentTask);
-    }
-
-    private String buildTemporaryDeadlineKey(TemporaryDeadline deadline) {
-        return buildTemporaryDeadlineKey(deadline.getClassCode(), deadline.getDeadlineName(), deadline.getDueDate());
-    }
-
-    private String buildTemporaryDeadlineKey(String classCode, String deadlineName, LocalDateTime dueDate) {
-        return String.format("%s|%s|%s", normalizeDeadlineKeyPart(classCode), normalizeDeadlineKeyPart(deadlineName),
-                dueDate);
-    }
-
-    private String resolveClassCode(CourseContentResponse courseContent) {
-        if (courseContent == null || courseContent.courseName() == null || courseContent.courseName().isBlank()) {
-            return ScheduleConstant.UNKNOWN_CLASS_CODE;
-        }
-        return courseContent.courseName();
-    }
-
-    private String normalizeDeadlineKeyPart(String value) {
-        return value == null ? "" : value.trim().toLowerCase();
     }
 
     @Override
@@ -311,14 +357,6 @@ public class ScheduleServiceImpl implements ScheduleService {
         List<CourseCalendarResponse.Course> courses = scheduleMapper.toListCourse(studentClasses);
         courses = sortCoursesByClassCode(courses);
         return new CourseCalendarResponse(courses.size(), semester, year, courses);
-    }
-
-    @Override
-    public DeadlineResponse fetchDeadlinesFromMoodle(String mssv, Integer month, Integer year, Pageable pageable) {
-        List<CourseContentResponse> allCourseContents = fetchCourseDeadlinesFromMoodle(mssv, month, year);
-        int totalDeadlines = allCourseContents.stream().mapToInt(c -> c.exercises().size()).sum();
-        List<CourseContentResponse> pagedCourseContents = paginateDeadlines(allCourseContents, pageable);
-        return new DeadlineResponse(totalDeadlines, pagedCourseContents);
     }
 
     private List<StudentSubjectClass> saveScheduleData(Student student, List<IcsEvent> events) {
@@ -493,49 +531,13 @@ public class ScheduleServiceImpl implements ScheduleService {
         Student student = studentRepository.findById(mssv)
                 .orElseThrow(() -> new UserException(UserErrorCode.STUDENT_NOT_FOUND));
         String decryptedWstoken = encryptionUtils.decrypt(student.getEncryptedWstoken());
-        Map<String, List<CourseDetailResponse>> courseContents = getCourseContents(decryptedWstoken, mssv);
-        List<CourseContentResponse> deadlines = extractDeadlinesForCourses(courseContents, decryptedWstoken, month,
-                year);
-        return deadlines;
+        return fetchCourseDeadlinesFromMoodleWithToken(mssv, decryptedWstoken, month, year);
     }
 
-    @Override
-    public List<TemporaryDeadline> getUpcomingDeadlines(String mssv) {
-        LocalDate now = LocalDate.now();
-        Integer currentMonth = now.getMonthValue();
-        Integer currentYear = now.getYear();
-        List<CourseContentResponse> moodleDeadlines = fetchCourseDeadlinesFromMoodle(mssv, currentMonth, currentYear);
-
-        // Build list of all upcoming deadlines from Moodle
-        List<TemporaryDeadline> allUpcomingDeadlines = new ArrayList<>();
-        for (CourseContentResponse courseContent : moodleDeadlines) {
-            String classCode = courseContent.courseName() == null || courseContent.courseName().isBlank()
-                    ? ScheduleConstant.UNKNOWN_CLASS_CODE : courseContent.courseName();
-            for (CourseContentResponse.exercise exercise : courseContent.exercises()) {
-                if (exercise.dueDate() != null && exercise.exerciseName() != null
-                        && !exercise.exerciseName().isBlank()) {
-                    allUpcomingDeadlines.add(TemporaryDeadline.builder().mssv(mssv).classCode(classCode)
-                            .deadlineName(exercise.exerciseName()).dueDate(exercise.dueDate()).build());
-                }
-            }
-        }
-
-        Set<String> existingKeys = temporaryDeadlineRepository.findByMssv(mssv).stream()
-                .map(this::buildTemporaryDeadlineKey).collect(Collectors.toSet());
-
-        List<TemporaryDeadline> newDeadlines = new ArrayList<>();
-        for (TemporaryDeadline deadline : allUpcomingDeadlines) {
-            String key = buildTemporaryDeadlineKey(deadline);
-            if (!existingKeys.contains(key)) {
-                newDeadlines.add(deadline);
-            }
-        }
-
-        if (!newDeadlines.isEmpty()) {
-            temporaryDeadlineRepository.saveAll(newDeadlines);
-        }
-
-        return newDeadlines;
+    private List<CourseContentResponse> fetchCourseDeadlinesFromMoodleWithToken(String mssv, String decryptedWstoken,
+            Integer month, Integer year) {
+        Map<String, List<CourseDetailResponse>> courseContents = getCourseContents(decryptedWstoken, mssv);
+        return extractDeadlinesForCourses(mssv, courseContents, decryptedWstoken, month, year);
     }
 
     /**
@@ -577,7 +579,7 @@ public class ScheduleServiceImpl implements ScheduleService {
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     }
 
-    private List<CourseContentResponse> extractDeadlinesForCourses(
+    private List<CourseContentResponse> extractDeadlinesForCourses(String mssv,
             Map<String, List<CourseDetailResponse>> courseContents, String decryptedWstoken, Integer month,
             Integer year) {
         List<CompletableFuture<CourseContentResponse>> futures = new ArrayList<>();
@@ -589,16 +591,19 @@ public class ScheduleServiceImpl implements ScheduleService {
             futures.add(CompletableFuture
                     .supplyAsync(() -> extractDeadlinesForCourse(courseName, details, decryptedWstoken, month, year)));
         }
-        return futures.stream().map(CompletableFuture::join)
+        List<CourseContentResponse> freshDeadlines = futures.stream().map(CompletableFuture::join)
                 .filter(courseContent -> !courseContent.exercises().isEmpty()).toList();
+        if (!freshDeadlines.isEmpty()) {
+            syncDeadlinesToTable(mssv, freshDeadlines);
+        }
+        return freshDeadlines;
     }
 
     private CourseContentResponse extractDeadlinesForCourse(String courseName, List<CourseDetailResponse> details,
             String decryptedWstoken, Integer month, Integer year) {
-        // ── Pass 1: collect all modules that have deadlines and match the filter ──────
         List<ModuleWithDate> modulesWithDueDates = new ArrayList<>();
         for (CourseDetailResponse detail : details) {
-            if (hasNoDeadline(detail)) {
+            if (detailHasDeadline(detail)) {
                 continue;
             }
 
@@ -698,14 +703,14 @@ public class ScheduleServiceImpl implements ScheduleService {
 
     private boolean hasNoDeadline(List<CourseDetailResponse> details) {
         for (CourseDetailResponse detail : details) {
-            if (!hasNoDeadline(detail)) {
+            if (!detailHasDeadline(detail)) {
                 return false;
             }
         }
         return true;
     }
 
-    private boolean hasNoDeadline(CourseDetailResponse detail) {
+    private boolean detailHasDeadline(CourseDetailResponse detail) {
         if (detail.moduleResponse() == null)
             return true;
         for (var module : detail.moduleResponse()) {
@@ -850,6 +855,7 @@ public class ScheduleServiceImpl implements ScheduleService {
             } else {
                 credits = curriculumCourseRepository.findCreditsForClass(courseCode, majorCode, academicStartYear);
             }
+
             studentClass.setCredits(credits != null ? credits : 0);
         }
     }
@@ -922,4 +928,9 @@ public class ScheduleServiceImpl implements ScheduleService {
         return courses.stream().sorted(Comparator.comparing(CourseCalendarResponse.Course::courseCode,
                 Comparator.nullsLast(Comparator.naturalOrder()))).toList();
     }
+
+    /**
+     * Syncs all Moodle deadlines for the active semester into the TemporaryDeadline table. Runs asynchronously after
+     * signup to pre-populate the deadline cache without blocking the auth response.
+     */
 }

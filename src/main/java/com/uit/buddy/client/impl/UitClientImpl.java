@@ -12,6 +12,8 @@ import com.uit.buddy.dto.response.client.EnrolledCourseResponse;
 import com.uit.buddy.dto.response.client.SiteInfoResponse;
 import com.uit.buddy.exception.client.ExternalClientErrorCode;
 import com.uit.buddy.exception.client.ExternalClientException;
+import com.uit.buddy.exception.user.UserErrorCode;
+import com.uit.buddy.exception.user.UserException;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import java.util.HashMap;
 import java.util.List;
@@ -60,16 +62,19 @@ public class UitClientImpl extends AbstractBaseClient implements UitClient {
         moodleResponseValidator.validate(response);
     }
 
-    @Retryable(retryFor = { ExternalClientException.class,
-            RestClientException.class }, maxAttemptsExpression = "${moodle.retry.max-attempts:3}", backoff = @Backoff(delayExpression = "${moodle.retry.delay-ms:1000}", multiplierExpression = "${moodle.retry.multiplier:2}"))
-    @CircuitBreaker(name = "moodle", fallbackMethod = "fallbackGetSiteInfo")
     @Override
     public SiteInfoResponse fetchSiteInfo(String wstoken) {
         try {
             rateLimiter.acquire();
             Map<String, String> queryParams = buildBaseParams(wstoken, MoodleApiConstants.FUNCTION_GET_SITE_INFO);
-            SiteInfoResponse response = get(moodleServerPath, SiteInfoResponse.class, queryParams, null);
-            siteInfoCache.set(response);
+            SiteInfoResponse response = null;
+            try {
+                response = get(moodleServerPath, SiteInfoResponse.class, queryParams, null);
+
+            } catch (ExternalClientException e) {
+                log.error("Failed to fetch site info with provided wstoken", e);
+                throw new UserException(UserErrorCode.INVALID_WSTOKEN);
+            }
             return response;
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
@@ -77,11 +82,6 @@ public class UitClientImpl extends AbstractBaseClient implements UitClient {
         } finally {
             rateLimiter.release();
         }
-    }
-
-    public SiteInfoResponse fallbackGetSiteInfo(String wstoken, Throwable t) {
-        log.warn("Circuit breaker OPEN for Moodle. Returning stale cache.", t);
-        return siteInfoCache.get();
     }
 
     @Retryable(retryFor = { ExternalClientException.class,
