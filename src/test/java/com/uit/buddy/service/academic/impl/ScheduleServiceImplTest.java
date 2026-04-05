@@ -24,10 +24,15 @@ import com.uit.buddy.exception.user.UserException;
 import com.uit.buddy.mapper.schedule.ScheduleMapper;
 import com.uit.buddy.repository.academic.CourseRepository;
 import com.uit.buddy.repository.academic.CurriculumCourseRepository;
+import com.uit.buddy.repository.academic.MoodleEnrollmentCacheRepository;
 import com.uit.buddy.repository.academic.SemesterRepository;
 import com.uit.buddy.repository.academic.StudentSubjectClassRepository;
 import com.uit.buddy.repository.academic.SubjectClassRepository;
+import com.uit.buddy.repository.learning.StudentTaskRepository;
+import com.uit.buddy.repository.learning.TemporaryDeadlineRepository;
 import com.uit.buddy.repository.user.StudentRepository;
+import com.uit.buddy.service.learning.AssignmentService;
+import com.uit.buddy.service.notification.NotificationService;
 import com.uit.buddy.util.EncryptionUtils;
 import com.uit.buddy.util.IcsParser;
 import com.uit.buddy.util.IcsParser.ParseResult;
@@ -73,6 +78,16 @@ class ScheduleServiceImplTest {
     private Executor executor;
     @Mock
     private ScheduleMapper scheduleMapper;
+    @Mock
+    private StudentTaskRepository studentTaskRepository;
+    @Mock
+    private TemporaryDeadlineRepository temporaryDeadlineRepository;
+    @Mock
+    private AssignmentService assignmentService;
+    @Mock
+    private NotificationService notificationService;
+    @Mock
+    private MoodleEnrollmentCacheRepository enrollmentCache;
 
     @InjectMocks
     private ScheduleServiceImpl scheduleService;
@@ -155,11 +170,7 @@ class ScheduleServiceImplTest {
                         "09:00", "1", "3", "A101", "2024-09-01", "2024-12-01", 3, null));
 
         when(studentSubjectClassRepository.findAllByStudentMssvAndSemester(mssv, "2024.2")).thenReturn(classes);
-        when(studentRepository.findById(mssv)).thenReturn(Optional.of(student));
-        when(encryptionUtils.decrypt("encrypted")).thenReturn("ws-token");
-        when(uitClient.fetchSiteInfo("ws-token")).thenReturn(new SiteInfoResponse(1L, "u", "Student"));
-        when(uitClient.getUserCourses("ws-token", 1L)).thenReturn(List.<EnrolledCourseResponse> of());
-        when(scheduleMapper.toListCourseWithDeadlines(classes, List.of())).thenReturn(mappedCourses);
+        when(scheduleMapper.toListCourse(classes)).thenReturn(mappedCourses);
 
         CourseCalendarResponse result = scheduleService.fetchCourseCalendar(mssv, "2024", "2");
 
