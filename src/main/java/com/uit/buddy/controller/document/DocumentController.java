@@ -11,10 +11,12 @@ import com.uit.buddy.dto.request.document.ShareResourceRequest;
 import com.uit.buddy.dto.request.document.ShareResourceViaMessageRequest;
 import com.uit.buddy.dto.request.document.UnshareResourceRequest;
 import com.uit.buddy.dto.request.document.UpdateFileRequest;
+import com.uit.buddy.dto.request.document.UpdateFolderRequest;
 import com.uit.buddy.dto.response.document.DocumentFileResponse;
 import com.uit.buddy.dto.response.document.DocumentSearchResult;
 import com.uit.buddy.dto.response.document.SharedFolderResponse;
 import com.uit.buddy.dto.response.document.SharedUserResponse;
+import com.uit.buddy.dto.response.document.UpdateFolderResponse;
 import com.uit.buddy.dto.response.document.ViewFolderDetailResponse;
 import com.uit.buddy.enums.DocumentResourceType;
 import com.uit.buddy.service.document.DocumentService;
@@ -40,8 +42,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import com.uit.buddy.dto.request.document.UpdateFolderRequest;
-import com.uit.buddy.dto.response.document.UpdateFolderResponse;
 
 @RestController
 @RequestMapping("/api/document")

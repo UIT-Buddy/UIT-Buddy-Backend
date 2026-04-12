@@ -48,6 +48,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -285,7 +286,6 @@ public class DocumentServiceImpl implements DocumentService {
     public DocumentFileResponse updateDocument(String mssv, UUID documentId, UpdateFileRequest request) {
         Document document = documentRepository.findByIdAndMssv(documentId, mssv)
                 .orElseThrow(() -> new DocumentException(DocumentErrorCode.FILE_NOT_FOUND));
-
         String newFileName = request.fileName().trim();
         if (!newFileName.equalsIgnoreCase(document.getFileName())) {
             boolean nameExists = documentRepository.existsByFolderIdAndFileNameIgnoreCase(document.getFolderId(),
