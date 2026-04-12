@@ -1,24 +1,5 @@
 package com.uit.buddy.controller.document;
 
-import java.util.List;
-import java.util.UUID;
-
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.ModelAttribute;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
-
 import com.uit.buddy.controller.AbstractBaseController;
 import com.uit.buddy.dto.base.CreatedResponse;
 import com.uit.buddy.dto.base.PageResponse;
@@ -35,12 +16,28 @@ import com.uit.buddy.dto.response.document.SharedUserResponse;
 import com.uit.buddy.dto.response.document.ViewFolderDetailResponse;
 import com.uit.buddy.enums.DocumentResourceType;
 import com.uit.buddy.service.document.DocumentService;
-
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import java.util.List;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/document")
@@ -156,14 +153,13 @@ public class DocumentController extends AbstractBaseController {
 
     @GetMapping(value = "/shared-user/{resourceType}/{resourceId}")
     @Operation(summary = "Get shared users", description = "View list of users a file or folder is shared with")
-    public ResponseEntity<PageResponse<SharedUserResponse>> getSharedUsers(
-            @AuthenticationPrincipal String mssv, @PathVariable DocumentResourceType resourceType,
-            @PathVariable UUID resourceId,
+    public ResponseEntity<PageResponse<SharedUserResponse>> getSharedUsers(@AuthenticationPrincipal String mssv,
+            @PathVariable DocumentResourceType resourceType, @PathVariable UUID resourceId,
             @RequestParam(defaultValue = "1") int page, @RequestParam(defaultValue = "15") int limit,
             @RequestParam(defaultValue = "desc") String sortType,
             @RequestParam(defaultValue = "sharedAt") String sortBy) {
-        log.info("[GET /api/document/shared-user/{}/{}] Getting shared users by mssv {}", resourceType,
-                resourceId, mssv);
+        log.info("[GET /api/document/shared-user/{}/{}] Getting shared users by mssv {}", resourceType, resourceId,
+                mssv);
         Pageable pageable = createPageable(page, limit, sortType, sortBy);
         Page<SharedUserResponse> response = documentService.getSharedUsers(mssv, resourceType, resourceId, pageable);
         return paging(response, "Shared users retrieved successfully");

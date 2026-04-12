@@ -1,24 +1,5 @@
 package com.uit.buddy.service.document.impl;
 
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
-
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.multipart.MultipartFile;
-
 import com.uit.buddy.constant.StorageConstants;
 import com.uit.buddy.dto.request.document.CreateFileRequest;
 import com.uit.buddy.dto.request.document.CreateFolderRequest;
@@ -51,9 +32,25 @@ import com.uit.buddy.repository.document.ShareFolderRepository;
 import com.uit.buddy.repository.user.StudentRepository;
 import com.uit.buddy.service.document.DocumentService;
 import com.uit.buddy.service.file.FileService;
-
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 @Service
 @RequiredArgsConstructor
@@ -266,7 +263,7 @@ public class DocumentServiceImpl implements DocumentService {
     public DocumentFileResponse updateDocument(String mssv, UUID documentId, UpdateFileRequest request) {
         Document document = documentRepository.findByIdAndMssv(documentId, mssv)
                 .orElseThrow(() -> new DocumentException(DocumentErrorCode.FILE_NOT_FOUND));
-        
+
         String newFileName = request.fileName().trim();
         if (!newFileName.equalsIgnoreCase(document.getFileName())) {
             boolean nameExists = documentRepository.existsByFolderIdAndFileNameIgnoreCase(document.getFolderId(),
@@ -279,8 +276,8 @@ public class DocumentServiceImpl implements DocumentService {
 
         if (request.folderId() != null && !request.folderId().equals(document.getFolderId())) {
             Folder targetFolder = findOwnedFolder(mssv, request.folderId());
-            boolean nameExistsInTarget = documentRepository.existsByFolderIdAndFileNameIgnoreCase(
-                    request.folderId(), newFileName, documentId);
+            boolean nameExistsInTarget = documentRepository.existsByFolderIdAndFileNameIgnoreCase(request.folderId(),
+                    newFileName, documentId);
             if (nameExistsInTarget) {
                 throw new DocumentException(DocumentErrorCode.FILE_ALREADY_EXISTS);
             }

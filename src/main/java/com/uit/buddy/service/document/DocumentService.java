@@ -28,7 +28,8 @@ public interface DocumentService {
 
     Page<DocumentSearchResult> searchSharedWithMe(String mssv, String keyword, Pageable pageable);
 
-    Page<SharedUserResponse> getSharedUsers(String mssv, DocumentResourceType resourceType, UUID resourceId, Pageable pageable);
+    Page<SharedUserResponse> getSharedUsers(String mssv, DocumentResourceType resourceType, UUID resourceId,
+            Pageable pageable);
 
     void shareResource(String mssv, ShareResourceRequest request);
 
