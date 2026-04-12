@@ -135,6 +135,14 @@ public class S3FileServiceImpl implements FileService {
     }
 
     @Override
+    public void deleteDocument(String fileUrl) {
+        String key = extractKeyFromUrl(fileUrl);
+        if (key != null) {
+            deleteObject(key);
+        }
+    }
+
+    @Override
     public List<DocumentUploadResult> uploadMultipleDocuments(List<MultipartFile> files) {
         if (files == null || files.isEmpty()) {
             return Collections.emptyList();

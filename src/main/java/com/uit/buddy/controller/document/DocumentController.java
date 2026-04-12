@@ -9,9 +9,12 @@ import com.uit.buddy.dto.request.document.CreateFileRequest;
 import com.uit.buddy.dto.request.document.CreateFolderRequest;
 import com.uit.buddy.dto.request.document.ShareResourceRequest;
 import com.uit.buddy.dto.request.document.UnshareResourceRequest;
+import com.uit.buddy.dto.request.document.UpdateFileRequest;
 import com.uit.buddy.dto.response.document.DocumentFileResponse;
 import com.uit.buddy.dto.response.document.DocumentSearchResult;
+import com.uit.buddy.dto.response.document.SharedUserResponse;
 import com.uit.buddy.dto.response.document.ViewFolderDetailResponse;
+import com.uit.buddy.enums.DocumentResourceType;
 import com.uit.buddy.service.document.DocumentService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -30,6 +33,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -72,6 +76,24 @@ public class DocumentController extends AbstractBaseController {
         Pageable pageable = createPageable(page, limit, sortType, sortBy);
         ViewFolderDetailResponse response = documentService.viewFolderDetail(mssv, folderId, pageable);
         return successSingle(response, "Folder detail retrieved successfully");
+    }
+
+    @PutMapping(value = "/{documentId}")
+    @Operation(summary = "Update file", description = "Rename a file or move it to another folder")
+    public ResponseEntity<SingleResponse<DocumentFileResponse>> updateDocument(@AuthenticationPrincipal String mssv,
+            @PathVariable UUID documentId, @Valid @RequestBody UpdateFileRequest request) {
+        log.info("[PUT /api/document/{}] Updating file for mssv: {}", documentId, mssv);
+        DocumentFileResponse response = documentService.updateDocument(mssv, documentId, request);
+        return successSingle(response, "File updated successfully");
+    }
+
+    @DeleteMapping(value = "/{documentId}")
+    @Operation(summary = "Delete file", description = "Delete a file and its storage object")
+    public ResponseEntity<SuccessResponse> deleteDocument(@AuthenticationPrincipal String mssv,
+            @PathVariable UUID documentId) {
+        log.info("[DELETE /api/document/{}] Deleting file for mssv: {}", documentId, mssv);
+        documentService.deleteDocument(mssv, documentId);
+        return success("File deleted successfully");
     }
 
     @GetMapping(value = "/download/{fileId}")
@@ -127,6 +149,20 @@ public class DocumentController extends AbstractBaseController {
                 request.resourceId(), mssv);
         documentService.unshareResource(mssv, request);
         return success("Resource unshared successfully");
+    }
+
+    @GetMapping(value = "/shared-user/{resourceType}/{resourceId}")
+    @Operation(summary = "Get shared users", description = "View list of users a file or folder is shared with")
+    public ResponseEntity<PageResponse<SharedUserResponse>> getSharedUsers(@AuthenticationPrincipal String mssv,
+            @PathVariable DocumentResourceType resourceType, @PathVariable UUID resourceId,
+            @RequestParam(defaultValue = "1") int page, @RequestParam(defaultValue = "15") int limit,
+            @RequestParam(defaultValue = "desc") String sortType,
+            @RequestParam(defaultValue = "sharedAt") String sortBy) {
+        log.info("[GET /api/document/shared-user/{}/{}] Getting shared users by mssv {}", resourceType, resourceId,
+                mssv);
+        Pageable pageable = createPageable(page, limit, sortType, sortBy);
+        Page<SharedUserResponse> response = documentService.getSharedUsers(mssv, resourceType, resourceId, pageable);
+        return paging(response, "Shared users retrieved successfully");
     }
 
 }

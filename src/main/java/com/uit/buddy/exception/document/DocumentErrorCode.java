@@ -17,7 +17,8 @@ public enum DocumentErrorCode {
     RECIPIENT_NOT_FOUND("DOC_007", "Recipient student not found", HttpStatus.NOT_FOUND),
     INVALID_SHARE_ROLE("DOC_008", "Invalid share role", HttpStatus.BAD_REQUEST),
     INVALID_SHARE_RESOURCE_TYPE("DOC_009", "Invalid share resource type", HttpStatus.BAD_REQUEST),
-    SHARE_NOT_FOUND("DOC_010", "Share not found", HttpStatus.NOT_FOUND);
+    SHARE_NOT_FOUND("DOC_010", "Share not found", HttpStatus.NOT_FOUND),
+    FILE_ALREADY_EXISTS("DOC_011", "File name already exists in this folder", HttpStatus.BAD_REQUEST);
 
     private final String code;
     private final String message;

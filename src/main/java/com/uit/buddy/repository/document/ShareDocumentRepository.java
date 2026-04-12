@@ -14,4 +14,6 @@ public interface ShareDocumentRepository extends JpaRepository<ShareDocument, UU
     boolean existsByDocumentIdAndMssv(UUID documentId, String mssv);
 
     long deleteByDocumentIdAndMssv(UUID documentId, String mssv);
+
+    List<ShareDocument> findByDocumentId(UUID documentId);
 }
