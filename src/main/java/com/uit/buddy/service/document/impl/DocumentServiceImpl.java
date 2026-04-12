@@ -1,13 +1,34 @@
 package com.uit.buddy.service.document.impl;
 
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
+
 import com.uit.buddy.constant.StorageConstants;
 import com.uit.buddy.dto.request.document.CreateFileRequest;
 import com.uit.buddy.dto.request.document.CreateFolderRequest;
 import com.uit.buddy.dto.request.document.ShareResourceRequest;
 import com.uit.buddy.dto.request.document.UnshareResourceRequest;
+import com.uit.buddy.dto.request.document.UpdateFileRequest;
 import com.uit.buddy.dto.response.document.DocumentFileResponse;
 import com.uit.buddy.dto.response.document.DocumentSearchResult;
 import com.uit.buddy.dto.response.document.DocumentUploadResult;
+import com.uit.buddy.dto.response.document.SharedUserResponse;
 import com.uit.buddy.dto.response.document.ViewFolderDetailResponse;
 import com.uit.buddy.dto.response.document.ViewFolderDetailResponse.FileResponse;
 import com.uit.buddy.dto.response.document.ViewFolderDetailResponse.PaginationMeta;
@@ -22,6 +43,7 @@ import com.uit.buddy.exception.document.DocumentException;
 import com.uit.buddy.exception.user.UserErrorCode;
 import com.uit.buddy.exception.user.UserException;
 import com.uit.buddy.mapper.document.DocumentMapper;
+import com.uit.buddy.mapper.user.StudentMapper;
 import com.uit.buddy.repository.document.DocumentRepository;
 import com.uit.buddy.repository.document.FolderRepository;
 import com.uit.buddy.repository.document.ShareDocumentRepository;
@@ -29,25 +51,9 @@ import com.uit.buddy.repository.document.ShareFolderRepository;
 import com.uit.buddy.repository.user.StudentRepository;
 import com.uit.buddy.service.document.DocumentService;
 import com.uit.buddy.service.file.FileService;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.multipart.MultipartFile;
 
 @Service
 @RequiredArgsConstructor
@@ -61,6 +67,7 @@ public class DocumentServiceImpl implements DocumentService {
     private final StudentRepository studentRepository;
     private final FileService fileService;
     private final DocumentMapper documentMapper;
+    private final StudentMapper studentMapper;
 
     @Override
     @Transactional
@@ -246,6 +253,58 @@ public class DocumentServiceImpl implements DocumentService {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public Page<SharedUserResponse> getSharedUsers(String mssv, DocumentResourceType resourceType, UUID resourceId,
+            Pageable pageable) {
+        validateOwnership(mssv, resourceType, resourceId);
+        List<SharedUserResponse> all = fetchSharedUsers(resourceType, resourceId);
+        return new PageImpl<>(all, pageable, all.size());
+    }
+
+    @Override
+    @Transactional
+    public DocumentFileResponse updateDocument(String mssv, UUID documentId, UpdateFileRequest request) {
+        Document document = documentRepository.findByIdAndMssv(documentId, mssv)
+                .orElseThrow(() -> new DocumentException(DocumentErrorCode.FILE_NOT_FOUND));
+        
+        String newFileName = request.fileName().trim();
+        if (!newFileName.equalsIgnoreCase(document.getFileName())) {
+            boolean nameExists = documentRepository.existsByFolderIdAndFileNameIgnoreCase(document.getFolderId(),
+                    newFileName, documentId);
+            if (nameExists) {
+                throw new DocumentException(DocumentErrorCode.FILE_ALREADY_EXISTS);
+            }
+            document.setFileName(newFileName);
+        }
+
+        if (request.folderId() != null && !request.folderId().equals(document.getFolderId())) {
+            Folder targetFolder = findOwnedFolder(mssv, request.folderId());
+            boolean nameExistsInTarget = documentRepository.existsByFolderIdAndFileNameIgnoreCase(
+                    request.folderId(), newFileName, documentId);
+            if (nameExistsInTarget) {
+                throw new DocumentException(DocumentErrorCode.FILE_ALREADY_EXISTS);
+            }
+            document.setFolder(targetFolder);
+        }
+
+        document = documentRepository.save(document);
+        return documentMapper.toDocumentFileResponse(document);
+    }
+
+    @Override
+    @Transactional
+    public void deleteDocument(String mssv, UUID documentId) {
+        Document document = documentRepository.findByIdAndMssv(documentId, mssv)
+                .orElseThrow(() -> new DocumentException(DocumentErrorCode.FILE_NOT_FOUND));
+
+        // Delete S3 object
+        fileService.deleteDocument(document.getFileUrl());
+
+        // Delete DB record (cascades to share_document)
+        documentRepository.delete(document);
+    }
+
+    @Override
     @Transactional
     public void shareResource(String mssv, ShareResourceRequest request) {
         validateShareTarget(mssv, request.targetMssv());
@@ -426,5 +485,34 @@ public class DocumentServiceImpl implements DocumentService {
         return folderRepository.findFirstByMssvAndParentIsNullAndFolderName(mssv, StorageConstants.ROOT_FOLDER_NAME)
                 .orElseGet(() -> folderRepository.save(Folder.builder().owner(studentRepository.getReferenceById(mssv))
                         .folderName(StorageConstants.ROOT_FOLDER_NAME).parent(null).build()));
+    }
+
+    private void validateOwnership(String mssv, DocumentResourceType resourceType, UUID resourceId) {
+        if (resourceType == DocumentResourceType.FILE) {
+            documentRepository.findByIdAndMssv(resourceId, mssv)
+                    .orElseThrow(() -> new DocumentException(DocumentErrorCode.FILE_NOT_FOUND));
+            return;
+        }
+        if (resourceType == DocumentResourceType.FOLDER) {
+            findOwnedFolder(mssv, resourceId);
+            return;
+        }
+        throw new DocumentException(DocumentErrorCode.INVALID_SHARE_RESOURCE_TYPE);
+    }
+
+    private List<SharedUserResponse> fetchSharedUsers(DocumentResourceType resourceType, UUID resourceId) {
+        if (resourceType == DocumentResourceType.FILE) {
+            return shareDocumentRepository.findByDocumentId(resourceId).stream()
+                    .map(sd -> new SharedUserResponse(studentMapper.toStudentResponse(sd.getRecipient()),
+                            sd.getAccessRole(), sd.getCreatedAt()))
+                    .toList();
+        }
+        if (resourceType == DocumentResourceType.FOLDER) {
+            return shareFolderRepository.findByFolderId(resourceId).stream()
+                    .map(sf -> new SharedUserResponse(studentMapper.toStudentResponse(sf.getRecipient()),
+                            sf.getAccessRole(), sf.getCreatedAt()))
+                    .toList();
+        }
+        throw new DocumentException(DocumentErrorCode.INVALID_SHARE_RESOURCE_TYPE);
     }
 }

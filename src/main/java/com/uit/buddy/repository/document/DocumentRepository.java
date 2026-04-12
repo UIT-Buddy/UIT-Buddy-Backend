@@ -20,4 +20,6 @@ public interface DocumentRepository extends JpaRepository<Document, UUID> {
     Page<Document> findByMssvAndFileNameContainingIgnoreCase(String mssv, String keyword, Pageable pageable);
 
     Page<Document> findByMssv(String mssv, Pageable pageable);
+
+    boolean existsByFolderIdAndFileNameIgnoreCase(UUID folderId, String fileName, UUID excludeId);
 }

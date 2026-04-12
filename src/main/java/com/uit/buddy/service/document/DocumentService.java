@@ -4,9 +4,12 @@ import com.uit.buddy.dto.request.document.CreateFileRequest;
 import com.uit.buddy.dto.request.document.CreateFolderRequest;
 import com.uit.buddy.dto.request.document.ShareResourceRequest;
 import com.uit.buddy.dto.request.document.UnshareResourceRequest;
+import com.uit.buddy.dto.request.document.UpdateFileRequest;
 import com.uit.buddy.dto.response.document.DocumentFileResponse;
 import com.uit.buddy.dto.response.document.DocumentSearchResult;
+import com.uit.buddy.dto.response.document.SharedUserResponse;
 import com.uit.buddy.dto.response.document.ViewFolderDetailResponse;
+import com.uit.buddy.enums.DocumentResourceType;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.data.domain.Page;
@@ -25,8 +28,14 @@ public interface DocumentService {
 
     Page<DocumentSearchResult> searchSharedWithMe(String mssv, String keyword, Pageable pageable);
 
+    Page<SharedUserResponse> getSharedUsers(String mssv, DocumentResourceType resourceType, UUID resourceId, Pageable pageable);
+
     void shareResource(String mssv, ShareResourceRequest request);
 
     void unshareResource(String mssv, UnshareResourceRequest request);
+
+    DocumentFileResponse updateDocument(String mssv, UUID documentId, UpdateFileRequest request);
+
+    void deleteDocument(String mssv, UUID documentId);
 
 }

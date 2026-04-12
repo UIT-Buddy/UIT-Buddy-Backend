@@ -14,4 +14,6 @@ public interface ShareFolderRepository extends JpaRepository<ShareFolder, UUID> 
     boolean existsByFolderIdAndMssv(UUID folderId, String mssv);
 
     long deleteByFolderIdAndMssv(UUID folderId, String mssv);
+
+    List<ShareFolder> findByFolderId(UUID folderId);
 }

@@ -24,4 +24,6 @@ public interface FileService {
     List<PostMedia> uploadMultiMedia(List<MultipartFile> images, List<MultipartFile> videos);
 
     List<DocumentUploadResult> uploadMultipleDocuments(List<MultipartFile> files);
+
+    void deleteDocument(String fileUrl);
 }
