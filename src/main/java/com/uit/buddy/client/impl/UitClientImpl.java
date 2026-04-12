@@ -12,12 +12,19 @@ import com.uit.buddy.dto.response.client.EnrolledCourseResponse;
 import com.uit.buddy.dto.response.client.SiteInfoResponse;
 import com.uit.buddy.exception.client.ExternalClientErrorCode;
 import com.uit.buddy.exception.client.ExternalClientException;
+import com.uit.buddy.exception.user.UserErrorCode;
+import com.uit.buddy.exception.user.UserException;
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.atomic.AtomicReference;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationContext;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.retry.annotation.Backoff;
@@ -35,16 +42,19 @@ public class UitClientImpl extends AbstractBaseClient implements UitClient {
     private final String restFormat;
     private final MoodleResponseValidator moodleResponseValidator;
     private final MoodleRateLimiter rateLimiter;
+    private final AtomicReference<SiteInfoResponse> siteInfoCache = new AtomicReference<>();
+    private final ApplicationContext applicationContext;
 
     public UitClientImpl(@Qualifier("moodleClient") RestClient restClient, ObjectMapper objectMapper,
             @Value("${app.uit.moodle-server-path}") String moodleServerPath,
             @Value("${app.uit.rest-format}") String restFormat, MoodleResponseValidator moodleResponseValidator,
-            MoodleRateLimiter rateLimiter) {
+            MoodleRateLimiter rateLimiter, ApplicationContext applicationContext) {
         super(restClient, objectMapper);
         this.moodleServerPath = moodleServerPath;
         this.restFormat = restFormat;
         this.moodleResponseValidator = moodleResponseValidator;
         this.rateLimiter = rateLimiter;
+        this.applicationContext = applicationContext;
     }
 
     @Override
@@ -52,14 +62,20 @@ public class UitClientImpl extends AbstractBaseClient implements UitClient {
         moodleResponseValidator.validate(response);
     }
 
-    @Retryable(retryFor = { ExternalClientException.class,
-            RestClientException.class }, maxAttemptsExpression = "${moodle.retry.max-attempts:3}", backoff = @Backoff(delayExpression = "${moodle.retry.delay-ms:1000}", multiplierExpression = "${moodle.retry.multiplier:2}"))
     @Override
     public SiteInfoResponse fetchSiteInfo(String wstoken) {
         try {
             rateLimiter.acquire();
             Map<String, String> queryParams = buildBaseParams(wstoken, MoodleApiConstants.FUNCTION_GET_SITE_INFO);
-            return get(moodleServerPath, SiteInfoResponse.class, queryParams, null);
+            SiteInfoResponse response = null;
+            try {
+                response = get(moodleServerPath, SiteInfoResponse.class, queryParams, null);
+
+            } catch (ExternalClientException e) {
+                log.error("Failed to fetch site info with provided wstoken", e);
+                throw new UserException(UserErrorCode.INVALID_WSTOKEN);
+            }
+            return response;
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new RuntimeException("Interrupted while waiting for rate limiter permit", e);
@@ -104,20 +120,79 @@ public class UitClientImpl extends AbstractBaseClient implements UitClient {
         }
     }
 
-    @Retryable(retryFor = { ExternalClientException.class,
-            RestClientException.class }, maxAttemptsExpression = "${moodle.retry.max-attempts:3}", backoff = @Backoff(delayExpression = "${moodle.retry.delay-ms:1000}", multiplierExpression = "${moodle.retry.multiplier:2}"))
+    /**
+     * Outer wrapper: acquires/releases rate-limiter permit around the entire call so that circuit-open calls (which
+     * bypass the method body entirely) do NOT leak permits.
+     */
     @Override
     public AssignmentDetailResponse getCourseAssignments(String wstoken, String assignmentId) {
         try {
             rateLimiter.acquire();
-            Map<String, String> queryParams = buildAssignmentSubmissionsParams(wstoken, assignmentId);
-            return get(moodleServerPath, AssignmentDetailResponse.class, queryParams, null);
+            return doGetCourseAssignments(wstoken, assignmentId);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new RuntimeException("Interrupted while waiting for rate limiter permit", e);
         } finally {
             rateLimiter.release();
         }
+    }
+
+    /**
+     * Inner method holds the resilience annotations. When the circuit is OPEN the fallback fires immediately — without
+     * running this method body — so acquire() is never called and no permit leaks.
+     */
+    @Retryable(retryFor = { ExternalClientException.class,
+            RestClientException.class }, maxAttemptsExpression = "${moodle.retry.max-attempts:3}", backoff = @Backoff(delayExpression = "${moodle.retry.delay-ms:1000}", multiplierExpression = "${moodle.retry.multiplier:2}"))
+    @CircuitBreaker(name = "moodleAssignments", fallbackMethod = "fallbackGetCourseAssignments")
+    private AssignmentDetailResponse doGetCourseAssignments(String wstoken, String assignmentId) {
+        Map<String, String> queryParams = buildAssignmentSubmissionsParams(wstoken, assignmentId);
+        return get(moodleServerPath, AssignmentDetailResponse.class, queryParams, null);
+    }
+
+    public AssignmentDetailResponse fallbackGetCourseAssignments(String wstoken, String assignmentId, Throwable t) {
+        log.warn("[UitClient] Circuit breaker OPEN for getCourseAssignments (assignmentId={}): {}", assignmentId,
+                t.getMessage());
+        return null;
+    }
+
+    /**
+     * Batch-fetch submission statuses for multiple assignments in parallel. Each call fires independently through the
+     * Spring proxy so @CircuitBreaker + @Retryable interceptors fire per-call. Calls that hit an open circuit or fail
+     * return null so the caller can fall back to date-only inference.
+     */
+    @Override
+    public Map<String, AssignmentDetailResponse> getAssignmentsInfo(String wstoken, List<String> assignmentIds) {
+        if (assignmentIds == null || assignmentIds.isEmpty()) {
+            return Map.of();
+        }
+
+        // Obtain the AOP proxy so interceptors (CircuitBreaker, Retryable) fire on each call
+        UitClient uitClientProxy = applicationContext.getBean(UitClient.class);
+
+        List<CompletableFuture<Map.Entry<String, AssignmentDetailResponse>>> futures = new java.util.ArrayList<>();
+        for (String id : assignmentIds) {
+            String assignmentId = id;
+            CompletableFuture<Map.Entry<String, AssignmentDetailResponse>> f = CompletableFuture.supplyAsync(() -> {
+                AssignmentDetailResponse resp = uitClientProxy.getCourseAssignments(wstoken, assignmentId);
+                return Map.entry(assignmentId, resp);
+            }, ForkJoinPool.commonPool()).exceptionally(ex -> {
+                log.debug("[UitClient] getCourseAssignments exception for id={}: {}", assignmentId, ex.getMessage());
+                return Map.entry(assignmentId, (AssignmentDetailResponse) null);
+            });
+            futures.add(f);
+        }
+
+        Map<String, AssignmentDetailResponse> results = new HashMap<>();
+        for (CompletableFuture<Map.Entry<String, AssignmentDetailResponse>> future : futures) {
+            try {
+                Map.Entry<String, AssignmentDetailResponse> entry = future.join();
+                results.put(entry.getKey(), entry.getValue());
+            } catch (Exception e) {
+                // Already handled in exceptionally above; safe to skip
+            }
+        }
+
+        return results;
     }
 
     @Recover

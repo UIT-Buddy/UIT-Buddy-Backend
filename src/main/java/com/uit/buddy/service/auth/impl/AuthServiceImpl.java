@@ -32,6 +32,7 @@ import com.uit.buddy.repository.auth.PendingAccountRepository;
 import com.uit.buddy.repository.auth.RefreshTokenRepository;
 import com.uit.buddy.repository.user.StudentRepository;
 import com.uit.buddy.security.JwtUtils;
+import com.uit.buddy.service.academic.ScheduleService;
 import com.uit.buddy.service.auth.AuthService;
 import com.uit.buddy.service.cometchat.CometChatService;
 import com.uit.buddy.service.email.EmailService;
@@ -73,6 +74,7 @@ public class AuthServiceImpl implements AuthService {
     private final OtpUtils otpUtils;
     private final FileService fileService;
     private final CometChatService cometChatService;
+    private final ScheduleService scheduleService;
 
     @Value("${app.otp.length}")
     private int otpLength;
@@ -222,6 +224,8 @@ public class AuthServiceImpl implements AuthService {
 
         pendingAccountRepository.delete(pendingAccount);
 
+        // Fire-and-forget: sync all Moodle deadlines for the active semester asynchronously.
+        // Failures are logged and retried by the global scheduler.
         String accessToken = jwtUtils.generateAccessToken(request.mssv());
         String refreshToken = jwtUtils.generateRefreshToken(request.mssv(), false);
 

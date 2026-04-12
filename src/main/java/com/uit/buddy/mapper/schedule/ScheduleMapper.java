@@ -21,20 +21,20 @@ public interface ScheduleMapper {
     String PERSONAL_DEADLINE = "personal";
     String UNKNOWN_DEADLINE = "unknown";
 
-    @Mapping(target = "courseCode", source = "subjectClass.course.courseCode")
-    @Mapping(target = "classId", source = "subjectClass.classCode")
+    @Mapping(target = "courseCode", expression = "java(safeCourseCode(studentClass))")
+    @Mapping(target = "classId", expression = "java(safeClassCode(studentClass))")
     @Mapping(target = "labOfClassId", expression = "java(extractLabOfClassId(studentClass))")
-    @Mapping(target = "isBlendedLearning", expression = "java(isBlendedLearningClass(studentClass.getSubjectClass().getClassType()))")
-    @Mapping(target = "courseName", source = "subjectClass.course.courseName")
-    @Mapping(target = "dayOfWeek", source = "subjectClass.dayOfWeek")
-    @Mapping(target = "startTime", source = "subjectClass.startTime")
-    @Mapping(target = "endTime", source = "subjectClass.endTime")
-    @Mapping(target = "roomCode", source = "subjectClass.roomCode")
-    @Mapping(target = "startPeriod", source = "subjectClass.startLesson")
-    @Mapping(target = "endPeriod", source = "subjectClass.endLesson")
-    @Mapping(target = "startDate", source = "subjectClass.startDate")
-    @Mapping(target = "endDate", source = "subjectClass.endDate")
-    @Mapping(target = "lecturer", source = "subjectClass.teacherName")
+    @Mapping(target = "isBlendedLearning", expression = "java(isBlendedLearningClass(safeClassType(studentClass)))")
+    @Mapping(target = "courseName", expression = "java(safeCourseName(studentClass))")
+    @Mapping(target = "dayOfWeek", expression = "java(safeDayOfWeek(studentClass))")
+    @Mapping(target = "startTime", expression = "java(safeStartTime(studentClass))")
+    @Mapping(target = "endTime", expression = "java(safeEndTime(studentClass))")
+    @Mapping(target = "roomCode", expression = "java(safeRoomCode(studentClass))")
+    @Mapping(target = "startPeriod", expression = "java(safeStartLesson(studentClass))")
+    @Mapping(target = "endPeriod", expression = "java(safeEndLesson(studentClass))")
+    @Mapping(target = "startDate", expression = "java(safeStartDate(studentClass))")
+    @Mapping(target = "endDate", expression = "java(safeEndDate(studentClass))")
+    @Mapping(target = "lecturer", expression = "java(safeTeacherName(studentClass))")
     @Mapping(target = "credits", constant = "0")
     @Mapping(target = "deadline", ignore = true)
     Course toCourse(StudentSubjectClass studentClass);
@@ -99,14 +99,17 @@ public interface ScheduleMapper {
 
     default List<Course> toListCourseWithDeadlines(List<StudentSubjectClass> studentClasses,
             List<CourseContentResponse> courseDeadlines) {
-        return studentClasses.stream().map(studentClass -> {
-            Course mappedCourse = toCourse(studentClass);
-            CourseContentResponse deadline = findMatchingDeadline(mappedCourse, courseDeadlines);
-            return new Course(mappedCourse.courseCode(), mappedCourse.classId(), mappedCourse.courseName(),
-                    mappedCourse.lecturer(), mappedCourse.dayOfWeek(), mappedCourse.startTime(),
-                    mappedCourse.labOfClassId(), mappedCourse.isBlendedLearning(), mappedCourse.endTime(),
-                    mappedCourse.startPeriod(), mappedCourse.endPeriod(), mappedCourse.roomCode(),
-                    mappedCourse.startDate(), mappedCourse.endDate(), mappedCourse.credits(), deadline);
+        return studentClasses.stream().map(ssc -> {
+            // Construct Course fields directly using safe accessors to avoid MapStruct
+            // generating nested proxy traversal (course → course.courseCode) that triggers
+            // LazyInitializationException outside a Hibernate session.
+            Course rawCourse = toCourse(ssc);
+            CourseContentResponse deadline = findMatchingDeadline(rawCourse, courseDeadlines);
+            return new Course(safeCourseCode(ssc), safeClassCode(ssc), safeCourseName(ssc), safeTeacherName(ssc),
+                    safeDayOfWeek(ssc), safeStartTime(ssc), extractLabOfClassId(ssc),
+                    isBlendedLearningClass(safeClassType(ssc)), safeEndTime(ssc), safeStartLesson(ssc),
+                    safeEndLesson(ssc), safeRoomCode(ssc), safeStartDate(ssc), safeEndDate(ssc),
+                    ssc.getCredits() != null ? ssc.getCredits() : 0, deadline);
         }).toList();
     }
 
@@ -170,6 +173,105 @@ public interface ScheduleMapper {
 
     default String mapStringToLocalTime(LocalTime value) {
         return value == null ? null : value.toString();
+    }
+
+    // ─── Safe accessors (avoid LazyInitializationException on lazy proxies) ────
+
+    default String safeCourseCode(StudentSubjectClass ssc) {
+        if (ssc == null || ssc.getSubjectClass() == null || ssc.getSubjectClass().getCourse() == null) {
+            return null;
+        }
+        return ssc.getSubjectClass().getCourse().getCourseCode();
+    }
+
+    default String safeClassCode(StudentSubjectClass ssc) {
+        if (ssc == null || ssc.getSubjectClass() == null) {
+            return null;
+        }
+        return ssc.getSubjectClass().getClassCode();
+    }
+
+    default String safeCourseName(StudentSubjectClass ssc) {
+        if (ssc == null || ssc.getSubjectClass() == null || ssc.getSubjectClass().getCourse() == null) {
+            return null;
+        }
+        return ssc.getSubjectClass().getCourse().getCourseName();
+    }
+
+    default String safeClassType(StudentSubjectClass ssc) {
+        if (ssc == null || ssc.getSubjectClass() == null) {
+            return null;
+        }
+        return ssc.getSubjectClass().getClassType();
+    }
+
+    default Integer safeDayOfWeek(StudentSubjectClass ssc) {
+        if (ssc == null || ssc.getSubjectClass() == null) {
+            return null;
+        }
+        return ssc.getSubjectClass().getDayOfWeek();
+    }
+
+    default String safeStartTime(StudentSubjectClass ssc) {
+        if (ssc == null || ssc.getSubjectClass() == null) {
+            return null;
+        }
+        LocalTime t = ssc.getSubjectClass().getStartTime();
+        return t == null ? null : t.toString();
+    }
+
+    default String safeEndTime(StudentSubjectClass ssc) {
+        if (ssc == null || ssc.getSubjectClass() == null) {
+            return null;
+        }
+        LocalTime t = ssc.getSubjectClass().getEndTime();
+        return t == null ? null : t.toString();
+    }
+
+    default String safeRoomCode(StudentSubjectClass ssc) {
+        if (ssc == null || ssc.getSubjectClass() == null) {
+            return null;
+        }
+        return ssc.getSubjectClass().getRoomCode();
+    }
+
+    default String safeStartLesson(StudentSubjectClass ssc) {
+        if (ssc == null || ssc.getSubjectClass() == null) {
+            return null;
+        }
+        Integer l = ssc.getSubjectClass().getStartLesson();
+        return l == null ? null : l.toString();
+    }
+
+    default String safeEndLesson(StudentSubjectClass ssc) {
+        if (ssc == null || ssc.getSubjectClass() == null) {
+            return null;
+        }
+        Integer l = ssc.getSubjectClass().getEndLesson();
+        return l == null ? null : l.toString();
+    }
+
+    default String safeStartDate(StudentSubjectClass ssc) {
+        if (ssc == null || ssc.getSubjectClass() == null) {
+            return null;
+        }
+        java.time.LocalDate d = ssc.getSubjectClass().getStartDate();
+        return d == null ? null : d.toString();
+    }
+
+    default String safeEndDate(StudentSubjectClass ssc) {
+        if (ssc == null || ssc.getSubjectClass() == null) {
+            return null;
+        }
+        java.time.LocalDate d = ssc.getSubjectClass().getEndDate();
+        return d == null ? null : d.toString();
+    }
+
+    default String safeTeacherName(StudentSubjectClass ssc) {
+        if (ssc == null || ssc.getSubjectClass() == null) {
+            return null;
+        }
+        return ssc.getSubjectClass().getTeacherName();
     }
 
 }

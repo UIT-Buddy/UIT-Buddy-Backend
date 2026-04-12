@@ -15,7 +15,8 @@ public enum UserErrorCode {
     CAN_NOT_FETCH_USER_PAGE("USER_006", "List of student not found", HttpStatus.BAD_REQUEST),
     REACH_LIMIT_IMAGES("USER_007", "Number of images reached the limit", HttpStatus.BAD_REQUEST),
     REACH_LIMIT_VIDEOS("USER_008", "Number of videos reached the limit", HttpStatus.BAD_REQUEST),
-    INVALID_WSTOKEN("USER_009", "Invalid WsToken", HttpStatus.UNAUTHORIZED);
+    INVALID_WSTOKEN("USER_009", "Invalid WsToken", HttpStatus.UNAUTHORIZED),
+    WS_TOKEN_EXPIRED("USER_010", "WsToken has expired", HttpStatus.UNAUTHORIZED);
 
     private final String code;
     private final String message;
