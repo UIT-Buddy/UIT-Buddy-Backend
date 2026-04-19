@@ -144,7 +144,7 @@ class NoteServiceImplTest {
         Note saved = createNote(noteId, nodeId, "New Note", LocalDateTime.now());
 
         when(noteNodeRepository.findByIdAndMssv(nodeId, MSSV)).thenReturn(Optional.of(node));
-        when(noteRepository.save(any(Note.class))).thenReturn(saved);
+        when(noteRepository.saveAndFlush(any(Note.class))).thenReturn(saved);
 
         NoteDetailResponse result = noteService.createNote(MSSV, request);
 
@@ -162,7 +162,7 @@ class NoteServiceImplTest {
 
         when(noteRepository.findByIdAndMssv(noteId, MSSV)).thenReturn(Optional.of(existing));
         when(noteNodeRepository.findByIdAndMssv(targetNodeId, MSSV)).thenReturn(Optional.of(targetNode));
-        when(noteRepository.save(existing)).thenReturn(existing);
+        when(noteRepository.saveAndFlush(existing)).thenReturn(existing);
 
         NoteDetailResponse result = noteService.updateNote(MSSV, noteId, request);
 
