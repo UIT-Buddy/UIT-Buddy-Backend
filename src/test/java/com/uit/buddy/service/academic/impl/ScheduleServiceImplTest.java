@@ -111,7 +111,7 @@ class ScheduleServiceImplTest {
                 .cometUid("uid").homeClassCode("CS01").encryptedWstoken("encrypted").build();
 
         // Active semester: Aug 2025 – Jan 2026 (Sem 2)
-        activeSemester = Semester.builder().semesterCode("2025.2").yearStart("2025").semesterNumber(2)
+        activeSemester = Semester.builder().semesterCode("2025.2").yearStart("2025").semesterNumber("2")
                 .startDate(LocalDate.of(2025, 8, 1)).endDate(LocalDate.of(2026, 1, 31)).build();
     }
 

@@ -61,6 +61,14 @@ public class S3FileServiceImpl implements FileService {
     }
 
     @Override
+    public String uploadCover(MultipartFile file, String mssv) {
+        validateFile(file, FileType.IMAGE);
+        String key = buildCoverKey(mssv);
+        uploadObject(extractBytes(file), key, file.getContentType());
+        return buildPublicUrl(key);
+    }
+
+    @Override
     public PostMedia uploadPostImage(MultipartFile file, String postId) {
         validateFile(file, FileType.IMAGE);
         return uploadPostMedia(extractBytes(file), file.getContentType(), file.getOriginalFilename(),
@@ -200,6 +208,10 @@ public class S3FileServiceImpl implements FileService {
 
     private String buildAvatarKey(String mssv) {
         return StorageConstants.FOLDER_AVATARS + StorageConstants.PATH_SEPARATOR + mssv;
+    }
+
+    private String buildCoverKey(String mssv) {
+        return StorageConstants.FOLDER_COVERS + StorageConstants.PATH_SEPARATOR + mssv;
     }
 
     private String buildKey(String folder, String objectId, String extension) {

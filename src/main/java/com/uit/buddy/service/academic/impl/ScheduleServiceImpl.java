@@ -59,6 +59,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.regex.Matcher;
@@ -136,7 +137,8 @@ public class ScheduleServiceImpl implements ScheduleService {
                 throw new ScheduleException(ScheduleErrorCode.INVALID_OWNER);
             }
 
-            // Save schedule from ICS — no Moodle calls here, just fast file parsing + DB write
+            // Save schedule from ICS — no Moodle calls here, just fast file parsing + DB
+            // write
             List<StudentSubjectClass> savedMappings = saveScheduleData(student, result.getEvents());
             List<CourseCalendarResponse.Course> courses = scheduleMapper.toListCourse(savedMappings);
             courses = sortCoursesByClassCode(courses);
@@ -250,7 +252,8 @@ public class ScheduleServiceImpl implements ScheduleService {
         Semester semester = getActiveSemester();
         String semesterCode = semester.getSemesterCode();
 
-        // Read from TemporaryDeadline table scoped to semester and (optionally) month/year
+        // Read from TemporaryDeadline table scoped to semester and (optionally)
+        // month/year
         List<TemporaryDeadline> savedDeadlines = (month != null && year != null)
                 ? temporaryDeadlineRepository.findByMssvAndSemesterCodeAndMonthAndYear(mssv, semesterCode, month, year)
                 : temporaryDeadlineRepository.findByMssvAndSemesterCodeAll(mssv, semesterCode);
@@ -275,8 +278,10 @@ public class ScheduleServiceImpl implements ScheduleService {
     }
 
     /**
-     * Fetches personal/course-linked deadlines from StudentTask table that fall within the given semester's date range.
-     * Delegates to {@link AssignmentService} which uses a proper JOIN FETCH query, avoiding LazyInitializationException
+     * Fetches personal/course-linked deadlines from StudentTask table that fall
+     * within the given semester's date range.
+     * Delegates to {@link AssignmentService} which uses a proper JOIN FETCH query,
+     * avoiding LazyInitializationException
      * on SubjectClass.
      */
     private List<CourseContentResponse> getCurrentSemesterDeadlines(String mssv, Integer month, Integer year) {
@@ -294,11 +299,13 @@ public class ScheduleServiceImpl implements ScheduleService {
         List<TemporaryDeadline> toSave = new ArrayList<>();
         for (CourseContentResponse course : freshDeadlines) {
             String classCode = course.courseName() == null || course.courseName().isBlank()
-                    ? ScheduleConstant.UNKNOWN_CLASS_CODE : course.courseName();
+                    ? ScheduleConstant.UNKNOWN_CLASS_CODE
+                    : course.courseName();
             for (CourseContentResponse.exercise exercise : course.exercises()) {
                 if (exercise.dueDate() == null || exercise.exerciseName() == null || exercise.exerciseName().isBlank())
                     continue;
-                // Always resolve status from due date (mirrors mapDeadlineStatus in ScheduleMapper)
+                // Always resolve status from due date (mirrors mapDeadlineStatus in
+                // ScheduleMapper)
                 String key = buildDeadlineKey(classCode, exercise.exerciseName(), exercise.dueDate());
                 TemporaryDeadline existingTd = existingMap.get(key);
                 if (existingTd == null) {
@@ -334,6 +341,14 @@ public class ScheduleServiceImpl implements ScheduleService {
         studentTask.setPersonalTitle(request.exerciseName());
         studentTask.setReminderAt(request.dueDate());
         studentTaskRepository.save(studentTask);
+
+        return scheduleMapper.toCreateDeadlineResponse(studentTask);
+    }
+
+    @Override
+    public CreateDeadlineResponse getDeadlineDetail(String mssv, UUID deadlineId) {
+        StudentTask studentTask = studentTaskRepository.findByIdAndMssv(deadlineId, mssv)
+                .orElseThrow(() -> new ScheduleException(ScheduleErrorCode.ASSIGNMENT_NOT_EXIST));
 
         return scheduleMapper.toCreateDeadlineResponse(studentTask);
     }
@@ -541,8 +556,10 @@ public class ScheduleServiceImpl implements ScheduleService {
     }
 
     /**
-     * Returns (userId, enrolledCourses) from Redis cache if present; otherwise fetches from Moodle and caches for
-     * MOODLE_ENROLLMENT_CACHE_TTL_SECONDS. Falls back to a live Moodle call on any error.
+     * Returns (userId, enrolledCourses) from Redis cache if present; otherwise
+     * fetches from Moodle and caches for
+     * MOODLE_ENROLLMENT_CACHE_TTL_SECONDS. Falls back to a live Moodle call on any
+     * error.
      */
     private EnrolledCoursesResult getCachedEnrolledCourses(String decryptedWstoken, String mssv) {
         return enrollmentCache.findByMssv(mssv)
@@ -738,7 +755,8 @@ public class ScheduleServiceImpl implements ScheduleService {
         AssignmentDetailResponse assignmentDetail = uitClient.getCourseAssignments(wstoken, assignmentId);
         LocalDateTime now = LocalDateTime.now();
 
-        // Circuit breaker open or Moodle unavailable — fall back to date-based inference only
+        // Circuit breaker open or Moodle unavailable — fall back to date-based
+        // inference only
         if (assignmentDetail == null) {
             log.debug("[Schedule Service] Moodle unavailable for assignmentId={}, inferring status from due date",
                     assignmentId);
@@ -765,8 +783,10 @@ public class ScheduleServiceImpl implements ScheduleService {
     }
 
     /**
-     * Like {@link #determineDeadlineStatus(LocalDateTime, String, String)} but reads from a pre-fetched map. When the
-     * map entry is null (circuit open or call failed), falls back to date-only inference so no additional HTTP call is
+     * Like {@link #determineDeadlineStatus(LocalDateTime, String, String)} but
+     * reads from a pre-fetched map. When the
+     * map entry is null (circuit open or call failed), falls back to date-only
+     * inference so no additional HTTP call is
      * made.
      */
     private DeadlineStatus determineDeadlineStatusFromCache(LocalDateTime dueDate,
@@ -930,7 +950,22 @@ public class ScheduleServiceImpl implements ScheduleService {
     }
 
     /**
-     * Syncs all Moodle deadlines for the active semester into the TemporaryDeadline table. Runs asynchronously after
+     * Syncs all Moodle deadlines for the active semester into the TemporaryDeadline
+     * table. Runs asynchronously after
      * signup to pre-populate the deadline cache without blocking the auth response.
      */
+    @Override
+    @Async("fetchExecutor")
+    public void syncAllMoodleDeadlinesForActiveSemesterAsync(String mssv, String encryptedWstoken) {
+        try {
+            String decryptedWstoken = encryptionUtils.decrypt(encryptedWstoken);
+            List<CourseContentResponse> synced = fetchCourseDeadlinesFromMoodleWithToken(mssv, decryptedWstoken, null,
+                    null);
+            int totalDeadlines = synced.stream().mapToInt(c -> c.exercises().size()).sum();
+            log.info("[Schedule Service] Async signup deadline sync completed for mssv={} with {} deadlines", mssv,
+                    totalDeadlines);
+        } catch (Exception e) {
+            log.warn("[Schedule Service] Async signup deadline sync failed for mssv={}: {}", mssv, e.getMessage(), e);
+        }
+    }
 }

@@ -4,10 +4,14 @@ import com.uit.buddy.entity.document.ShareFolder;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface ShareFolderRepository extends JpaRepository<ShareFolder, UUID> {
     List<ShareFolder> findByMssv(String mssv);
+
+    Page<ShareFolder> findByMssv(String mssv, Pageable pageable);
 
     Optional<ShareFolder> findByFolderIdAndMssv(UUID folderId, String mssv);
 

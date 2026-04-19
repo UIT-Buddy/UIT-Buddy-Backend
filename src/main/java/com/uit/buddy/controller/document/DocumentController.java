@@ -8,10 +8,12 @@ import com.uit.buddy.dto.base.SuccessResponse;
 import com.uit.buddy.dto.request.document.CreateFileRequest;
 import com.uit.buddy.dto.request.document.CreateFolderRequest;
 import com.uit.buddy.dto.request.document.ShareResourceRequest;
+import com.uit.buddy.dto.request.document.ShareResourceViaMessageRequest;
 import com.uit.buddy.dto.request.document.UnshareResourceRequest;
 import com.uit.buddy.dto.request.document.UpdateFileRequest;
 import com.uit.buddy.dto.response.document.DocumentFileResponse;
 import com.uit.buddy.dto.response.document.DocumentSearchResult;
+import com.uit.buddy.dto.response.document.SharedFolderResponse;
 import com.uit.buddy.dto.response.document.SharedUserResponse;
 import com.uit.buddy.dto.response.document.ViewFolderDetailResponse;
 import com.uit.buddy.enums.DocumentResourceType;
@@ -131,6 +133,18 @@ public class DocumentController extends AbstractBaseController {
         return paging(response, "Search shared documents successfully");
     }
 
+    @GetMapping(value = "/shared-folders")
+    @Operation(summary = "List folders shared with me", description = "View folder resources shared with current user")
+    public ResponseEntity<PageResponse<SharedFolderResponse>> getSharedFoldersWithMe(
+            @AuthenticationPrincipal String mssv, @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "15") int limit, @RequestParam(defaultValue = "desc") String sortType,
+            @RequestParam(defaultValue = "createdAt") String sortBy) {
+        Pageable pageable = createPageable(page, limit, sortType, sortBy);
+        log.info("[GET /api/document/shared-folders] Getting shared folders for mssv {}", mssv);
+        Page<SharedFolderResponse> response = documentService.getSharedFoldersWithMe(mssv, pageable);
+        return paging(response, "Shared folders retrieved successfully");
+    }
+
     @PostMapping(value = "/share")
     @Operation(summary = "Share a resource", description = "Share a file or folder with another student")
     public ResponseEntity<SuccessResponse> shareResource(@AuthenticationPrincipal String mssv,
@@ -139,6 +153,16 @@ public class DocumentController extends AbstractBaseController {
                 mssv);
         documentService.shareResource(mssv, request);
         return success("Resource shared successfully");
+    }
+
+    @PostMapping(value = "/share/message")
+    @Operation(summary = "Share a resource via message", description = "Share a file or folder with another student and send it through chat message")
+    public ResponseEntity<SuccessResponse> shareResourceViaMessage(@AuthenticationPrincipal String mssv,
+            @Valid @RequestBody ShareResourceViaMessageRequest request) {
+        log.info("[POST /api/document/share/message] Sharing {} {} via message by mssv {}", request.resourceType(),
+                request.resourceId(), mssv);
+        documentService.shareResourceViaMessage(mssv, request);
+        return success("Resource shared via message successfully");
     }
 
     @DeleteMapping(value = "/share")

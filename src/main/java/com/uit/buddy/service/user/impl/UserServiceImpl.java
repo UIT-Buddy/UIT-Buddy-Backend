@@ -8,12 +8,15 @@ import com.uit.buddy.dto.response.client.SiteInfoResponse;
 import com.uit.buddy.dto.response.user.FoundUserResponse;
 import com.uit.buddy.dto.response.user.UserResponse;
 import com.uit.buddy.dto.response.user.UserSettingResponse;
+import com.uit.buddy.entity.academic.AcademicSummary;
 import com.uit.buddy.entity.user.Student;
 import com.uit.buddy.entity.user.UserSetting;
 import com.uit.buddy.enums.FriendStatus;
 import com.uit.buddy.exception.user.UserErrorCode;
 import com.uit.buddy.exception.user.UserException;
 import com.uit.buddy.mapper.user.UserMapper;
+import com.uit.buddy.repository.academic.AcademicSummaryRepository;
+import com.uit.buddy.repository.social.PostRepository;
 import com.uit.buddy.mapper.user.UserSettingMapper;
 import com.uit.buddy.repository.user.StudentRepository;
 import com.uit.buddy.repository.user.UserSettingRepository;
@@ -43,6 +46,8 @@ public class UserServiceImpl implements UserService {
     private final UserSettingRepository userSettingRepository;
     private final UserSettingMapper userSettingMapper;
     private final FriendService friendService;
+    private final AcademicSummaryRepository academicSummaryRepository;
+    private final PostRepository postRepository;
     private final UitClient uitClient;
     private final WsTokenEncryptionService wsTokenEncryptionService;
 
@@ -54,7 +59,8 @@ public class UserServiceImpl implements UserService {
         Student student = studentRepository.findById(mssv)
                 .orElseThrow(() -> new UserException(UserErrorCode.STUDENT_NOT_FOUND));
 
-        return userMapper.toUserResponse(student, FriendStatus.NONE);
+        UserResponse baseProfile = userMapper.toUserResponse(student, FriendStatus.NONE);
+        return enrichMyProfile(baseProfile, mssv);
     }
 
     @Override
@@ -87,7 +93,8 @@ public class UserServiceImpl implements UserService {
         Student updatedStudent = studentRepository.save(student);
         log.info("[User Service] Successfully updated profile for MSSV: {}", mssv);
 
-        return userMapper.toUserResponse(updatedStudent, FriendStatus.NONE);
+        UserResponse baseProfile = userMapper.toUserResponse(updatedStudent, FriendStatus.NONE);
+        return enrichMyProfile(baseProfile, mssv);
     }
 
     @Override
@@ -111,6 +118,27 @@ public class UserServiceImpl implements UserService {
 
         log.info("[User Service] Successfully uploaded avatar for MSSV: {}", mssv);
         return avatarUrl;
+    }
+
+    @Override
+    @Transactional
+    public String uploadCover(String mssv, MultipartFile file) {
+        log.info("[User Service] Uploading cover for MSSV: {}", mssv);
+
+        if (file == null || file.isEmpty()) {
+            throw new UserException(UserErrorCode.FILE_EMPTY);
+        }
+
+        Student student = studentRepository.findById(mssv)
+                .orElseThrow(() -> new UserException(UserErrorCode.STUDENT_NOT_FOUND));
+
+        String coverUrl = fileService.uploadCover(file, mssv);
+
+        student.setCoverUrl(coverUrl);
+        studentRepository.save(student);
+
+        log.info("[User Service] Successfully uploaded cover for MSSV: {}", mssv);
+        return coverUrl;
     }
 
     @Override
@@ -180,5 +208,26 @@ public class UserServiceImpl implements UserService {
 
         student.setEncryptedWstoken(wsTokenEncryptionService.encryptWstoken(request.wstoken()));
         studentRepository.save(student);
+    }
+
+    private UserResponse enrichMyProfile(UserResponse baseProfile, String mssv) {
+        AcademicSummary academicSummary = academicSummaryRepository.findByMssv(mssv).orElse(null);
+
+        Float accumulatedGpa = academicSummary != null ? academicSummary.getAccumulatedGpa() : null;
+        Integer accumulatedCredits = academicSummary != null ? academicSummary.getAccumulatedCredits() : 0;
+        Long postCount = postRepository.countByMssv(mssv);
+
+        return new UserResponse(
+                baseProfile.mssv(),
+                baseProfile.fullName(),
+                baseProfile.email(),
+                baseProfile.avatarUrl(),
+                baseProfile.coverUrl(),
+                baseProfile.bio(),
+                baseProfile.homeClassCode(),
+                baseProfile.friendStatus(),
+                accumulatedGpa,
+                accumulatedCredits,
+                postCount);
     }
 }

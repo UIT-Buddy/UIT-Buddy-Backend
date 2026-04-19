@@ -25,8 +25,8 @@ public class Semester extends AbstractAuditEntity {
     @Column(name = "year_end", length = 10)
     private String yearEnd;
 
-    @Column(name = "semester_number", nullable = false)
-    private Integer semesterNumber;
+    @Column(name = "semester_number", length = 20, nullable = false)
+    private String semesterNumber;
 
     @Column(name = "start_date")
     private LocalDate startDate;
