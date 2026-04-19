@@ -51,8 +51,7 @@ public class NoteController extends AbstractBaseController {
 
     @PostMapping("/nodes")
     @Operation(summary = "Create note node", description = "Create a new node in personal note tree")
-    public ResponseEntity<SingleResponse<NoteNodeTreeResponse>> createNode(
-            @AuthenticationPrincipal String mssv,
+    public ResponseEntity<SingleResponse<NoteNodeTreeResponse>> createNode(@AuthenticationPrincipal String mssv,
             @Valid @RequestBody CreateNoteNodeRequest request) {
         NoteNodeTreeResponse response = noteService.createNode(mssv, request);
         return successSingle(response, "Note node created successfully");
@@ -60,33 +59,25 @@ public class NoteController extends AbstractBaseController {
 
     @PatchMapping("/nodes/{nodeId}")
     @Operation(summary = "Update note node", description = "Rename node or move node to another parent")
-    public ResponseEntity<SingleResponse<NoteNodeTreeResponse>> updateNode(
-            @AuthenticationPrincipal String mssv,
-            @PathVariable UUID nodeId,
-            @Valid @RequestBody UpdateNoteNodeRequest request) {
+    public ResponseEntity<SingleResponse<NoteNodeTreeResponse>> updateNode(@AuthenticationPrincipal String mssv,
+            @PathVariable UUID nodeId, @Valid @RequestBody UpdateNoteNodeRequest request) {
         NoteNodeTreeResponse response = noteService.updateNode(mssv, nodeId, request);
         return successSingle(response, "Note node updated successfully");
     }
 
     @DeleteMapping("/nodes/{nodeId}")
     @Operation(summary = "Delete note node", description = "Delete node and all descendant nodes")
-    public ResponseEntity<SuccessResponse> deleteNode(
-            @AuthenticationPrincipal String mssv,
-            @PathVariable UUID nodeId) {
+    public ResponseEntity<SuccessResponse> deleteNode(@AuthenticationPrincipal String mssv, @PathVariable UUID nodeId) {
         noteService.deleteNode(mssv, nodeId);
         return success("Note node deleted successfully");
     }
 
     @GetMapping
     @Operation(summary = "List notes", description = "List notes with optional node and keyword filters")
-    public ResponseEntity<PageResponse<NoteSummaryResponse>> getNotes(
-            @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "15") int limit,
-            @RequestParam(defaultValue = "desc") String sortType,
-            @RequestParam(defaultValue = "updatedAt") String sortBy,
-            @RequestParam(required = false) UUID nodeId,
-            @RequestParam(required = false) String keyword,
-            @AuthenticationPrincipal String mssv) {
+    public ResponseEntity<PageResponse<NoteSummaryResponse>> getNotes(@RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "15") int limit, @RequestParam(defaultValue = "desc") String sortType,
+            @RequestParam(defaultValue = "updatedAt") String sortBy, @RequestParam(required = false) UUID nodeId,
+            @RequestParam(required = false) String keyword, @AuthenticationPrincipal String mssv) {
         Pageable pageable = createPageable(page, limit, sortType, sortBy);
         Page<NoteSummaryResponse> response = noteService.getNotes(mssv, nodeId, keyword, pageable);
         return paging(response, "Notes retrieved successfully");
@@ -94,8 +85,7 @@ public class NoteController extends AbstractBaseController {
 
     @PostMapping
     @Operation(summary = "Create note", description = "Create a personal note")
-    public ResponseEntity<SingleResponse<NoteDetailResponse>> createNote(
-            @AuthenticationPrincipal String mssv,
+    public ResponseEntity<SingleResponse<NoteDetailResponse>> createNote(@AuthenticationPrincipal String mssv,
             @Valid @RequestBody CreateNoteRequest request) {
         NoteDetailResponse response = noteService.createNote(mssv, request);
         return successSingle(response, "Note created successfully");
@@ -103,8 +93,7 @@ public class NoteController extends AbstractBaseController {
 
     @GetMapping("/{noteId}")
     @Operation(summary = "Get note detail", description = "Get detail of a note")
-    public ResponseEntity<SingleResponse<NoteDetailResponse>> getNoteDetail(
-            @AuthenticationPrincipal String mssv,
+    public ResponseEntity<SingleResponse<NoteDetailResponse>> getNoteDetail(@AuthenticationPrincipal String mssv,
             @PathVariable UUID noteId) {
         NoteDetailResponse response = noteService.getNoteDetail(mssv, noteId);
         return successSingle(response, "Note detail retrieved successfully");
@@ -112,19 +101,15 @@ public class NoteController extends AbstractBaseController {
 
     @PatchMapping("/{noteId}")
     @Operation(summary = "Update note", description = "Update title/content/node of a note")
-    public ResponseEntity<SingleResponse<NoteDetailResponse>> updateNote(
-            @AuthenticationPrincipal String mssv,
-            @PathVariable UUID noteId,
-            @Valid @RequestBody UpdateNoteRequest request) {
+    public ResponseEntity<SingleResponse<NoteDetailResponse>> updateNote(@AuthenticationPrincipal String mssv,
+            @PathVariable UUID noteId, @Valid @RequestBody UpdateNoteRequest request) {
         NoteDetailResponse response = noteService.updateNote(mssv, noteId, request);
         return successSingle(response, "Note updated successfully");
     }
 
     @DeleteMapping("/{noteId}")
     @Operation(summary = "Delete note", description = "Delete a note")
-    public ResponseEntity<SuccessResponse> deleteNote(
-            @AuthenticationPrincipal String mssv,
-            @PathVariable UUID noteId) {
+    public ResponseEntity<SuccessResponse> deleteNote(@AuthenticationPrincipal String mssv, @PathVariable UUID noteId) {
         noteService.deleteNote(mssv, noteId);
         return success("Note deleted successfully");
     }

@@ -81,8 +81,8 @@ public class NoteServiceImpl implements NoteService {
         }
 
         sortTree(rootNodes);
-        uncategorizedNotes.sort(Comparator.comparing(NoteSummaryResponse::updatedAt,
-                Comparator.nullsLast(Comparator.reverseOrder())));
+        uncategorizedNotes.sort(
+                Comparator.comparing(NoteSummaryResponse::updatedAt, Comparator.nullsLast(Comparator.reverseOrder())));
 
         return new NoteTreeResponse(rootNodes, uncategorizedNotes);
     }
@@ -95,11 +95,7 @@ public class NoteServiceImpl implements NoteService {
             getOwnedNode(mssv, parentId);
         }
 
-        NoteNode node = NoteNode.builder()
-                .mssv(mssv)
-                .name(request.name().trim())
-                .parentId(parentId)
-                .build();
+        NoteNode node = NoteNode.builder().mssv(mssv).name(request.name().trim()).parentId(parentId).build();
 
         NoteNode saved = noteNodeRepository.saveAndFlush(node);
         return toNodeResponse(saved);
@@ -138,8 +134,7 @@ public class NoteServiceImpl implements NoteService {
 
         String normalizedKeyword = (keyword == null || keyword.isBlank()) ? null : keyword.trim();
 
-        return noteRepository.searchNotes(mssv, nodeId, normalizedKeyword, pageable)
-                .map(this::toSummaryResponse);
+        return noteRepository.searchNotes(mssv, nodeId, normalizedKeyword, pageable).map(this::toSummaryResponse);
     }
 
     @Override
@@ -150,11 +145,7 @@ public class NoteServiceImpl implements NoteService {
             getOwnedNode(mssv, nodeId);
         }
 
-        Note note = Note.builder()
-                .mssv(mssv)
-                .nodeId(nodeId)
-                .title(request.title().trim())
-                .content(request.content())
+        Note note = Note.builder().mssv(mssv).nodeId(nodeId).title(request.title().trim()).content(request.content())
                 .build();
 
         Note saved = noteRepository.saveAndFlush(note);
@@ -231,31 +222,17 @@ public class NoteServiceImpl implements NoteService {
     }
 
     private NoteNodeTreeResponse toNodeResponse(NoteNode node) {
-        return NoteNodeTreeResponse.builder()
-                .id(node.getId())
-                .parentId(node.getParentId())
-                .name(node.getName())
-                .updatedAt(node.getUpdatedAt())
-                .createdAt(node.getCreatedAt())
-                .build();
+        return NoteNodeTreeResponse.builder().id(node.getId()).parentId(node.getParentId()).name(node.getName())
+                .updatedAt(node.getUpdatedAt()).createdAt(node.getCreatedAt()).build();
     }
 
     private NoteSummaryResponse toSummaryResponse(Note note) {
-        return new NoteSummaryResponse(
-                note.getId(),
-                note.getNodeId(),
-                note.getTitle(),
-                note.getUpdatedAt(),
+        return new NoteSummaryResponse(note.getId(), note.getNodeId(), note.getTitle(), note.getUpdatedAt(),
                 note.getCreatedAt());
     }
 
     private NoteDetailResponse toDetailResponse(Note note) {
-        return new NoteDetailResponse(
-                note.getId(),
-                note.getNodeId(),
-                note.getTitle(),
-                note.getContent(),
-                note.getUpdatedAt(),
-                note.getCreatedAt());
+        return new NoteDetailResponse(note.getId(), note.getNodeId(), note.getTitle(), note.getContent(),
+                note.getUpdatedAt(), note.getCreatedAt());
     }
 }

@@ -1,9 +1,8 @@
 package com.uit.buddy.service.academic;
 
 import com.uit.buddy.dto.response.academic.SemesterGradesResponse;
-import org.springframework.web.multipart.MultipartFile;
-
 import java.util.List;
+import org.springframework.web.multipart.MultipartFile;
 
 public interface GradeService {
 

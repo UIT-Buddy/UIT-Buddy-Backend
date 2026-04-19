@@ -25,6 +25,6 @@ public interface NoteRepository extends JpaRepository<Note, UUID> {
               AND (:keyword IS NULL OR LOWER(n.title) LIKE LOWER(CONCAT('%', :keyword, '%'))
                    OR LOWER(COALESCE(n.content, '')) LIKE LOWER(CONCAT('%', :keyword, '%')))
             """)
-    Page<Note> searchNotes(@Param("mssv") String mssv, @Param("nodeId") UUID nodeId,
-            @Param("keyword") String keyword, Pageable pageable);
+    Page<Note> searchNotes(@Param("mssv") String mssv, @Param("nodeId") UUID nodeId, @Param("keyword") String keyword,
+            Pageable pageable);
 }

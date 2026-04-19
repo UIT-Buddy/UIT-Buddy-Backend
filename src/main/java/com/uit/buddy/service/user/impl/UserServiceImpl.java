@@ -15,9 +15,9 @@ import com.uit.buddy.enums.FriendStatus;
 import com.uit.buddy.exception.user.UserErrorCode;
 import com.uit.buddy.exception.user.UserException;
 import com.uit.buddy.mapper.user.UserMapper;
+import com.uit.buddy.mapper.user.UserSettingMapper;
 import com.uit.buddy.repository.academic.AcademicSummaryRepository;
 import com.uit.buddy.repository.social.PostRepository;
-import com.uit.buddy.mapper.user.UserSettingMapper;
 import com.uit.buddy.repository.user.StudentRepository;
 import com.uit.buddy.repository.user.UserSettingRepository;
 import com.uit.buddy.service.cometchat.CometChatService;
@@ -217,17 +217,8 @@ public class UserServiceImpl implements UserService {
         Integer accumulatedCredits = academicSummary != null ? academicSummary.getAccumulatedCredits() : 0;
         Long postCount = postRepository.countByMssv(mssv);
 
-        return new UserResponse(
-                baseProfile.mssv(),
-                baseProfile.fullName(),
-                baseProfile.email(),
-                baseProfile.avatarUrl(),
-                baseProfile.coverUrl(),
-                baseProfile.bio(),
-                baseProfile.homeClassCode(),
-                baseProfile.friendStatus(),
-                accumulatedGpa,
-                accumulatedCredits,
-                postCount);
+        return new UserResponse(baseProfile.mssv(), baseProfile.fullName(), baseProfile.email(),
+                baseProfile.avatarUrl(), baseProfile.coverUrl(), baseProfile.bio(), baseProfile.homeClassCode(),
+                baseProfile.friendStatus(), accumulatedGpa, accumulatedCredits, postCount);
     }
 }

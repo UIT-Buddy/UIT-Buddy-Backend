@@ -1,7 +1,7 @@
 package com.uit.buddy.service.document.impl;
 
-import com.uit.buddy.constant.StorageConstants;
 import com.uit.buddy.client.CometChatClient;
+import com.uit.buddy.constant.StorageConstants;
 import com.uit.buddy.dto.request.client.CometChatSendMessageRequest;
 import com.uit.buddy.dto.request.document.CreateFileRequest;
 import com.uit.buddy.dto.request.document.CreateFolderRequest;
@@ -365,8 +365,7 @@ public class DocumentServiceImpl implements DocumentService {
             resourceMetadata.put("url", metadata.url());
         }
 
-        CometChatSendMessageRequest messageRequest = CometChatSendMessageRequest.builder()
-                .receiver(receiverId)
+        CometChatSendMessageRequest messageRequest = CometChatSendMessageRequest.builder().receiver(receiverId)
                 .receiverType(receiverType == ShareTargetType.USER ? "user" : "group").category("message").type("text")
                 .data(Map.of("text", messageText, "metadata", resourceMetadata)).build();
 

@@ -4,10 +4,9 @@ import com.uit.buddy.dto.response.academic.GradeResponse;
 import com.uit.buddy.dto.response.academic.SemesterGradesResponse;
 import com.uit.buddy.entity.academic.Grade;
 import com.uit.buddy.entity.academic.Semester;
+import java.util.List;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
-
-import java.util.List;
 
 @Mapper(componentModel = "spring")
 public interface GradeMapper {
@@ -22,10 +21,7 @@ public interface GradeMapper {
     SemesterGradesResponse toSemesterGradesResponse(Semester semester, List<Grade> grades);
 
     default Integer calculateTotalCredits(List<Grade> grades) {
-        return grades.stream()
-                .filter(g -> g.getCredits() != null)
-                .mapToInt(Grade::getCredits)
-                .sum();
+        return grades.stream().filter(g -> g.getCredits() != null).mapToInt(Grade::getCredits).sum();
     }
 
     default Float calculateWeightedAverage(List<Grade> grades) {

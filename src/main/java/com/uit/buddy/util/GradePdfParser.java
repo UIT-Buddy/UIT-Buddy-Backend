@@ -126,17 +126,9 @@ public class GradePdfParser {
             SemesterMetrics mappedSemester = timeline.pollFirst();
             reassignedCount++;
 
-            enriched.add(new CourseGradeExtract(
-                    course.courseCode(),
-                    course.courseName(),
-                    course.credits(),
-                    course.processGrade(),
-                    course.midtermGrade(),
-                    course.finalGrade(),
-                    course.labGrade(),
-                    course.totalGrade(),
-                    mappedSemester.semesterNumber(),
-                    mappedSemester.yearStart(),
+            enriched.add(new CourseGradeExtract(course.courseCode(), course.courseName(), course.credits(),
+                    course.processGrade(), course.midtermGrade(), course.finalGrade(), course.labGrade(),
+                    course.totalGrade(), mappedSemester.semesterNumber(), mappedSemester.yearStart(),
                     mappedSemester.yearEnd()));
         }
 
@@ -175,8 +167,7 @@ public class GradePdfParser {
                     continue;
                 }
 
-                timeline.computeIfAbsent(code, ignored -> new ArrayDeque<>())
-                        .addLast(currentSemester);
+                timeline.computeIfAbsent(code, ignored -> new ArrayDeque<>()).addLast(currentSemester);
             }
         }
 
@@ -599,10 +590,8 @@ public class GradePdfParser {
         if (text == null) {
             return "";
         }
-        return GradeConstants.MULTI_WHITESPACE_PATTERN
-                .matcher(text.replace('\n', ' ').replace('\r', ' '))
-                .replaceAll(" ")
-                .trim();
+        return GradeConstants.MULTI_WHITESPACE_PATTERN.matcher(text.replace('\n', ' ').replace('\r', ' '))
+                .replaceAll(" ").trim();
     }
 
     private Float roundToOneDecimal(Float value) {
@@ -739,13 +728,9 @@ public class GradePdfParser {
 
     // Normalize text: remove Vietnamese accents, lowercase, normalize whitespace
     private String normalize(String text) {
-        String noAccents = GradeConstants.DIACRITICS_PATTERN
-                .matcher(Normalizer.normalize(text, Normalizer.Form.NFD))
-                .replaceAll("")
-                .replace('Đ', 'D')
-                .replace('đ', 'd');
-        return GradeConstants.MULTI_WHITESPACE_PATTERN.matcher(noAccents.toLowerCase(Locale.ROOT))
-                .replaceAll(" ");
+        String noAccents = GradeConstants.DIACRITICS_PATTERN.matcher(Normalizer.normalize(text, Normalizer.Form.NFD))
+                .replaceAll("").replace('Đ', 'D').replace('đ', 'd');
+        return GradeConstants.MULTI_WHITESPACE_PATTERN.matcher(noAccents.toLowerCase(Locale.ROOT)).replaceAll(" ");
     }
 
     private String normalizeAcademicYearEnd(String yearStart, String rawYearEnd) {
@@ -771,9 +756,8 @@ public class GradePdfParser {
     private record HeaderMapping(int codeIndex, int nameIndex, int creditsIndex, int processIndex, int midtermIndex,
             int labIndex, int finalIndex, int totalIndex, boolean usesSubHeader) {
         private boolean isValid() {
-            return codeIndex >= 0 && nameIndex >= 0 && creditsIndex >= 0
-                    && processIndex >= 0 && midtermIndex >= 0 && labIndex >= 0
-                    && finalIndex >= 0 && totalIndex >= 0;
+            return codeIndex >= 0 && nameIndex >= 0 && creditsIndex >= 0 && processIndex >= 0 && midtermIndex >= 0
+                    && labIndex >= 0 && finalIndex >= 0 && totalIndex >= 0;
         }
     }
 
@@ -813,15 +797,13 @@ public class GradePdfParser {
             if (moreName == null || moreName.isBlank()) {
                 return;
             }
-            this.courseName = GradeConstants.MULTI_WHITESPACE_PATTERN
-                    .matcher(this.courseName + " " + moreName)
-                    .replaceAll(" ")
-                    .trim();
+            this.courseName = GradeConstants.MULTI_WHITESPACE_PATTERN.matcher(this.courseName + " " + moreName)
+                    .replaceAll(" ").trim();
         }
 
         private CourseGradeExtract toRecord() {
-            return new CourseGradeExtract(courseCode, courseName, credits, processGrade, midtermGrade,
-                    finalGrade, labGrade, totalGrade, semesterNumber, yearStart, yearEnd);
+            return new CourseGradeExtract(courseCode, courseName, credits, processGrade, midtermGrade, finalGrade,
+                    labGrade, totalGrade, semesterNumber, yearStart, yearEnd);
         }
     }
 

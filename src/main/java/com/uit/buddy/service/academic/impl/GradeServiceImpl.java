@@ -16,18 +16,17 @@ import com.uit.buddy.util.GradePdfParser;
 import com.uit.buddy.util.GradePdfParser.CourseGradeExtract;
 import com.uit.buddy.util.GradePdfParser.ParsedGradeData;
 import com.uit.buddy.util.GradePdfParser.SemesterMetrics;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.multipart.MultipartFile;
-
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 @Service
 @RequiredArgsConstructor
@@ -55,8 +54,7 @@ public class GradeServiceImpl implements GradeService {
                 .orElseThrow(() -> new GradeException(GradeErrorCode.STUDENT_NOT_FOUND));
 
         if (parsedData.studentMssv() == null || !parsedData.studentMssv().equals(mssv)) {
-            throw new GradeException(GradeErrorCode.INVALID_FILE,
-                    "MSSV in PDF does not match authenticated user");
+            throw new GradeException(GradeErrorCode.INVALID_FILE, "MSSV in PDF does not match authenticated user");
         }
 
         String fallbackSemesterCode = determineSemester(parsedData.semesterMetrics());
@@ -73,26 +71,19 @@ public class GradeServiceImpl implements GradeService {
 
             Integer parsedCredits = courseGrade.credits() != null ? courseGrade.credits() : 0;
             Integer resolvedCredits = curriculumMetadata != null && curriculumMetadata.credits() != null
-                    && curriculumMetadata.credits() > 0
-                            ? curriculumMetadata.credits()
-                            : parsedCredits;
+                    && curriculumMetadata.credits() > 0 ? curriculumMetadata.credits() : parsedCredits;
 
-            Grade grade = Grade.builder()
-                    .mssv(mssv)
-                    .semesterCode(semesterCode)
-                    .courseCode(courseGrade.courseCode())
-                    .courseName(courseGrade.courseName())
-                    .credits(resolvedCredits)
+            Grade grade = Grade.builder().mssv(mssv).semesterCode(semesterCode).courseCode(courseGrade.courseCode())
+                    .courseName(courseGrade.courseName()).credits(resolvedCredits)
                     .courseType(curriculumMetadata != null ? curriculumMetadata.categoryCode() : null)
                     .processGrade(normalizeGrade(courseGrade.processGrade()))
                     .midtermGrade(normalizeGrade(courseGrade.midtermGrade()))
                     .finalGrade(normalizeGrade(courseGrade.finalGrade()))
                     .labGrade(normalizeGrade(courseGrade.labGrade()))
-                    .totalGrade(normalizeGrade(courseGrade.totalGrade()))
-                    .build();
+                    .totalGrade(normalizeGrade(courseGrade.totalGrade())).build();
 
-            Optional<Grade> existing = gradeRepository.findByMssvAndCourseCodeAndSemesterCode(
-                    mssv, courseGrade.courseCode(), semesterCode);
+            Optional<Grade> existing = gradeRepository.findByMssvAndCourseCodeAndSemesterCode(mssv,
+                    courseGrade.courseCode(), semesterCode);
 
             if (existing.isPresent()) {
                 grade.setId(existing.get().getId());
@@ -125,8 +116,7 @@ public class GradeServiceImpl implements GradeService {
 
     private String determineSemester(Optional<SemesterMetrics> metricsOpt) {
         if (metricsOpt.isEmpty()) {
-            throw new GradeException(GradeErrorCode.INVALID_FILE,
-                    "Cannot determine semester from PDF summary");
+            throw new GradeException(GradeErrorCode.INVALID_FILE, "Cannot determine semester from PDF summary");
         }
 
         SemesterMetrics metrics = metricsOpt.get();
@@ -139,18 +129,15 @@ public class GradeServiceImpl implements GradeService {
                     "Cannot determine semester info (hoc ky/nam hoc) from PDF");
         }
 
-        Optional<Semester> semester = semesterRepository.findBySemesterNumberAndYearStartAndYearEnd(
-                String.valueOf(semesterNumber),
-                yearStart,
-                yearEnd);
+        Optional<Semester> semester = semesterRepository
+                .findBySemesterNumberAndYearStartAndYearEnd(String.valueOf(semesterNumber), yearStart, yearEnd);
 
         if (semester.isPresent()) {
             return semester.get().getSemesterCode();
         }
 
         throw new GradeException(GradeErrorCode.INVALID_FILE,
-                "Semester not found in system: HK" + semesterNumber + " " +
-                        yearStart + "-" + yearEnd);
+                "Semester not found in system: HK" + semesterNumber + " " + yearStart + "-" + yearEnd);
     }
 
     @Override
@@ -179,10 +166,8 @@ public class GradeServiceImpl implements GradeService {
 
         List<Semester> semesters = semesterRepository.findAllById(semesterCodes);
 
-        return semesters.stream()
-                .sorted(Comparator.comparing(Semester::getStartDate))
-                .map(semester -> buildSemesterGradesResponse(
-                        semester,
+        return semesters.stream().sorted(Comparator.comparing(Semester::getStartDate))
+                .map(semester -> buildSemesterGradesResponse(semester,
                         gradesBySemester.getOrDefault(semester.getSemesterCode(), Collections.emptyList())))
                 .collect(Collectors.toList());
     }
@@ -207,10 +192,8 @@ public class GradeServiceImpl implements GradeService {
         CurriculumMetadata metadata = null;
 
         for (String candidate : lookupCandidates) {
-            metadata = curriculumCourseRepository
-                    .findGradeCourseMetadata(candidate, majorCode, academicStartYear)
-                    .map(value -> new CurriculumMetadata(value.getCredits(), value.getCategoryCode()))
-                    .orElse(null);
+            metadata = curriculumCourseRepository.findGradeCourseMetadata(candidate, majorCode, academicStartYear)
+                    .map(value -> new CurriculumMetadata(value.getCredits(), value.getCategoryCode())).orElse(null);
             if (metadata != null) {
                 break;
             }
@@ -276,9 +259,7 @@ public class GradeServiceImpl implements GradeService {
             return null;
         }
 
-        return BigDecimal.valueOf(grade.doubleValue())
-                .setScale(1, RoundingMode.HALF_UP)
-                .floatValue();
+        return BigDecimal.valueOf(grade.doubleValue()).setScale(1, RoundingMode.HALF_UP).floatValue();
     }
 
     private record CurriculumMetadata(Integer credits, String categoryCode) {

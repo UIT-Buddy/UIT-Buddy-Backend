@@ -134,8 +134,7 @@ public class ScheduleController extends AbstractBaseController {
 
     @GetMapping("/deadline/{deadlineId}")
     @Operation(summary = "Get deadline detail", description = "Get detail of a specific personal/course-linked deadline")
-    public ResponseEntity<SingleResponse<CreateDeadlineResponse>> getDeadlineDetail(
-            @PathVariable UUID deadlineId,
+    public ResponseEntity<SingleResponse<CreateDeadlineResponse>> getDeadlineDetail(@PathVariable UUID deadlineId,
             @AuthenticationPrincipal String mssv) {
         log.info("[GET /api/schedule/deadline/{}] Getting deadline detail for student: {}", deadlineId, mssv);
         CreateDeadlineResponse deadline = scheduleService.getDeadlineDetail(mssv, deadlineId);

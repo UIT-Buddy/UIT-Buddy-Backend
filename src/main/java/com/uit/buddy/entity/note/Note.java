@@ -13,8 +13,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Entity
-@Table(name = "notes", indexes = {
-        @Index(name = "idx_notes_mssv", columnList = "mssv"),
+@Table(name = "notes", indexes = { @Index(name = "idx_notes_mssv", columnList = "mssv"),
         @Index(name = "idx_notes_node", columnList = "node_id"),
         @Index(name = "idx_notes_updated_at", columnList = "updated_at") })
 @Getter

@@ -9,14 +9,13 @@ import com.uit.buddy.service.academic.GradeService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/grade")
@@ -43,8 +42,7 @@ public class GradeController extends AbstractBaseController {
 
     @GetMapping("/semester/{semesterCode}")
     @Operation(summary = "Get grades by semester", description = "Get all grades for a student in a specific semester")
-    public ResponseEntity<SingleResponse<SemesterGradesResponse>> getGradesBySemester(
-            @PathVariable String semesterCode,
+    public ResponseEntity<SingleResponse<SemesterGradesResponse>> getGradesBySemester(@PathVariable String semesterCode,
             @AuthenticationPrincipal String mssv) {
 
         log.info("[GET /api/grade/semester/{}] Getting grades for student: {}", semesterCode, mssv);
