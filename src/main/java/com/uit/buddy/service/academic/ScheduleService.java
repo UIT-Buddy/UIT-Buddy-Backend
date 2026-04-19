@@ -8,6 +8,7 @@ import com.uit.buddy.dto.response.schedule.CourseContentResponse;
 import com.uit.buddy.dto.response.schedule.CreateDeadlineResponse;
 import com.uit.buddy.dto.response.schedule.DeadlineResponse;
 import java.util.List;
+import java.util.UUID;
 import org.springframework.data.domain.Pageable;
 
 public interface ScheduleService {
@@ -18,6 +19,8 @@ public interface ScheduleService {
     CreateDeadlineResponse createDeadline(String mssv, CreateDeadlineRequest request);
 
     CreateDeadlineResponse updateDeadline(String mssv, UpdateDeadlineRequest request);
+
+    CreateDeadlineResponse getDeadlineDetail(String mssv, UUID deadlineId);
 
     /**
      * Fetch deadlines for a student. Reads from TemporaryDeadline table (Moodle-sourced) and StudentTask table

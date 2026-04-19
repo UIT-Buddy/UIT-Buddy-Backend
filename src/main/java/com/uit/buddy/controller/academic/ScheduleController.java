@@ -17,6 +17,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.util.List;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Pageable;
@@ -129,6 +130,15 @@ public class ScheduleController extends AbstractBaseController {
         Pageable pageable = createPageable(page, limit, sortType, sortBy);
         DeadlineResponse deadlines = scheduleService.fetchDeadline(mssv, month, year, pageable);
         return successSingle(deadlines, "Deadlines fetched successfully");
+    }
+
+    @GetMapping("/deadline/{deadlineId}")
+    @Operation(summary = "Get deadline detail", description = "Get detail of a specific personal/course-linked deadline")
+    public ResponseEntity<SingleResponse<CreateDeadlineResponse>> getDeadlineDetail(@PathVariable UUID deadlineId,
+            @AuthenticationPrincipal String mssv) {
+        log.info("[GET /api/schedule/deadline/{}] Getting deadline detail for student: {}", deadlineId, mssv);
+        CreateDeadlineResponse deadline = scheduleService.getDeadlineDetail(mssv, deadlineId);
+        return successSingle(deadline, "Deadline detail retrieved successfully");
     }
 
     @GetMapping("/calendar")

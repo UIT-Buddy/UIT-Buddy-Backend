@@ -67,6 +67,15 @@ public class UserController extends AbstractBaseController {
         return successSingle(avatarUrl, "Avatar uploaded successfully!");
     }
 
+    @PostMapping(value = "/cover", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @Operation(summary = "Upload user cover", description = "Upload a new cover image for the authenticated user")
+    public ResponseEntity<SingleResponse<String>> uploadCover(@RequestParam("file") MultipartFile file,
+            @AuthenticationPrincipal String mssv) {
+        log.info("[POST /api/user/cover] Request to upload cover received");
+        String coverUrl = userService.uploadCover(mssv, file);
+        return successSingle(coverUrl, "Cover uploaded successfully!");
+    }
+
     @GetMapping("/{mssv}")
     @Operation(summary = "Get other student profile", description = "Fetch detailed information of other student")
     public ResponseEntity<SingleResponse<UserResponse>> getOtherStudentProfile(@PathVariable String mssv,

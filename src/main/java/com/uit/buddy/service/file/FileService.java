@@ -13,6 +13,8 @@ public interface FileService {
 
     String uploadAvatar(MultipartFile file, String mssv);
 
+    String uploadCover(MultipartFile file, String mssv);
+
     PostMedia uploadPostImage(MultipartFile file, String postId);
 
     PostMedia uploadPostVideo(MultipartFile file, String postId);

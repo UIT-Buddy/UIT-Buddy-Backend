@@ -12,6 +12,7 @@ public final class StorageConstants {
     }
 
     public static final String FOLDER_AVATARS = "avatars";
+    public static final String FOLDER_COVERS = "covers";
     public static final String FOLDER_POST_IMAGES = "posts/images";
     public static final String FOLDER_POST_VIDEOS = "posts/videos";
     public static final String FOLDER_DOCUMENT_FILES = "documents/files";

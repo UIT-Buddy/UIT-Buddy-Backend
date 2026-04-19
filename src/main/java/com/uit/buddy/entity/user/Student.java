@@ -31,6 +31,9 @@ public class Student extends AbstractAuditEntity {
     @Column(name = "avatar_url", length = 255)
     private String avatarUrl;
 
+    @Column(name = "cover_url", length = 255)
+    private String coverUrl;
+
     @Column(name = "bio", length = 100)
     private String bio;
 

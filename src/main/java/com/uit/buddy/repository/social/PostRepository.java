@@ -17,6 +17,8 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface PostRepository extends CrudRepository<Post, UUID> {
 
+    long countByMssv(String mssv);
+
     String SELECT_BASE = """
             p.id as id, p.title as title, p.content as content, p.medias as medias,
             p.like_count as likeCount, p.comment_count as commentCount, p.share_count as shareCount,

@@ -1,14 +1,18 @@
 package com.uit.buddy.service.document.impl;
 
+import com.uit.buddy.client.CometChatClient;
 import com.uit.buddy.constant.StorageConstants;
+import com.uit.buddy.dto.request.client.CometChatSendMessageRequest;
 import com.uit.buddy.dto.request.document.CreateFileRequest;
 import com.uit.buddy.dto.request.document.CreateFolderRequest;
 import com.uit.buddy.dto.request.document.ShareResourceRequest;
+import com.uit.buddy.dto.request.document.ShareResourceViaMessageRequest;
 import com.uit.buddy.dto.request.document.UnshareResourceRequest;
 import com.uit.buddy.dto.request.document.UpdateFileRequest;
 import com.uit.buddy.dto.response.document.DocumentFileResponse;
 import com.uit.buddy.dto.response.document.DocumentSearchResult;
 import com.uit.buddy.dto.response.document.DocumentUploadResult;
+import com.uit.buddy.dto.response.document.SharedFolderResponse;
 import com.uit.buddy.dto.response.document.SharedUserResponse;
 import com.uit.buddy.dto.response.document.ViewFolderDetailResponse;
 import com.uit.buddy.dto.response.document.ViewFolderDetailResponse.FileResponse;
@@ -19,6 +23,7 @@ import com.uit.buddy.entity.document.ShareDocument;
 import com.uit.buddy.entity.document.ShareFolder;
 import com.uit.buddy.enums.AccessRole;
 import com.uit.buddy.enums.DocumentResourceType;
+import com.uit.buddy.enums.ShareTargetType;
 import com.uit.buddy.exception.document.DocumentErrorCode;
 import com.uit.buddy.exception.document.DocumentException;
 import com.uit.buddy.exception.user.UserErrorCode;
@@ -62,6 +67,7 @@ public class DocumentServiceImpl implements DocumentService {
     private final ShareDocumentRepository shareDocumentRepository;
     private final ShareFolderRepository shareFolderRepository;
     private final StudentRepository studentRepository;
+    private final CometChatClient cometChatClient;
     private final FileService fileService;
     private final DocumentMapper documentMapper;
     private final StudentMapper studentMapper;
@@ -251,6 +257,20 @@ public class DocumentServiceImpl implements DocumentService {
 
     @Override
     @Transactional(readOnly = true)
+    public Page<SharedFolderResponse> getSharedFoldersWithMe(String mssv, Pageable pageable) {
+        return shareFolderRepository.findByMssv(mssv, pageable).map(shareFolder -> {
+            Folder folder = shareFolder.getFolder();
+            int itemCount = folder.getChildren().size() + folder.getFiles().size();
+
+            return new SharedFolderResponse(folder.getId(), folder.getFolderName(), buildFolderPath(folder),
+                    folder.getParent() != null ? folder.getParent().getId() : null, itemCount,
+                    studentMapper.toStudentResponse(folder.getOwner()), shareFolder.getAccessRole(),
+                    shareFolder.getCreatedAt());
+        });
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public Page<SharedUserResponse> getSharedUsers(String mssv, DocumentResourceType resourceType, UUID resourceId,
             Pageable pageable) {
         validateOwnership(mssv, resourceType, resourceId);
@@ -317,6 +337,39 @@ public class DocumentServiceImpl implements DocumentService {
         }
 
         throw new DocumentException(DocumentErrorCode.INVALID_SHARE_RESOURCE_TYPE);
+    }
+
+    @Override
+    @Transactional
+    public void shareResourceViaMessage(String mssv, ShareResourceViaMessageRequest request) {
+        ShareTargetType receiverType = request.receiverType();
+        String receiverId = request.receiverId();
+
+        if (receiverType == ShareTargetType.USER) {
+            validateShareTarget(mssv, receiverId);
+            shareResource(mssv, new ShareResourceRequest(request.resourceType(), request.resourceId(), receiverId));
+        }
+
+        SharedResourceMetadata metadata = resolveOwnedResourceMetadata(mssv, request.resourceType(),
+                request.resourceId());
+
+        String messageText = request.content() != null && !request.content().isBlank() ? request.content()
+                : defaultShareMessage(metadata);
+
+        Map<String, Object> resourceMetadata = new LinkedHashMap<>();
+        resourceMetadata.put("resourceType", metadata.resourceType().name());
+        resourceMetadata.put("resourceId", metadata.resourceId().toString());
+        resourceMetadata.put("resourceName", metadata.resourceName());
+        resourceMetadata.put("resourcePath", metadata.resourcePath());
+        if (metadata.url() != null && !metadata.url().isBlank()) {
+            resourceMetadata.put("url", metadata.url());
+        }
+
+        CometChatSendMessageRequest messageRequest = CometChatSendMessageRequest.builder().receiver(receiverId)
+                .receiverType(receiverType == ShareTargetType.USER ? "user" : "group").category("message").type("text")
+                .data(Map.of("text", messageText, "metadata", resourceMetadata)).build();
+
+        cometChatClient.sendMessage(messageRequest, mssv);
     }
 
     @Override
@@ -472,6 +525,40 @@ public class DocumentServiceImpl implements DocumentService {
         if (!studentRepository.existsById(targetMssv)) {
             throw new DocumentException(DocumentErrorCode.RECIPIENT_NOT_FOUND);
         }
+    }
+
+    private SharedResourceMetadata resolveOwnedResourceMetadata(String mssv, DocumentResourceType resourceType,
+            UUID resourceId) {
+        if (resourceType == DocumentResourceType.FILE) {
+            Document document = documentRepository.findByIdAndMssv(resourceId, mssv)
+                    .orElseThrow(() -> new DocumentException(DocumentErrorCode.FILE_NOT_FOUND));
+
+            String resourcePath = document.getFolder() != null
+                    ? buildFolderPath(document.getFolder()) + StorageConstants.PATH_SEPARATOR + document.getFileName()
+                    : StorageConstants.ROOT_FOLDER_NAME + StorageConstants.PATH_SEPARATOR + document.getFileName();
+
+            return new SharedResourceMetadata(DocumentResourceType.FILE, document.getId(), document.getFileName(),
+                    resourcePath, document.getFileUrl());
+        }
+
+        if (resourceType == DocumentResourceType.FOLDER) {
+            Folder folder = findOwnedFolder(mssv, resourceId);
+            return new SharedResourceMetadata(DocumentResourceType.FOLDER, folder.getId(), folder.getFolderName(),
+                    buildFolderPath(folder), null);
+        }
+
+        throw new DocumentException(DocumentErrorCode.INVALID_SHARE_RESOURCE_TYPE);
+    }
+
+    private String defaultShareMessage(SharedResourceMetadata metadata) {
+        if (metadata.resourceType() == DocumentResourceType.FILE) {
+            return "Shared a file: " + metadata.resourceName();
+        }
+        return "Shared a folder: " + metadata.resourceName();
+    }
+
+    private record SharedResourceMetadata(DocumentResourceType resourceType, UUID resourceId, String resourceName,
+            String resourcePath, String url) {
     }
 
     private Folder resolveTargetFolder(String mssv, UUID folderId) {

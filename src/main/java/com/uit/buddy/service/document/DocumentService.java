@@ -3,10 +3,12 @@ package com.uit.buddy.service.document;
 import com.uit.buddy.dto.request.document.CreateFileRequest;
 import com.uit.buddy.dto.request.document.CreateFolderRequest;
 import com.uit.buddy.dto.request.document.ShareResourceRequest;
+import com.uit.buddy.dto.request.document.ShareResourceViaMessageRequest;
 import com.uit.buddy.dto.request.document.UnshareResourceRequest;
 import com.uit.buddy.dto.request.document.UpdateFileRequest;
 import com.uit.buddy.dto.response.document.DocumentFileResponse;
 import com.uit.buddy.dto.response.document.DocumentSearchResult;
+import com.uit.buddy.dto.response.document.SharedFolderResponse;
 import com.uit.buddy.dto.response.document.SharedUserResponse;
 import com.uit.buddy.dto.response.document.ViewFolderDetailResponse;
 import com.uit.buddy.enums.DocumentResourceType;
@@ -28,10 +30,14 @@ public interface DocumentService {
 
     Page<DocumentSearchResult> searchSharedWithMe(String mssv, String keyword, Pageable pageable);
 
+    Page<SharedFolderResponse> getSharedFoldersWithMe(String mssv, Pageable pageable);
+
     Page<SharedUserResponse> getSharedUsers(String mssv, DocumentResourceType resourceType, UUID resourceId,
             Pageable pageable);
 
     void shareResource(String mssv, ShareResourceRequest request);
+
+    void shareResourceViaMessage(String mssv, ShareResourceViaMessageRequest request);
 
     void unshareResource(String mssv, UnshareResourceRequest request);
 

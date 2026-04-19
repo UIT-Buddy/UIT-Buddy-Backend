@@ -59,6 +59,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.regex.Matcher;
@@ -136,7 +137,8 @@ public class ScheduleServiceImpl implements ScheduleService {
                 throw new ScheduleException(ScheduleErrorCode.INVALID_OWNER);
             }
 
-            // Save schedule from ICS — no Moodle calls here, just fast file parsing + DB write
+            // Save schedule from ICS — no Moodle calls here, just fast file parsing + DB
+            // write
             List<StudentSubjectClass> savedMappings = saveScheduleData(student, result.getEvents());
             List<CourseCalendarResponse.Course> courses = scheduleMapper.toListCourse(savedMappings);
             courses = sortCoursesByClassCode(courses);
@@ -250,7 +252,8 @@ public class ScheduleServiceImpl implements ScheduleService {
         Semester semester = getActiveSemester();
         String semesterCode = semester.getSemesterCode();
 
-        // Read from TemporaryDeadline table scoped to semester and (optionally) month/year
+        // Read from TemporaryDeadline table scoped to semester and (optionally)
+        // month/year
         List<TemporaryDeadline> savedDeadlines = (month != null && year != null)
                 ? temporaryDeadlineRepository.findByMssvAndSemesterCodeAndMonthAndYear(mssv, semesterCode, month, year)
                 : temporaryDeadlineRepository.findByMssvAndSemesterCodeAll(mssv, semesterCode);
@@ -298,7 +301,8 @@ public class ScheduleServiceImpl implements ScheduleService {
             for (CourseContentResponse.exercise exercise : course.exercises()) {
                 if (exercise.dueDate() == null || exercise.exerciseName() == null || exercise.exerciseName().isBlank())
                     continue;
-                // Always resolve status from due date (mirrors mapDeadlineStatus in ScheduleMapper)
+                // Always resolve status from due date (mirrors mapDeadlineStatus in
+                // ScheduleMapper)
                 String key = buildDeadlineKey(classCode, exercise.exerciseName(), exercise.dueDate());
                 TemporaryDeadline existingTd = existingMap.get(key);
                 if (existingTd == null) {
@@ -334,6 +338,14 @@ public class ScheduleServiceImpl implements ScheduleService {
         studentTask.setPersonalTitle(request.exerciseName());
         studentTask.setReminderAt(request.dueDate());
         studentTaskRepository.save(studentTask);
+
+        return scheduleMapper.toCreateDeadlineResponse(studentTask);
+    }
+
+    @Override
+    public CreateDeadlineResponse getDeadlineDetail(String mssv, UUID deadlineId) {
+        StudentTask studentTask = studentTaskRepository.findByIdAndMssv(deadlineId, mssv)
+                .orElseThrow(() -> new ScheduleException(ScheduleErrorCode.ASSIGNMENT_NOT_EXIST));
 
         return scheduleMapper.toCreateDeadlineResponse(studentTask);
     }
@@ -738,7 +750,8 @@ public class ScheduleServiceImpl implements ScheduleService {
         AssignmentDetailResponse assignmentDetail = uitClient.getCourseAssignments(wstoken, assignmentId);
         LocalDateTime now = LocalDateTime.now();
 
-        // Circuit breaker open or Moodle unavailable — fall back to date-based inference only
+        // Circuit breaker open or Moodle unavailable — fall back to date-based
+        // inference only
         if (assignmentDetail == null) {
             log.debug("[Schedule Service] Moodle unavailable for assignmentId={}, inferring status from due date",
                     assignmentId);

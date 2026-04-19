@@ -224,8 +224,10 @@ public class AuthServiceImpl implements AuthService {
 
         pendingAccountRepository.delete(pendingAccount);
 
-        // Fire-and-forget: sync all Moodle deadlines for the active semester asynchronously.
+        // Fire-and-forget: sync all Moodle deadlines for the active semester
+        // asynchronously.
         // Failures are logged and retried by the global scheduler.
+
         String accessToken = jwtUtils.generateAccessToken(request.mssv());
         String refreshToken = jwtUtils.generateRefreshToken(request.mssv(), false);
 
