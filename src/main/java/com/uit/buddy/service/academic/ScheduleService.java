@@ -53,5 +53,4 @@ public interface ScheduleService {
      * a user completes signup to pre-populate their deadline cache without blocking the response. Accepts
      * encryptedWstoken to avoid a DB lookup that would fail because the signup transaction has not yet committed.
      */
-    void syncAllMoodleDeadlinesForActiveSemesterAsync(String mssv, String encryptedWstoken);
 }

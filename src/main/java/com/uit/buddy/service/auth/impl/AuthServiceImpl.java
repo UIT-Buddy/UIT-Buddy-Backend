@@ -227,7 +227,6 @@ public class AuthServiceImpl implements AuthService {
         // Fire-and-forget: sync all Moodle deadlines for the active semester
         // asynchronously.
         // Failures are logged and retried by the global scheduler.
-        scheduleService.syncAllMoodleDeadlinesForActiveSemesterAsync(request.mssv(), student.getEncryptedWstoken());
 
         String accessToken = jwtUtils.generateAccessToken(request.mssv());
         String refreshToken = jwtUtils.generateRefreshToken(request.mssv(), false);

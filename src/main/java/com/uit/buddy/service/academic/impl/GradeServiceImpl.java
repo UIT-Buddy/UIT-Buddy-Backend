@@ -1,8 +1,10 @@
 package com.uit.buddy.service.academic.impl;
 
+import com.uit.buddy.dto.response.academic.GradeResponse;
 import com.uit.buddy.dto.response.academic.SemesterGradesResponse;
 import com.uit.buddy.entity.academic.Grade;
 import com.uit.buddy.entity.academic.Semester;
+import com.uit.buddy.entity.academic.SemesterSummary;
 import com.uit.buddy.entity.user.Student;
 import com.uit.buddy.exception.grade.GradeErrorCode;
 import com.uit.buddy.exception.grade.GradeException;
@@ -10,6 +12,7 @@ import com.uit.buddy.mapper.academic.GradeMapper;
 import com.uit.buddy.repository.academic.CurriculumCourseRepository;
 import com.uit.buddy.repository.academic.GradeRepository;
 import com.uit.buddy.repository.academic.SemesterRepository;
+import com.uit.buddy.repository.academic.SemesterSummaryRepository;
 import com.uit.buddy.repository.user.StudentRepository;
 import com.uit.buddy.service.academic.GradeService;
 import com.uit.buddy.util.GradePdfParser;
@@ -35,6 +38,7 @@ public class GradeServiceImpl implements GradeService {
 
     private final GradeRepository gradeRepository;
     private final SemesterRepository semesterRepository;
+    private final SemesterSummaryRepository semesterSummaryRepository;
     private final CurriculumCourseRepository curriculumCourseRepository;
     private final StudentRepository studentRepository;
     private final GradeMapper gradeMapper;
@@ -70,11 +74,9 @@ public class GradeServiceImpl implements GradeService {
                     academicStartYear, curriculumMetadataCache);
 
             Integer parsedCredits = courseGrade.credits() != null ? courseGrade.credits() : 0;
-            Integer resolvedCredits = curriculumMetadata != null && curriculumMetadata.credits() != null
-                    && curriculumMetadata.credits() > 0 ? curriculumMetadata.credits() : parsedCredits;
 
             Grade grade = Grade.builder().mssv(mssv).semesterCode(semesterCode).courseCode(courseGrade.courseCode())
-                    .courseName(courseGrade.courseName()).credits(resolvedCredits)
+                    .courseName(courseGrade.courseName()).credits(parsedCredits)
                     .courseType(curriculumMetadata != null ? curriculumMetadata.categoryCode() : null)
                     .processGrade(normalizeGrade(courseGrade.processGrade()))
                     .midtermGrade(normalizeGrade(courseGrade.midtermGrade()))
@@ -92,6 +94,8 @@ public class GradeServiceImpl implements GradeService {
             gradeRepository.save(grade);
             savedCount++;
         }
+
+        synchronizeSemesterSummaries(student);
 
         log.info("Successfully imported {} grades for student {}", savedCount, mssv);
         return String.format("Imported %d courses successfully", savedCount);
@@ -148,8 +152,9 @@ public class GradeServiceImpl implements GradeService {
         List<Grade> grades = gradeRepository.findByMssvAndSemesterCode(mssv, semesterCode);
         Semester semester = semesterRepository.findById(semesterCode)
                 .orElseThrow(() -> new GradeException(GradeErrorCode.INVALID_FILE, "Semester not found"));
+        SemesterSummary summary = semesterSummaryRepository.findByMssvAndSemesterCode(mssv, semesterCode).orElse(null);
 
-        return buildSemesterGradesResponse(semester, grades);
+        return buildSemesterGradesResponse(semester, grades, summary);
     }
 
     @Override
@@ -158,6 +163,8 @@ public class GradeServiceImpl implements GradeService {
         log.info("Getting all grades for student {}", mssv);
 
         List<Grade> allGrades = gradeRepository.findByMssv(mssv);
+        Map<String, SemesterSummary> summaryBySemesterCode = semesterSummaryRepository.findByMssv(mssv).stream()
+                .collect(Collectors.toMap(SemesterSummary::getSemesterCode, value -> value, (left, right) -> left));
 
         Map<String, List<Grade>> gradesBySemester = allGrades.stream()
                 .collect(Collectors.groupingBy(Grade::getSemesterCode));
@@ -168,12 +175,84 @@ public class GradeServiceImpl implements GradeService {
 
         return semesters.stream().sorted(Comparator.comparing(Semester::getStartDate))
                 .map(semester -> buildSemesterGradesResponse(semester,
-                        gradesBySemester.getOrDefault(semester.getSemesterCode(), Collections.emptyList())))
+                        gradesBySemester.getOrDefault(semester.getSemesterCode(), Collections.emptyList()),
+                        summaryBySemesterCode.get(semester.getSemesterCode())))
                 .collect(Collectors.toList());
     }
 
-    private SemesterGradesResponse buildSemesterGradesResponse(Semester semester, List<Grade> grades) {
-        return gradeMapper.toSemesterGradesResponse(semester, grades);
+    private SemesterGradesResponse buildSemesterGradesResponse(Semester semester, List<Grade> grades,
+            SemesterSummary semesterSummary) {
+        List<GradeResponse> gradeResponses = grades.stream().map(gradeMapper::toResponse).collect(Collectors.toList());
+
+        Integer totalCredits = semesterSummary != null && semesterSummary.getTermCredits() != null
+                ? semesterSummary.getTermCredits() : calculateTotalCredits(grades);
+
+        Float averageGrade = semesterSummary != null && semesterSummary.getTermGpa() != null
+                ? roundToTwoDecimals(semesterSummary.getTermGpa())
+                : roundToTwoDecimals(calculateWeightedAverage(grades));
+
+        return SemesterGradesResponse.builder().semesterCode(semester.getSemesterCode()).totalCredits(totalCredits)
+                .averageGrade(averageGrade).grades(gradeResponses).build();
+    }
+
+    private void synchronizeSemesterSummaries(Student student) {
+        String mssv = student.getMssv();
+        List<Grade> allGrades = gradeRepository.findByMssv(mssv);
+        Map<String, List<Grade>> gradesBySemester = allGrades.stream()
+                .collect(Collectors.groupingBy(Grade::getSemesterCode));
+
+        for (Map.Entry<String, List<Grade>> entry : gradesBySemester.entrySet()) {
+            String semesterCode = entry.getKey();
+            List<Grade> grades = entry.getValue();
+
+            Semester semester = semesterRepository.findById(semesterCode).orElse(null);
+            if (semester == null) {
+                log.warn("Skipping semester summary sync because semester {} was not found", semesterCode);
+                continue;
+            }
+
+            Integer termCredits = calculateTotalCredits(grades);
+            Float termGpa = roundToTwoDecimals(calculateWeightedAverage(grades));
+
+            SemesterSummary summary = semesterSummaryRepository.findByMssvAndSemesterCode(mssv, semesterCode)
+                    .orElseGet(() -> SemesterSummary.builder().student(student).semester(semester).build());
+
+            summary.setTermCredits(termCredits);
+            summary.setTermGpa(termGpa);
+            semesterSummaryRepository.save(summary);
+        }
+    }
+
+    private Integer calculateTotalCredits(List<Grade> grades) {
+        return grades.stream().filter(grade -> grade.getCredits() != null).mapToInt(Grade::getCredits).sum();
+    }
+
+    private Float calculateWeightedAverage(List<Grade> grades) {
+        double totalWeightedGrade = 0D;
+        int totalCredits = 0;
+
+        for (Grade grade : grades) {
+            if (grade.getTotalGrade() == null || grade.getCredits() == null) {
+                continue;
+            }
+
+            totalWeightedGrade += grade.getTotalGrade() * grade.getCredits();
+            totalCredits += grade.getCredits();
+        }
+
+        if (totalCredits == 0) {
+            return null;
+        }
+
+        return (float) (totalWeightedGrade / totalCredits);
+    }
+
+    private Float roundToTwoDecimals(Float value) {
+        if (value == null) {
+            return null;
+        }
+
+        return BigDecimal.valueOf(value.doubleValue()).setScale(2, RoundingMode.HALF_UP).floatValue();
     }
 
     private CurriculumMetadata resolveCurriculumMetadata(String courseCode, String majorCode, Integer academicStartYear,

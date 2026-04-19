@@ -946,18 +946,4 @@ public class ScheduleServiceImpl implements ScheduleService {
      * Syncs all Moodle deadlines for the active semester into the TemporaryDeadline table. Runs asynchronously after
      * signup to pre-populate the deadline cache without blocking the auth response.
      */
-    @Override
-    @Async("fetchExecutor")
-    public void syncAllMoodleDeadlinesForActiveSemesterAsync(String mssv, String encryptedWstoken) {
-        try {
-            String decryptedWstoken = encryptionUtils.decrypt(encryptedWstoken);
-            List<CourseContentResponse> synced = fetchCourseDeadlinesFromMoodleWithToken(mssv, decryptedWstoken, null,
-                    null);
-            int totalDeadlines = synced.stream().mapToInt(c -> c.exercises().size()).sum();
-            log.info("[Schedule Service] Async signup deadline sync completed for mssv={} with {} deadlines", mssv,
-                    totalDeadlines);
-        } catch (Exception e) {
-            log.warn("[Schedule Service] Async signup deadline sync failed for mssv={}: {}", mssv, e.getMessage(), e);
-        }
-    }
 }

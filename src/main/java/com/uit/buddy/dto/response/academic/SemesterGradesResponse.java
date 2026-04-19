@@ -12,7 +12,6 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class SemesterGradesResponse {
     private String semesterCode;
-    private String semesterName;
     private Integer totalCredits;
     private Float averageGrade;
     private List<GradeResponse> grades;
