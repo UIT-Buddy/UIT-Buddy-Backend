@@ -16,6 +16,7 @@ public class AcademicSummaryResponse {
     private Float accumulatedGpa;
     private Float majorProgress;
     private Integer accumulatedGeneralCredits;
+    private Integer accumulatedPoliticalCredits;
     private Integer accumulatedFoundationCredits;
     private Integer accumulatedMajorCredits;
     private Integer accumulatedElectiveCredits;

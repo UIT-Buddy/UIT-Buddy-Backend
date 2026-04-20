@@ -212,9 +212,13 @@ public class GradeServiceImpl implements GradeService {
     @Transactional(readOnly = true)
     public AcademicSummaryResponse getAcademicSummary(String mssv) {
         AcademicSummary summary = academicSummaryRepository.findByMssv(mssv).orElse(null);
+        Map<CourseCategoryCode, Integer> totalCreditsByCategory = calculateCreditsByCategory(
+                gradeRepository.findByMssv(mssv));
+        Integer accumulatedPoliticalCredits = totalCreditsByCategory.getOrDefault(CourseCategoryCode.CT, 0);
         if (summary == null) {
             return AcademicSummaryResponse.builder().attemptedCredits(0).accumulatedCredits(0).attemptedGpa(0F)
                     .accumulatedGpa(0F).majorProgress(0F).accumulatedGeneralCredits(0)
+                    .accumulatedPoliticalCredits(accumulatedPoliticalCredits)
                     .accumulatedFoundationCredits(0).accumulatedMajorCredits(0).accumulatedElectiveCredits(0)
                     .accumulatedGraduationCredits(0).build();
         }
@@ -227,6 +231,7 @@ public class GradeServiceImpl implements GradeService {
                 .majorProgress(summary.getMajorProgress() != null ? summary.getMajorProgress() : 0F)
                 .accumulatedGeneralCredits(
                         summary.getAccumulatedGeneralCredits() != null ? summary.getAccumulatedGeneralCredits() : 0)
+                .accumulatedPoliticalCredits(accumulatedPoliticalCredits)
                 .accumulatedFoundationCredits(summary.getAccumulatedFoundationCredits() != null
                         ? summary.getAccumulatedFoundationCredits()
                         : 0)
@@ -314,7 +319,10 @@ public class GradeServiceImpl implements GradeService {
     private Map<CourseCategoryCode, Integer> resolveCreditsByCategory(List<Grade> grades,
             SemesterSummary semesterSummary) {
         if (hasCompleteCategoryCache(semesterSummary)) {
-            return buildCategoryMapFromSummary(semesterSummary);
+            Map<CourseCategoryCode, Integer> creditsByCategory = buildCategoryMapFromSummary(semesterSummary);
+            Integer ctCredits = calculateCreditsByCategory(grades).getOrDefault(CourseCategoryCode.CT, 0);
+            creditsByCategory.put(CourseCategoryCode.CT, ctCredits);
+            return creditsByCategory;
         }
 
         return calculateCreditsByCategory(grades);
@@ -335,6 +343,7 @@ public class GradeServiceImpl implements GradeService {
         creditsByCategory.put(CourseCategoryCode.CN, semesterSummary.getTermCnCredits());
         creditsByCategory.put(CourseCategoryCode.TOTTN, semesterSummary.getTermTottnCredits());
         creditsByCategory.put(CourseCategoryCode.TC, semesterSummary.getTermTcCredits());
+        creditsByCategory.put(CourseCategoryCode.CT, 0);
         return creditsByCategory;
     }
 
