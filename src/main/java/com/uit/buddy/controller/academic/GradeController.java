@@ -3,6 +3,7 @@ package com.uit.buddy.controller.academic;
 import com.uit.buddy.controller.AbstractBaseController;
 import com.uit.buddy.dto.base.SingleResponse;
 import com.uit.buddy.dto.request.grade.UploadGradeRequest;
+import com.uit.buddy.dto.response.academic.AcademicSummaryResponse;
 import com.uit.buddy.dto.response.academic.SemesterGradesResponse;
 import com.uit.buddy.exception.grade.*;
 import com.uit.buddy.service.academic.GradeService;
@@ -58,5 +59,15 @@ public class GradeController extends AbstractBaseController {
         log.info("[GET /api/grade/all] Getting all grades for student: {}", mssv);
         List<SemesterGradesResponse> response = gradeService.getAllGrades(mssv);
         return successSingle(response, "All grades retrieved successfully");
+    }
+
+    @GetMapping("/summary")
+    @Operation(summary = "Get academic summary", description = "Get overall academic summary for the authenticated student")
+    public ResponseEntity<SingleResponse<AcademicSummaryResponse>> getAcademicSummary(
+            @AuthenticationPrincipal String mssv) {
+
+        log.info("[GET /api/grade/summary] Getting academic summary for student: {}", mssv);
+        AcademicSummaryResponse response = gradeService.getAcademicSummary(mssv);
+        return successSingle(response, "Academic summary retrieved successfully");
     }
 }

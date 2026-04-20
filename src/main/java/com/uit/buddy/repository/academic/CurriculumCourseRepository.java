@@ -17,6 +17,17 @@ public interface CurriculumCourseRepository extends JpaRepository<CurriculumCour
             @Param("year") Integer year);
 
     @Query(value = """
+            SELECT c.total_credits_required
+            FROM curriculums c
+            WHERE c.major_code = :majorCode
+              AND c.academic_start_year = :year
+            ORDER BY c.curriculum_code
+            LIMIT 1
+            """, nativeQuery = true)
+    Optional<Integer> findTotalCreditsRequiredByMajorAndYear(@Param("majorCode") String majorCode,
+            @Param("year") Integer year);
+
+    @Query(value = """
             SELECT COALESCE(cc.credits,
                             COALESCE(cc.theory_credits, 0) + COALESCE(cc.lab_credits, 0),
                             cc.theory_credits,

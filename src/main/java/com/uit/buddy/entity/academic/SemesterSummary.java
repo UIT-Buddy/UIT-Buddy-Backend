@@ -34,8 +34,32 @@ public class SemesterSummary extends AbstractBaseEntity {
     @Column(name = "term_gpa")
     private Float termGpa;
 
+    @Column(name = "term_gpa_scale4")
+    private Float termGpaScale4;
+
     @Column(name = "term_credits")
     private Integer termCredits;
+
+    @Column(name = "accumulated_credits")
+    private Integer accumulatedCredits;
+
+    @Column(name = "term_dc_credits")
+    private Integer termDcCredits;
+
+    @Column(name = "term_csnn_credits")
+    private Integer termCsnnCredits;
+
+    @Column(name = "term_csn_credits")
+    private Integer termCsnCredits;
+
+    @Column(name = "term_cn_credits")
+    private Integer termCnCredits;
+
+    @Column(name = "term_tottn_credits")
+    private Integer termTottnCredits;
+
+    @Column(name = "term_tc_credits")
+    private Integer termTcCredits;
 
     @Column(name = "term_rank", length = 50)
     private String termRank;

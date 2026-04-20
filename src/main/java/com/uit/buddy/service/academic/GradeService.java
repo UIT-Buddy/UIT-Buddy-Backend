@@ -1,5 +1,6 @@
 package com.uit.buddy.service.academic;
 
+import com.uit.buddy.dto.response.academic.AcademicSummaryResponse;
 import com.uit.buddy.dto.response.academic.SemesterGradesResponse;
 import java.util.List;
 import org.springframework.web.multipart.MultipartFile;
@@ -11,4 +12,6 @@ public interface GradeService {
     SemesterGradesResponse getGradesBySemester(String mssv, String semesterCode);
 
     List<SemesterGradesResponse> getAllGrades(String mssv);
+
+    AcademicSummaryResponse getAcademicSummary(String mssv);
 }
