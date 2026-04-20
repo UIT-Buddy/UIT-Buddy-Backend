@@ -7,8 +7,8 @@ import com.uit.buddy.entity.academic.AcademicSummary;
 import com.uit.buddy.entity.academic.Grade;
 import com.uit.buddy.entity.academic.Semester;
 import com.uit.buddy.entity.academic.SemesterSummary;
-import com.uit.buddy.enums.CourseCategoryCode;
 import com.uit.buddy.entity.user.Student;
+import com.uit.buddy.enums.CourseCategoryCode;
 import com.uit.buddy.exception.grade.GradeErrorCode;
 import com.uit.buddy.exception.grade.GradeException;
 import com.uit.buddy.mapper.academic.GradeMapper;
@@ -161,8 +161,7 @@ public class GradeServiceImpl implements GradeService {
                 .orElseThrow(() -> new GradeException(GradeErrorCode.INVALID_FILE, "Semester not found"));
         SemesterSummary summary = semesterSummaryRepository.findByMssvAndSemesterCode(mssv, semesterCode).orElse(null);
         Integer accumulatedCredits = summary != null && summary.getAccumulatedCredits() != null
-                ? summary.getAccumulatedCredits()
-                : calculateAccumulatedCreditsUntilSemester(mssv, semester);
+                ? summary.getAccumulatedCredits() : calculateAccumulatedCreditsUntilSemester(mssv, semester);
 
         return buildSemesterGradesResponse(semester, grades, summary, accumulatedCredits);
     }
@@ -214,9 +213,8 @@ public class GradeServiceImpl implements GradeService {
         AcademicSummary summary = academicSummaryRepository.findByMssv(mssv).orElse(null);
         if (summary == null) {
             return AcademicSummaryResponse.builder().attemptedCredits(0).accumulatedCredits(0).attemptedGpa(0F)
-                    .accumulatedGpa(0F).majorProgress(0F).accumulatedGeneralCredits(0)
-                    .accumulatedFoundationCredits(0).accumulatedMajorCredits(0).accumulatedElectiveCredits(0)
-                    .accumulatedGraduationCredits(0).build();
+                    .accumulatedGpa(0F).majorProgress(0F).accumulatedGeneralCredits(0).accumulatedFoundationCredits(0)
+                    .accumulatedMajorCredits(0).accumulatedElectiveCredits(0).accumulatedGraduationCredits(0).build();
         }
 
         return AcademicSummaryResponse.builder()
@@ -228,15 +226,13 @@ public class GradeServiceImpl implements GradeService {
                 .accumulatedGeneralCredits(
                         summary.getAccumulatedGeneralCredits() != null ? summary.getAccumulatedGeneralCredits() : 0)
                 .accumulatedFoundationCredits(summary.getAccumulatedFoundationCredits() != null
-                        ? summary.getAccumulatedFoundationCredits()
-                        : 0)
+                        ? summary.getAccumulatedFoundationCredits() : 0)
                 .accumulatedMajorCredits(
                         summary.getAccumulatedMajorCredits() != null ? summary.getAccumulatedMajorCredits() : 0)
                 .accumulatedElectiveCredits(
                         summary.getAccumulatedElectiveCredits() != null ? summary.getAccumulatedElectiveCredits() : 0)
                 .accumulatedGraduationCredits(summary.getAccumulatedGraduationCredits() != null
-                        ? summary.getAccumulatedGraduationCredits()
-                        : 0)
+                        ? summary.getAccumulatedGraduationCredits() : 0)
                 .build();
     }
 
@@ -286,8 +282,7 @@ public class GradeServiceImpl implements GradeService {
 
     private Integer resolveTotalCredits(List<Grade> grades, SemesterSummary semesterSummary) {
         Integer totalCredits = semesterSummary != null && semesterSummary.getTermCredits() != null
-                ? semesterSummary.getTermCredits()
-                : calculateTotalCredits(grades);
+                ? semesterSummary.getTermCredits() : calculateTotalCredits(grades);
         return totalCredits != null ? totalCredits : 0;
     }
 
@@ -417,17 +412,13 @@ public class GradeServiceImpl implements GradeService {
         AcademicMetrics academicMetrics = academicMetricsOpt.orElse(null);
 
         Integer attemptedCredits = academicMetrics != null && academicMetrics.attemptedCredits() != null
-                ? academicMetrics.attemptedCredits()
-                : totalCredits;
+                ? academicMetrics.attemptedCredits() : totalCredits;
         Integer accumulatedCredits = academicMetrics != null && academicMetrics.accumulatedCredits() != null
-                ? academicMetrics.accumulatedCredits()
-                : totalCredits;
+                ? academicMetrics.accumulatedCredits() : totalCredits;
         Float attemptedGpa = academicMetrics != null && academicMetrics.attemptedGpa() != null
-                ? roundToTwoDecimals(academicMetrics.attemptedGpa())
-                : weightedGpa;
+                ? roundToTwoDecimals(academicMetrics.attemptedGpa()) : weightedGpa;
         Float accumulatedGpa = academicMetrics != null && academicMetrics.accumulatedGpa() != null
-                ? roundToTwoDecimals(academicMetrics.accumulatedGpa())
-                : weightedGpa;
+                ? roundToTwoDecimals(academicMetrics.accumulatedGpa()) : weightedGpa;
 
         AcademicSummary summary = academicSummaryRepository.findByMssv(mssv)
                 .orElseGet(() -> AcademicSummary.builder().student(student).build());
