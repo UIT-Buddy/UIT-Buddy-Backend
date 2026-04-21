@@ -40,9 +40,9 @@ public final class GradeConstants {
     public static final List<String> TERM_CREDITS_KEYWORDS = List.of("so tin chi hoc ky", "tin chi hoc ky");
     public static final String TERM_RANK_KEYWORD = "xep loai hoc ky";
 
-    public static final List<String> ATTEMPTED_GPA_KEYWORDS = List.of("diem trung binh dang ky");
-    public static final List<String> ACCUMULATED_GPA_KEYWORDS = List.of("diem trung binh tich luy");
-    public static final List<String> ATTEMPTED_CREDITS_KEYWORDS = List.of("so tin chi dang ky");
+    public static final List<String> ATTEMPTED_GPA_KEYWORDS = List.of("diem trung binh chung");
+    public static final List<String> ACCUMULATED_GPA_KEYWORDS = List.of("diem trung binh chung tich luy");
+    public static final List<String> ATTEMPTED_CREDITS_KEYWORDS = List.of("so tin chi da hoc");
     public static final List<String> ACCUMULATED_CREDITS_KEYWORDS = List.of("so tin chi tich luy");
 
     // Grade section markers

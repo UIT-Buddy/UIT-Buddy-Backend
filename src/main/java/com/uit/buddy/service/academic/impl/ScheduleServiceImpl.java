@@ -68,7 +68,6 @@ import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.domain.Pageable;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -261,7 +260,7 @@ public class ScheduleServiceImpl implements ScheduleService {
         List<CourseContentResponse> moodleDeadlines = savedDeadlines.stream()
                 .collect(Collectors.groupingBy(TemporaryDeadline::getClassCode)).entrySet().stream()
                 .map(entry -> new CourseContentResponse(entry.getKey(), entry.getValue().stream()
-                        .map(td -> new CourseContentResponse.exercise(td.getDeadlineName(), td.getDueDate(), null,
+                        .map(td -> new CourseContentResponse.exercise(null, td.getDeadlineName(), td.getDueDate(), null,
                                 td.getStatus() != null ? td.getStatus() : DeadlineStatus.UPCOMING, false))
                         .toList()))
                 .toList();
@@ -653,7 +652,7 @@ public class ScheduleServiceImpl implements ScheduleService {
         // ── Pass 3: resolve deadline status using cached results ────────────────────
         List<CourseContentResponse.exercise> exercises = modulesWithDueDates.stream().map(m -> {
             DeadlineStatus status = determineDeadlineStatusFromCache(m.dueDate, submissionStatuses.get(m.id));
-            return new CourseContentResponse.exercise(m.name, m.dueDate, m.url, status, false);
+            return new CourseContentResponse.exercise(null, m.name, m.dueDate, m.url, status, false);
         }).toList();
 
         List<CourseContentResponse.exercise> sortedExercises = exercises.stream()

@@ -3,6 +3,7 @@ package com.uit.buddy.entity.academic;
 import com.uit.buddy.entity.AbstractBaseEntity;
 import com.uit.buddy.entity.user.Student;
 import jakarta.persistence.*;
+import java.math.BigDecimal;
 import lombok.*;
 
 @Entity
@@ -28,17 +29,26 @@ public class AcademicSummary extends AbstractBaseEntity {
     @Column(name = "accumulated_credits")
     private Integer accumulatedCredits;
 
-    @Column(name = "attempted_gpa")
-    private Float attemptedGpa;
+    @Column(name = "attempted_gpa_scale10", precision = 4, scale = 2)
+    private BigDecimal attemptedGpaScale10;
 
-    @Column(name = "accumulated_gpa")
-    private Float accumulatedGpa;
+    @Column(name = "attempted_gpa_scale4", precision = 4, scale = 2)
+    private BigDecimal attemptedGpaScale4;
 
-    @Column(name = "major_progress")
-    private Float majorProgress;
+    @Column(name = "accumulated_gpa_scale10", precision = 4, scale = 2)
+    private BigDecimal accumulatedGpaScale10;
+
+    @Column(name = "accumulated_gpa_scale4", precision = 4, scale = 2)
+    private BigDecimal accumulatedGpaScale4;
+
+    @Column(name = "major_progress", precision = 4, scale = 2)
+    private BigDecimal majorProgress;
 
     @Column(name = "accumulated_general_credits")
     private Integer accumulatedGeneralCredits;
+
+    @Column(name = "accumulated_political_credits")
+    private Integer accumulatedPoliticalCredits;
 
     @Column(name = "accumulated_foundation_credits")
     private Integer accumulatedFoundationCredits;

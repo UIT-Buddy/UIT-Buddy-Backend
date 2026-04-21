@@ -80,8 +80,8 @@ public interface ScheduleMapper {
 
     default CourseContentResponse.exercise toExercise(StudentTask studentTask) {
         boolean isPersonal = studentTask.getTaskType() == TaskType.PERSONAL;
-        return new CourseContentResponse.exercise(studentTask.getPersonalTitle(), studentTask.getReminderAt(), null,
-                mapDeadlineStatus(studentTask), isPersonal);
+        return new CourseContentResponse.exercise(studentTask.getId(), studentTask.getPersonalTitle(),
+                studentTask.getReminderAt(), null, mapDeadlineStatus(studentTask), isPersonal);
     }
 
     default String resolveCourseName(StudentTask studentTask) {
