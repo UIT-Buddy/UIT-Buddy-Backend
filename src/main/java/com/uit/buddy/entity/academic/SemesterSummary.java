@@ -2,7 +2,9 @@ package com.uit.buddy.entity.academic;
 
 import com.uit.buddy.entity.AbstractBaseEntity;
 import com.uit.buddy.entity.user.Student;
+import com.uit.buddy.enums.AcademicRank;
 import jakarta.persistence.*;
+import java.math.BigDecimal;
 import lombok.*;
 
 @Entity
@@ -31,11 +33,11 @@ public class SemesterSummary extends AbstractBaseEntity {
     @JoinColumn(name = "semester_code", referencedColumnName = "semester_code", foreignKey = @ForeignKey(name = "fk_summary_semester"))
     private Semester semester;
 
-    @Column(name = "term_gpa")
-    private Float termGpa;
+    @Column(name = "term_gpa_scale10", precision = 4, scale = 2)
+    private BigDecimal termGpaScale10;
 
-    @Column(name = "term_gpa_scale4")
-    private Float termGpaScale4;
+    @Column(name = "term_gpa_scale4", precision = 4, scale = 2)
+    private BigDecimal termGpaScale4;
 
     @Column(name = "term_credits")
     private Integer termCredits;
@@ -61,6 +63,10 @@ public class SemesterSummary extends AbstractBaseEntity {
     @Column(name = "term_tc_credits")
     private Integer termTcCredits;
 
+    @Column(name = "term_ct_credits")
+    private Integer termCtCredits;
+
+    @Enumerated(EnumType.STRING)
     @Column(name = "term_rank", length = 50)
-    private String termRank;
+    private AcademicRank termRank;
 }

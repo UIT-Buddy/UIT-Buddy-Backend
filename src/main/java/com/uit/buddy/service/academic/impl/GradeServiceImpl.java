@@ -7,8 +7,9 @@ import com.uit.buddy.entity.academic.AcademicSummary;
 import com.uit.buddy.entity.academic.Grade;
 import com.uit.buddy.entity.academic.Semester;
 import com.uit.buddy.entity.academic.SemesterSummary;
-import com.uit.buddy.enums.CourseCategoryCode;
 import com.uit.buddy.entity.user.Student;
+import com.uit.buddy.enums.AcademicRank;
+import com.uit.buddy.enums.CourseCategoryCode;
 import com.uit.buddy.exception.grade.GradeErrorCode;
 import com.uit.buddy.exception.grade.GradeException;
 import com.uit.buddy.mapper.academic.GradeMapper;
@@ -67,6 +68,11 @@ public class GradeServiceImpl implements GradeService {
             throw new GradeException(GradeErrorCode.INVALID_FILE, "MSSV in PDF does not match authenticated user");
         }
 
+        if (log.isInfoEnabled()) {
+            log.info("Parsed {} semester summary metrics from PDF for {}: {}", parsedData.semesterMetricsMap().size(),
+                    mssv, new TreeSet<>(parsedData.semesterMetricsMap().keySet()));
+        }
+
         String fallbackSemesterCode = determineSemester(parsedData.semesterMetrics());
         Map<String, String> semesterCodeCache = new HashMap<>();
         Map<String, CurriculumMetadata> curriculumMetadataCache = new HashMap<>();
@@ -80,10 +86,11 @@ public class GradeServiceImpl implements GradeService {
                     academicStartYear, curriculumMetadataCache);
 
             Integer parsedCredits = courseGrade.credits() != null ? courseGrade.credits() : 0;
+            String courseType = courseGrade.courseType() != null ? courseGrade.courseType()
+                    : (curriculumMetadata != null ? curriculumMetadata.categoryCode() : null);
 
             Grade grade = Grade.builder().mssv(mssv).semesterCode(semesterCode).courseCode(courseGrade.courseCode())
-                    .courseName(courseGrade.courseName()).credits(parsedCredits)
-                    .courseType(curriculumMetadata != null ? curriculumMetadata.categoryCode() : null)
+                    .courseName(courseGrade.courseName()).credits(parsedCredits).courseType(courseType)
                     .processGrade(normalizeGrade(courseGrade.processGrade()))
                     .midtermGrade(normalizeGrade(courseGrade.midtermGrade()))
                     .finalGrade(normalizeGrade(courseGrade.finalGrade()))
@@ -101,7 +108,7 @@ public class GradeServiceImpl implements GradeService {
             savedCount++;
         }
 
-        synchronizeSemesterSummaries(student);
+        synchronizeSemesterSummaries(student, parsedData.semesterMetricsMap());
         synchronizeAcademicSummary(student, parsedData.academicMetrics());
 
         log.info("Successfully imported {} grades for student {}", savedCount, mssv);
@@ -161,8 +168,7 @@ public class GradeServiceImpl implements GradeService {
                 .orElseThrow(() -> new GradeException(GradeErrorCode.INVALID_FILE, "Semester not found"));
         SemesterSummary summary = semesterSummaryRepository.findByMssvAndSemesterCode(mssv, semesterCode).orElse(null);
         Integer accumulatedCredits = summary != null && summary.getAccumulatedCredits() != null
-                ? summary.getAccumulatedCredits()
-                : calculateAccumulatedCreditsUntilSemester(mssv, semester);
+                ? summary.getAccumulatedCredits() : calculateAccumulatedCreditsUntilSemester(mssv, semester);
 
         return buildSemesterGradesResponse(semester, grades, summary, accumulatedCredits);
     }
@@ -212,13 +218,14 @@ public class GradeServiceImpl implements GradeService {
     @Transactional(readOnly = true)
     public AcademicSummaryResponse getAcademicSummary(String mssv) {
         AcademicSummary summary = academicSummaryRepository.findByMssv(mssv).orElse(null);
-        Map<CourseCategoryCode, Integer> totalCreditsByCategory = calculateCreditsByCategory(
-                gradeRepository.findByMssv(mssv));
-        Integer accumulatedPoliticalCredits = totalCreditsByCategory.getOrDefault(CourseCategoryCode.CT, 0);
+        Integer accumulatedPoliticalCredits = summary != null && summary.getAccumulatedPoliticalCredits() != null
+                ? summary.getAccumulatedPoliticalCredits()
+                : calculateCreditsByCategory(gradeRepository.findByMssv(mssv)).getOrDefault(CourseCategoryCode.CT, 0);
+
         if (summary == null) {
-            return AcademicSummaryResponse.builder().attemptedCredits(0).accumulatedCredits(0).attemptedGpa(0F)
-                    .accumulatedGpa(0F).majorProgress(0F).accumulatedGeneralCredits(0)
-                    .accumulatedPoliticalCredits(accumulatedPoliticalCredits)
+            return AcademicSummaryResponse.builder().attemptedCredits(0).accumulatedCredits(0).attemptedGpaScale10(0F)
+                    .attemptedGpaScale4(0F).accumulatedGpaScale10(0F).accumulatedGpaScale4(0F).majorProgress(0F)
+                    .accumulatedGeneralCredits(0).accumulatedPoliticalCredits(accumulatedPoliticalCredits)
                     .accumulatedFoundationCredits(0).accumulatedMajorCredits(0).accumulatedElectiveCredits(0)
                     .accumulatedGraduationCredits(0).build();
         }
@@ -226,22 +233,27 @@ public class GradeServiceImpl implements GradeService {
         return AcademicSummaryResponse.builder()
                 .attemptedCredits(summary.getAttemptedCredits() != null ? summary.getAttemptedCredits() : 0)
                 .accumulatedCredits(summary.getAccumulatedCredits() != null ? summary.getAccumulatedCredits() : 0)
-                .attemptedGpa(summary.getAttemptedGpa() != null ? summary.getAttemptedGpa() : 0F)
-                .accumulatedGpa(summary.getAccumulatedGpa() != null ? summary.getAccumulatedGpa() : 0F)
-                .majorProgress(summary.getMajorProgress() != null ? summary.getMajorProgress() : 0F)
+                .attemptedGpaScale10(decimalToFloat(summary.getAttemptedGpaScale10()) != null
+                        ? decimalToFloat(summary.getAttemptedGpaScale10()) : 0F)
+                .attemptedGpaScale4(decimalToFloat(summary.getAttemptedGpaScale4()) != null
+                        ? decimalToFloat(summary.getAttemptedGpaScale4()) : 0F)
+                .accumulatedGpaScale10(decimalToFloat(summary.getAccumulatedGpaScale10()) != null
+                        ? decimalToFloat(summary.getAccumulatedGpaScale10()) : 0F)
+                .accumulatedGpaScale4(decimalToFloat(summary.getAccumulatedGpaScale4()) != null
+                        ? decimalToFloat(summary.getAccumulatedGpaScale4()) : 0F)
+                .majorProgress(decimalToFloat(summary.getMajorProgress()) != null
+                        ? decimalToFloat(summary.getMajorProgress()) : 0F)
                 .accumulatedGeneralCredits(
                         summary.getAccumulatedGeneralCredits() != null ? summary.getAccumulatedGeneralCredits() : 0)
                 .accumulatedPoliticalCredits(accumulatedPoliticalCredits)
                 .accumulatedFoundationCredits(summary.getAccumulatedFoundationCredits() != null
-                        ? summary.getAccumulatedFoundationCredits()
-                        : 0)
+                        ? summary.getAccumulatedFoundationCredits() : 0)
                 .accumulatedMajorCredits(
                         summary.getAccumulatedMajorCredits() != null ? summary.getAccumulatedMajorCredits() : 0)
                 .accumulatedElectiveCredits(
                         summary.getAccumulatedElectiveCredits() != null ? summary.getAccumulatedElectiveCredits() : 0)
                 .accumulatedGraduationCredits(summary.getAccumulatedGraduationCredits() != null
-                        ? summary.getAccumulatedGraduationCredits()
-                        : 0)
+                        ? summary.getAccumulatedGraduationCredits() : 0)
                 .build();
     }
 
@@ -291,21 +303,20 @@ public class GradeServiceImpl implements GradeService {
 
     private Integer resolveTotalCredits(List<Grade> grades, SemesterSummary semesterSummary) {
         Integer totalCredits = semesterSummary != null && semesterSummary.getTermCredits() != null
-                ? semesterSummary.getTermCredits()
-                : calculateTotalCredits(grades);
+                ? semesterSummary.getTermCredits() : calculateTotalCredits(grades);
         return totalCredits != null ? totalCredits : 0;
     }
 
     private Float resolveGradeScale10(List<Grade> grades, SemesterSummary semesterSummary) {
-        Float gradeScale10 = semesterSummary != null && semesterSummary.getTermGpa() != null
-                ? roundToTwoDecimals(semesterSummary.getTermGpa())
-                : roundToTwoDecimals(calculateWeightedAverage(grades));
-        return gradeScale10 != null ? gradeScale10 : 0F;
+        if (semesterSummary != null && semesterSummary.getTermGpaScale10() != null) {
+            return decimalToFloat(semesterSummary.getTermGpaScale10());
+        }
+        return 0F;
     }
 
     private Float resolveGradeScale4(Float gradeScale10, SemesterSummary semesterSummary) {
         if (semesterSummary != null && semesterSummary.getTermGpaScale4() != null) {
-            return roundToTwoDecimals(semesterSummary.getTermGpaScale4());
+            return decimalToFloat(semesterSummary.getTermGpaScale4());
         }
 
         return convertGradeScale10ToScale4(gradeScale10);
@@ -319,10 +330,7 @@ public class GradeServiceImpl implements GradeService {
     private Map<CourseCategoryCode, Integer> resolveCreditsByCategory(List<Grade> grades,
             SemesterSummary semesterSummary) {
         if (hasCompleteCategoryCache(semesterSummary)) {
-            Map<CourseCategoryCode, Integer> creditsByCategory = buildCategoryMapFromSummary(semesterSummary);
-            Integer ctCredits = calculateCreditsByCategory(grades).getOrDefault(CourseCategoryCode.CT, 0);
-            creditsByCategory.put(CourseCategoryCode.CT, ctCredits);
-            return creditsByCategory;
+            return buildCategoryMapFromSummary(semesterSummary);
         }
 
         return calculateCreditsByCategory(grades);
@@ -332,7 +340,7 @@ public class GradeServiceImpl implements GradeService {
         return semesterSummary != null && semesterSummary.getTermDcCredits() != null
                 && semesterSummary.getTermCsnnCredits() != null && semesterSummary.getTermCsnCredits() != null
                 && semesterSummary.getTermCnCredits() != null && semesterSummary.getTermTottnCredits() != null
-                && semesterSummary.getTermTcCredits() != null;
+                && semesterSummary.getTermTcCredits() != null && semesterSummary.getTermCtCredits() != null;
     }
 
     private Map<CourseCategoryCode, Integer> buildCategoryMapFromSummary(SemesterSummary semesterSummary) {
@@ -343,7 +351,8 @@ public class GradeServiceImpl implements GradeService {
         creditsByCategory.put(CourseCategoryCode.CN, semesterSummary.getTermCnCredits());
         creditsByCategory.put(CourseCategoryCode.TOTTN, semesterSummary.getTermTottnCredits());
         creditsByCategory.put(CourseCategoryCode.TC, semesterSummary.getTermTcCredits());
-        creditsByCategory.put(CourseCategoryCode.CT, 0);
+        creditsByCategory.put(CourseCategoryCode.CT, semesterSummary.getTermCtCredits());
+        creditsByCategory.put(CourseCategoryCode.TD, 0);
         return creditsByCategory;
     }
 
@@ -365,7 +374,7 @@ public class GradeServiceImpl implements GradeService {
         return creditsByCategory;
     }
 
-    private void synchronizeSemesterSummaries(Student student) {
+    private void synchronizeSemesterSummaries(Student student, Map<String, SemesterMetrics> semesterMetricsMap) {
         String mssv = student.getMssv();
         List<Grade> allGrades = gradeRepository.findByMssv(mssv);
         Map<String, List<Grade>> gradesBySemester = allGrades.stream()
@@ -388,10 +397,25 @@ public class GradeServiceImpl implements GradeService {
         for (Semester semester : sortedSemesters) {
             String semesterCode = semester.getSemesterCode();
             List<Grade> grades = gradesBySemester.getOrDefault(semesterCode, Collections.emptyList());
+            String semesterKey = buildSemesterMetricKey(semester);
+            SemesterMetrics pdfMetrics = semesterMetricsMap.get(semesterKey);
 
-            Integer termCredits = calculateTotalCredits(grades);
-            Float termGpa = roundToTwoDecimals(calculateWeightedAverage(grades));
-            Float termGpaScale4 = convertGradeScale10ToScale4(termGpa != null ? termGpa : 0F);
+            if (pdfMetrics == null || pdfMetrics.termCredits() == null || pdfMetrics.termGpaScale10() == null) {
+                log.warn(
+                        "Missing semester summary metrics from PDF for semester {} (lookup key: {}). Available keys: {}",
+                        semesterCode, semesterKey, new TreeSet<>(semesterMetricsMap.keySet()));
+                semesterMetricsMap
+                        .forEach((key, metrics) -> log.warn("PDF metric [{}] -> termCredits={}, termGpaScale10={}", key,
+                                metrics != null ? metrics.termCredits() : null,
+                                metrics != null ? metrics.termGpaScale10() : null));
+                throw new GradeException(GradeErrorCode.INVALID_FILE,
+                        "Missing semester summary metrics from PDF for semester " + semesterCode);
+            }
+
+            Integer termCredits = pdfMetrics.termCredits();
+            Float termGpaScale10 = roundToTwoDecimals(pdfMetrics.termGpaScale10());
+
+            Float termGpaScale4 = convertGradeScale10ToScale4(termGpaScale10 != null ? termGpaScale10 : 0F);
             Map<CourseCategoryCode, Integer> creditsByCategory = calculateCreditsByCategory(grades);
 
             accumulatedCredits += termCredits != null ? termCredits : 0;
@@ -400,8 +424,9 @@ public class GradeServiceImpl implements GradeService {
                     .orElseGet(() -> SemesterSummary.builder().student(student).semester(semester).build());
 
             summary.setTermCredits(termCredits);
-            summary.setTermGpa(termGpa);
-            summary.setTermGpaScale4(termGpaScale4);
+            summary.setTermGpaScale10(toScaledDecimal(termGpaScale10));
+            summary.setTermGpaScale4(toScaledDecimal(termGpaScale4));
+            summary.setTermRank(AcademicRank.fromGpa(termGpaScale10));
             summary.setAccumulatedCredits(accumulatedCredits);
             summary.setTermDcCredits(creditsByCategory.get(CourseCategoryCode.DC));
             summary.setTermCsnnCredits(creditsByCategory.get(CourseCategoryCode.CSNN));
@@ -409,6 +434,7 @@ public class GradeServiceImpl implements GradeService {
             summary.setTermCnCredits(creditsByCategory.get(CourseCategoryCode.CN));
             summary.setTermTottnCredits(creditsByCategory.get(CourseCategoryCode.TOTTN));
             summary.setTermTcCredits(creditsByCategory.get(CourseCategoryCode.TC));
+            summary.setTermCtCredits(creditsByCategory.get(CourseCategoryCode.CT));
             semesterSummaryRepository.save(summary);
         }
     }
@@ -421,31 +447,34 @@ public class GradeServiceImpl implements GradeService {
         Integer academicStartYear = resolveAcademicStartYear(student);
         Integer totalCreditsRequired = resolveTotalCreditsRequired(majorCode, academicStartYear);
 
-        Integer totalCredits = calculateTotalCredits(allGrades);
-        Float weightedGpa = roundToTwoDecimals(calculateWeightedAverage(allGrades));
         AcademicMetrics academicMetrics = academicMetricsOpt.orElse(null);
 
         Integer attemptedCredits = academicMetrics != null && academicMetrics.attemptedCredits() != null
-                ? academicMetrics.attemptedCredits()
-                : totalCredits;
+                ? academicMetrics.attemptedCredits() : calculateTotalCredits(allGrades);
         Integer accumulatedCredits = academicMetrics != null && academicMetrics.accumulatedCredits() != null
-                ? academicMetrics.accumulatedCredits()
-                : totalCredits;
-        Float attemptedGpa = academicMetrics != null && academicMetrics.attemptedGpa() != null
-                ? roundToTwoDecimals(academicMetrics.attemptedGpa())
-                : weightedGpa;
-        Float accumulatedGpa = academicMetrics != null && academicMetrics.accumulatedGpa() != null
-                ? roundToTwoDecimals(academicMetrics.accumulatedGpa())
-                : weightedGpa;
+                ? academicMetrics.accumulatedCredits() : calculateTotalCredits(allGrades);
+
+        Float attemptedGpaScale10 = academicMetrics != null && academicMetrics.attemptedGpa() != null
+                ? roundToTwoDecimals(academicMetrics.attemptedGpa()) : null;
+        Float accumulatedGpaScale10 = academicMetrics != null && academicMetrics.accumulatedGpa() != null
+                ? roundToTwoDecimals(academicMetrics.accumulatedGpa()) : null;
+
+        Float attemptedGpaScale4 = attemptedGpaScale10 != null ? convertGradeScale10ToScale4(attemptedGpaScale10)
+                : null;
+        Float accumulatedGpaScale4 = accumulatedGpaScale10 != null ? convertGradeScale10ToScale4(accumulatedGpaScale10)
+                : null;
 
         AcademicSummary summary = academicSummaryRepository.findByMssv(mssv)
                 .orElseGet(() -> AcademicSummary.builder().student(student).build());
 
         summary.setAttemptedCredits(attemptedCredits != null ? attemptedCredits : 0);
         summary.setAccumulatedCredits(accumulatedCredits != null ? accumulatedCredits : 0);
-        summary.setAttemptedGpa(attemptedGpa != null ? attemptedGpa : 0F);
-        summary.setAccumulatedGpa(accumulatedGpa != null ? accumulatedGpa : 0F);
+        summary.setAttemptedGpaScale10(toScaledDecimal(attemptedGpaScale10));
+        summary.setAttemptedGpaScale4(toScaledDecimal(attemptedGpaScale4));
+        summary.setAccumulatedGpaScale10(toScaledDecimal(accumulatedGpaScale10));
+        summary.setAccumulatedGpaScale4(toScaledDecimal(accumulatedGpaScale4));
         summary.setAccumulatedGeneralCredits(totalCreditsByCategory.get(CourseCategoryCode.DC));
+        summary.setAccumulatedPoliticalCredits(totalCreditsByCategory.get(CourseCategoryCode.CT));
         summary.setAccumulatedFoundationCredits(totalCreditsByCategory.get(CourseCategoryCode.CSNN)
                 + totalCreditsByCategory.get(CourseCategoryCode.CSN));
         summary.setAccumulatedMajorCredits(totalCreditsByCategory.get(CourseCategoryCode.CN));
@@ -464,37 +493,46 @@ public class GradeServiceImpl implements GradeService {
                 .orElse(null);
     }
 
-    private Float calculateMajorProgress(Integer accumulatedCredits, Integer totalCreditsRequired) {
+    private BigDecimal calculateMajorProgress(Integer accumulatedCredits, Integer totalCreditsRequired) {
         if (accumulatedCredits == null || totalCreditsRequired == null || totalCreditsRequired <= 0) {
-            return 0F;
+            return BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
         }
 
         float progress = Math.min((float) accumulatedCredits / totalCreditsRequired, 1F);
-        return roundToTwoDecimals(progress);
+        return BigDecimal.valueOf(progress).setScale(2, RoundingMode.HALF_UP);
     }
 
     private Integer calculateTotalCredits(List<Grade> grades) {
         return grades.stream().filter(grade -> grade.getCredits() != null).mapToInt(Grade::getCredits).sum();
     }
 
-    private Float calculateWeightedAverage(List<Grade> grades) {
-        double totalWeightedGrade = 0D;
-        int totalCredits = 0;
-
-        for (Grade grade : grades) {
-            if (grade.getTotalGrade() == null || grade.getCredits() == null) {
-                continue;
-            }
-
-            totalWeightedGrade += grade.getTotalGrade() * grade.getCredits();
-            totalCredits += grade.getCredits();
+    private String buildSemesterMetricKey(Semester semester) {
+        String semesterNumber = semester.getSemesterNumber() != null ? semester.getSemesterNumber().trim() : "";
+        String semesterNumberDigits = semesterNumber.replaceAll("\\D+", "");
+        if (!semesterNumberDigits.isBlank()) {
+            semesterNumber = semesterNumberDigits;
         }
 
-        if (totalCredits == 0) {
-            return null;
+        String yearStart = semester.getYearStart() != null ? semester.getYearStart().trim() : "";
+        String yearEnd = normalizeSemesterYearEnd(yearStart, semester.getYearEnd());
+        return semesterNumber + "-" + yearStart + "-" + yearEnd;
+    }
+
+    private String normalizeSemesterYearEnd(String yearStart, String yearEnd) {
+        if (yearEnd == null || yearEnd.isBlank()) {
+            return "";
         }
 
-        return (float) (totalWeightedGrade / totalCredits);
+        String trimmed = yearEnd.trim();
+        if (trimmed.length() == 4) {
+            return trimmed;
+        }
+
+        if (trimmed.length() == 2 && yearStart != null && yearStart.length() == 4) {
+            return yearStart.substring(0, 2) + trimmed;
+        }
+
+        return trimmed;
     }
 
     private Float roundToTwoDecimals(Float value) {
@@ -503,6 +541,22 @@ public class GradeServiceImpl implements GradeService {
         }
 
         return BigDecimal.valueOf(value.doubleValue()).setScale(2, RoundingMode.HALF_UP).floatValue();
+    }
+
+    private BigDecimal toScaledDecimal(Float value) {
+        if (value == null) {
+            return null;
+        }
+
+        return BigDecimal.valueOf(value.doubleValue()).setScale(2, RoundingMode.HALF_UP);
+    }
+
+    private Float decimalToFloat(BigDecimal value) {
+        if (value == null) {
+            return null;
+        }
+
+        return value.setScale(2, RoundingMode.HALF_UP).floatValue();
     }
 
     private CurriculumMetadata resolveCurriculumMetadata(String courseCode, String majorCode, Integer academicStartYear,

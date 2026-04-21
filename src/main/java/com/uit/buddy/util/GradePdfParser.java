@@ -4,6 +4,8 @@ import com.uit.buddy.constant.GradeConstants;
 import com.uit.buddy.exception.grade.GradeErrorCode;
 import com.uit.buddy.exception.grade.GradeException;
 import java.io.IOException;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.text.Normalizer;
 import java.util.*;
 import java.util.regex.Matcher;
@@ -34,16 +36,28 @@ public class GradePdfParser {
             throw new GradeException(GradeErrorCode.INVALID_FILE, "Cannot extract student MSSV from PDF");
         }
 
-        List<CourseGradeExtract> courseGrades = extractCourseGradesFromTables(pdfBytes);
+        Map<String, SemesterMetrics> semesterMetricsMap = new HashMap<>();
+        List<CourseGradeExtract> courseGrades = extractCourseGradesFromTables(pdfBytes, semesterMetricsMap);
         if (courseGrades.isEmpty()) {
             throw new GradeException(GradeErrorCode.INVALID_FILE, "Cannot detect grade table structure in PDF");
         }
         courseGrades = enrichCourseSemestersFromRawText(rawText, courseGrades);
 
+        // Prefer summary metrics extracted from raw text because they survive
+        // table/page
+        // splits where Tabula may lose semester headers.
+        Map<String, SemesterMetrics> rawTextSemesterMetrics = extractSemesterSummaryMetricsFromRawText(rawText);
+        semesterMetricsMap.putAll(rawTextSemesterMetrics);
+        if (log.isInfoEnabled()) {
+            log.info("Extracted {} semester summary metrics from PDF: {}", semesterMetricsMap.size(),
+                    new TreeSet<>(semesterMetricsMap.keySet()));
+        }
+
         Optional<SemesterMetrics> semesterMetrics = extractSemesterMetrics(normalizedText);
         Optional<AcademicMetrics> academicMetrics = extractAcademicMetrics(normalizedText);
 
-        return new ParsedGradeData(rawText, studentMssv, courseGrades, semesterMetrics, academicMetrics);
+        return new ParsedGradeData(rawText, studentMssv, courseGrades, semesterMetrics, academicMetrics,
+                semesterMetricsMap);
     }
 
     private byte[] readPdfBytes(MultipartFile gradeFile) {
@@ -64,7 +78,8 @@ public class GradePdfParser {
         }
     }
 
-    private List<CourseGradeExtract> extractCourseGradesFromTables(byte[] pdfBytes) {
+    private List<CourseGradeExtract> extractCourseGradesFromTables(byte[] pdfBytes,
+            Map<String, SemesterMetrics> semesterMetricsMap) {
         List<CourseGradeExtract> results = new ArrayList<>();
 
         try (PDDocument document = PDDocument.load(pdfBytes)) {
@@ -79,7 +94,7 @@ public class GradePdfParser {
 
                 int beforePageParse = results.size();
                 for (Table table : spreadsheetExtractionAlgorithm.extract(page)) {
-                    HeaderMapping used = parseTable(table, results, lastKnownMapping);
+                    HeaderMapping used = parseTable(table, results, lastKnownMapping, semesterMetricsMap);
                     if (used != null) {
                         lastKnownMapping = used;
                     }
@@ -87,7 +102,7 @@ public class GradePdfParser {
 
                 if (results.size() == beforePageParse) {
                     for (Table table : basicExtractionAlgorithm.extract(page)) {
-                        HeaderMapping used = parseTable(table, results, lastKnownMapping);
+                        HeaderMapping used = parseTable(table, results, lastKnownMapping, semesterMetricsMap);
                         if (used != null) {
                             lastKnownMapping = used;
                         }
@@ -126,9 +141,10 @@ public class GradePdfParser {
             SemesterMetrics mappedSemester = timeline.pollFirst();
             reassignedCount++;
 
+            String courseType = determineCourseType(course.courseCode());
             enriched.add(new CourseGradeExtract(course.courseCode(), course.courseName(), course.credits(),
                     course.processGrade(), course.midtermGrade(), course.finalGrade(), course.labGrade(),
-                    course.totalGrade(), mappedSemester.semesterNumber(), mappedSemester.yearStart(),
+                    course.totalGrade(), courseType, mappedSemester.semesterNumber(), mappedSemester.yearStart(),
                     mappedSemester.yearEnd()));
         }
 
@@ -149,9 +165,31 @@ public class GradePdfParser {
                 continue;
             }
 
+            String normalizedLine = normalize(line);
+
+            // Check if this is a semester header line (e.g., "Học kì 1 - Năm học
+            // 2023-2024")
             SemesterMetrics semesterFromLine = extractSemesterMetricsFromLine(line);
             if (semesterFromLine != null) {
                 currentSemester = semesterFromLine;
+                continue;
+            }
+
+            // Check if this is a semester summary line (e.g., "Trung bình học kỳ: 16 8.12")
+            // Extract term credits and term GPA for the current semester
+            if (currentSemester != null && normalizedLine.contains("trung binh hoc ky")) {
+                Matcher termSummaryMatcher = GradeConstants.TERM_SUMMARY_LINE_PATTERN.matcher(normalizedLine);
+                if (termSummaryMatcher.find()) {
+                    try {
+                        Integer termCredits = Integer.parseInt(termSummaryMatcher.group(1));
+                        Float termGpaScale10 = Float.parseFloat(termSummaryMatcher.group(2));
+                        // Update current semester with term metrics
+                        currentSemester = new SemesterMetrics(currentSemester.semesterNumber(),
+                                currentSemester.yearStart(), currentSemester.yearEnd(), termGpaScale10, termCredits,
+                                currentSemester.termRank());
+                    } catch (NumberFormatException ignored) {
+                    }
+                }
                 continue;
             }
 
@@ -174,7 +212,63 @@ public class GradePdfParser {
         return timeline;
     }
 
-    private HeaderMapping parseTable(Table table, List<CourseGradeExtract> results, HeaderMapping fallbackMapping) {
+    private Map<String, SemesterMetrics> extractSemesterSummaryMetricsFromRawText(String rawText) {
+        Map<String, SemesterMetrics> metricsBySemester = new LinkedHashMap<>();
+        String[] lines = rawText.split("\\R");
+        SemesterMetrics currentSemester = null;
+
+        for (String line : lines) {
+            if (line == null || line.isBlank()) {
+                continue;
+            }
+
+            SemesterMetrics semesterFromLine = extractSemesterMetricsFromLine(line);
+            if (semesterFromLine != null) {
+                currentSemester = semesterFromLine;
+                continue;
+            }
+
+            if (currentSemester == null) {
+                continue;
+            }
+
+            String normalizedLine = normalize(line);
+            if (!normalizedLine.contains("trung binh hoc ky")) {
+                continue;
+            }
+
+            Matcher termSummaryMatcher = GradeConstants.TERM_SUMMARY_LINE_PATTERN.matcher(normalizedLine);
+            if (!termSummaryMatcher.find()) {
+                if (log.isDebugEnabled()) {
+                    log.debug("Detected semester summary line but could not parse values: '{}'",
+                            collapseWhitespace(line));
+                }
+                continue;
+            }
+
+            Integer termCredits = parseIntegerToken(termSummaryMatcher.group(1));
+            Float termGpaScale10 = parseDecimalToken(termSummaryMatcher.group(2));
+            if (termCredits == null || termGpaScale10 == null) {
+                if (log.isDebugEnabled()) {
+                    log.debug("Detected semester summary line with invalid values credits='{}', gpa='{}': '{}'",
+                            termSummaryMatcher.group(1), termSummaryMatcher.group(2), collapseWhitespace(line));
+                }
+                continue;
+            }
+
+            SemesterMetrics semesterMetrics = new SemesterMetrics(currentSemester.semesterNumber(),
+                    currentSemester.yearStart(), currentSemester.yearEnd(), roundToTwoDecimals(termGpaScale10),
+                    termCredits, currentSemester.termRank());
+
+            metricsBySemester.put(buildSemesterKey(semesterMetrics), semesterMetrics);
+            currentSemester = semesterMetrics;
+        }
+
+        return metricsBySemester;
+    }
+
+    private HeaderMapping parseTable(Table table, List<CourseGradeExtract> results, HeaderMapping fallbackMapping,
+            Map<String, SemesterMetrics> semesterMetricsMap) {
         List<List<RectangularTextContainer>> rows = table.getRows();
         if (rows == null || rows.isEmpty()) {
             return fallbackMapping;
@@ -208,20 +302,26 @@ public class GradePdfParser {
                 continue;
             }
 
-            if (normalizedRow.matches(GradeConstants.SEMESTER_START_PATTERN_TEXT)) {
-                if (pendingCourse != null) {
-                    results.add(pendingCourse.toRecord());
-                    pendingCourse = null;
-                }
-                currentSemester = extractSemesterMetricsFromLine(mergedRowText);
-                continue;
-            }
-
             if (isSemesterSummaryRow(normalizedRow)) {
                 if (pendingCourse != null) {
                     results.add(pendingCourse.toRecord());
                     pendingCourse = null;
                 }
+                if (currentSemester != null) {
+                    SemesterMetrics enriched = extractSemesterMetricsFromSummaryRow(cells, mapping, currentSemester);
+                    String semesterKey = buildSemesterKey(enriched);
+                    semesterMetricsMap.put(semesterKey, enriched);
+                }
+                continue;
+            }
+
+            SemesterMetrics semesterFromLine = extractSemesterMetricsFromLine(mergedRowText);
+            if (semesterFromLine != null) {
+                if (pendingCourse != null) {
+                    results.add(pendingCourse.toRecord());
+                    pendingCourse = null;
+                }
+                currentSemester = semesterFromLine;
                 continue;
             }
 
@@ -601,6 +701,14 @@ public class GradePdfParser {
         return Math.round(value * 10f) / 10f;
     }
 
+    private Float roundToTwoDecimals(Float value) {
+        if (value == null) {
+            return null;
+        }
+
+        return BigDecimal.valueOf(value.doubleValue()).setScale(2, RoundingMode.HALF_UP).floatValue();
+    }
+
     private SemesterMetrics extractSemesterMetricsFromLine(String semesterLine) {
         String normalizedLine = normalize(semesterLine);
         Matcher semesterMatcher = GradeConstants.SEMESTER_INFO_PATTERN.matcher(normalizedLine);
@@ -619,31 +727,85 @@ public class GradePdfParser {
         return new SemesterMetrics(semesterNumber, yearStart, yearEnd, null, null, null);
     }
 
-    // Extract semester summary metrics (semester number, year, GPA, credits, rank)
+    // Extract credits and GPA from semester summary row (e.g., "Trung bình học kỳ")
+    private SemesterMetrics extractSemesterMetricsFromSummaryRow(List<String> cells, HeaderMapping mapping,
+            SemesterMetrics currentSemester) {
+        Integer termCredits = parseIntegerToken(safeCell(cells, mapping.creditsIndex()));
+        Float termGpaScale10 = parseDecimalToken(safeCell(cells, mapping.totalIndex()));
+
+        // Fallback for PDF tables where summary values are shifted outside detected
+        // columns.
+        if (termCredits == null || termGpaScale10 == null) {
+            for (String cell : cells) {
+                if (cell == null || cell.isBlank()) {
+                    continue;
+                }
+
+                if (termCredits == null) {
+                    termCredits = parseIntegerToken(cell);
+                }
+
+                Float candidateGpa = parseDecimalToken(cell);
+                if (candidateGpa != null) {
+                    termGpaScale10 = candidateGpa;
+                }
+            }
+        }
+
+        if (currentSemester != null) {
+            return new SemesterMetrics(currentSemester.semesterNumber(), currentSemester.yearStart(),
+                    currentSemester.yearEnd(), termGpaScale10, termCredits, currentSemester.termRank());
+        }
+
+        return new SemesterMetrics(null, null, null, termGpaScale10, termCredits, null);
+    }
+
+    private Integer parseIntegerToken(String text) {
+        if (text == null || text.isBlank()) {
+            return null;
+        }
+
+        String normalized = text.trim();
+        if (!normalized.matches("^\\d{1,3}$")) {
+            return null;
+        }
+
+        try {
+            return Integer.parseInt(normalized);
+        } catch (NumberFormatException ignored) {
+            return null;
+        }
+    }
+
+    private Float parseDecimalToken(String text) {
+        if (text == null || text.isBlank()) {
+            return null;
+        }
+
+        String normalized = text.replace(",", ".").trim();
+        if (!normalized.matches("^\\d{1,2}(?:\\.\\d{1,2})?$")) {
+            return null;
+        }
+
+        try {
+            float value = Float.parseFloat(normalized);
+            if (value < GradeConstants.MIN_GRADE || value > GradeConstants.MAX_GRADE) {
+                return null;
+            }
+            return roundToTwoDecimals(value);
+        } catch (NumberFormatException ignored) {
+            return null;
+        }
+    }
+
+    // Build a unique key for semester (e.g., "1-2023-2024")
+    private String buildSemesterKey(SemesterMetrics metrics) {
+        return metrics.semesterNumber() + "-" + metrics.yearStart() + "-" + metrics.yearEnd();
+    }
+
+    // Extract semester info (number, year) for fallback/context only
+    // Term metrics are extracted per-semester in buildCourseSemesterTimeline()
     private Optional<SemesterMetrics> extractSemesterMetrics(String normalizedText) {
-        Float termGpa = null;
-        Integer termCredits = null;
-
-        Matcher termSummaryMatcher = GradeConstants.TERM_SUMMARY_LINE_PATTERN.matcher(normalizedText);
-        if (termSummaryMatcher.find()) {
-            try {
-                termCredits = Integer.parseInt(termSummaryMatcher.group(1));
-            } catch (NumberFormatException ignored) {
-            }
-            try {
-                termGpa = Float.parseFloat(termSummaryMatcher.group(2));
-            } catch (NumberFormatException ignored) {
-            }
-        }
-
-        if (termGpa == null) {
-            termGpa = findFloatAfterKeywords(normalizedText, GradeConstants.TERM_GPA_KEYWORDS);
-        }
-        if (termCredits == null) {
-            termCredits = findIntegerAfterKeywords(normalizedText, GradeConstants.TERM_CREDITS_KEYWORDS);
-        }
-        String termRank = findTextAfterKeyword(normalizedText, GradeConstants.TERM_RANK_KEYWORD);
-
         Integer semesterNumber = null;
         String yearStart = null;
         String yearEnd = null;
@@ -658,11 +820,11 @@ public class GradePdfParser {
             yearEnd = normalizeAcademicYearEnd(yearStart, semesterMatcher.group(3));
         }
 
-        if (termGpa == null && termCredits == null && termRank == null && semesterNumber == null) {
+        if (semesterNumber == null && yearStart == null) {
             return Optional.empty();
         }
 
-        return Optional.of(new SemesterMetrics(semesterNumber, yearStart, yearEnd, termGpa, termCredits, termRank));
+        return Optional.of(new SemesterMetrics(semesterNumber, yearStart, yearEnd, null, null, null));
     }
 
     // Extract cumulative academic metrics (attempted/accumulated credits and GPA)
@@ -672,6 +834,13 @@ public class GradePdfParser {
         Integer attemptedCredits = findIntegerAfterKeywords(normalizedText, GradeConstants.ATTEMPTED_CREDITS_KEYWORDS);
         Integer accumulatedCredits = findIntegerAfterKeywords(normalizedText,
                 GradeConstants.ACCUMULATED_CREDITS_KEYWORDS);
+
+        if (attemptedGpa != null) {
+            attemptedGpa = Math.round(attemptedGpa * 100) / 100f;
+        }
+        if (accumulatedGpa != null) {
+            accumulatedGpa = Math.round(accumulatedGpa * 100) / 100f;
+        }
 
         if (attemptedGpa == null && accumulatedGpa == null && attemptedCredits == null && accumulatedCredits == null) {
             return Optional.empty();
@@ -731,6 +900,14 @@ public class GradePdfParser {
         String noAccents = GradeConstants.DIACRITICS_PATTERN.matcher(Normalizer.normalize(text, Normalizer.Form.NFD))
                 .replaceAll("").replace('Đ', 'D').replace('đ', 'd');
         return GradeConstants.MULTI_WHITESPACE_PATTERN.matcher(noAccents.toLowerCase(Locale.ROOT)).replaceAll(" ");
+    }
+
+    // Determine course type based on course code (PE courses are type TD)
+    private String determineCourseType(String courseCode) {
+        if (courseCode != null && courseCode.toUpperCase().startsWith("PE")) {
+            return "TD";
+        }
+        return null;
     }
 
     private String normalizeAcademicYearEnd(String yearStart, String rawYearEnd) {
@@ -802,21 +979,23 @@ public class GradePdfParser {
         }
 
         private CourseGradeExtract toRecord() {
+            String courseType = (courseCode != null && courseCode.toUpperCase().startsWith("PE")) ? "TD" : null;
             return new CourseGradeExtract(courseCode, courseName, credits, processGrade, midtermGrade, finalGrade,
-                    labGrade, totalGrade, semesterNumber, yearStart, yearEnd);
+                    labGrade, totalGrade, courseType, semesterNumber, yearStart, yearEnd);
         }
     }
 
     public record ParsedGradeData(String rawText, String studentMssv, List<CourseGradeExtract> courseGrades,
-            Optional<SemesterMetrics> semesterMetrics, Optional<AcademicMetrics> academicMetrics) {
+            Optional<SemesterMetrics> semesterMetrics, Optional<AcademicMetrics> academicMetrics,
+            Map<String, SemesterMetrics> semesterMetricsMap) {
     }
 
     public record CourseGradeExtract(String courseCode, String courseName, Integer credits, Float processGrade,
-            Float midtermGrade, Float finalGrade, Float labGrade, Float totalGrade, Integer semesterNumber,
-            String yearStart, String yearEnd) {
+            Float midtermGrade, Float finalGrade, Float labGrade, Float totalGrade, String courseType,
+            Integer semesterNumber, String yearStart, String yearEnd) {
     }
 
-    public record SemesterMetrics(Integer semesterNumber, String yearStart, String yearEnd, Float termGpa,
+    public record SemesterMetrics(Integer semesterNumber, String yearStart, String yearEnd, Float termGpaScale10,
             Integer termCredits, String termRank) {
     }
 

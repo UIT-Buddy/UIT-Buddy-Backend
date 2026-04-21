@@ -19,3 +19,39 @@ WHERE cc.course_code LIKE 'SS%'
     cc.curriculum_code LIKE '%_2025'
   )
   AND cc.category_code <> 'CT';
+
+ALTER TABLE semester_summaries
+    ADD COLUMN IF NOT EXISTS term_ct_credits INTEGER;
+
+ALTER TABLE academic_summary
+    ADD COLUMN IF NOT EXISTS accumulated_political_credits INTEGER;
+
+-- Rename term_gpa to term_gpa_scale10 for clarity and naming consistency with term_gpa_scale4
+ALTER TABLE semester_summaries
+    RENAME COLUMN term_gpa TO term_gpa_scale10;
+
+DO $$
+BEGIN
+    IF EXISTS (
+        SELECT 1
+        FROM information_schema.columns
+        WHERE table_name = 'semester_summaries'
+          AND column_name = 'term_gpa_scale10'
+    ) THEN
+        ALTER TABLE semester_summaries
+            ALTER COLUMN term_gpa_scale10 TYPE NUMERIC(4,2)
+            USING ROUND(term_gpa_scale10::numeric, 2);
+    END IF;
+
+    IF EXISTS (
+        SELECT 1
+        FROM information_schema.columns
+        WHERE table_name = 'semester_summaries'
+          AND column_name = 'term_gpa_scale4'
+    ) THEN
+        ALTER TABLE semester_summaries
+            ALTER COLUMN term_gpa_scale4 TYPE NUMERIC(4,2)
+            USING ROUND(term_gpa_scale4::numeric, 2);
+    END IF;
+END $$;
+

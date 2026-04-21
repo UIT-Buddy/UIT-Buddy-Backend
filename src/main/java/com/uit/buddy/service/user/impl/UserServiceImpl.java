@@ -213,12 +213,15 @@ public class UserServiceImpl implements UserService {
     private UserResponse enrichMyProfile(UserResponse baseProfile, String mssv) {
         AcademicSummary academicSummary = academicSummaryRepository.findByMssv(mssv).orElse(null);
 
-        Float accumulatedGpa = academicSummary != null ? academicSummary.getAccumulatedGpa() : null;
+        Float accumulatedGpaScale10 = academicSummary != null && academicSummary.getAccumulatedGpaScale10() != null
+                ? academicSummary.getAccumulatedGpaScale10().floatValue() : null;
+        Float accumulatedGpaScale4 = academicSummary != null && academicSummary.getAccumulatedGpaScale4() != null
+                ? academicSummary.getAccumulatedGpaScale4().floatValue() : null;
         Integer accumulatedCredits = academicSummary != null ? academicSummary.getAccumulatedCredits() : 0;
         Long postCount = postRepository.countByMssv(mssv);
 
         return new UserResponse(baseProfile.mssv(), baseProfile.fullName(), baseProfile.email(),
                 baseProfile.avatarUrl(), baseProfile.coverUrl(), baseProfile.bio(), baseProfile.homeClassCode(),
-                baseProfile.friendStatus(), accumulatedGpa, accumulatedCredits, postCount);
+                baseProfile.friendStatus(), accumulatedGpaScale10, accumulatedGpaScale4, accumulatedCredits, postCount);
     }
 }
