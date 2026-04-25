@@ -41,6 +41,8 @@ jobs:
           printf "%s" "$FIREBASE_JSON_CONTENT" > gitops-manifests/uit-buddy-firebase-adminsdk-fbsvc-e3e18ce04a.json
 
       - name: Deploy Locally on Self-Hosted
+        env:
+          IMAGE_TAG: ${{ github.event.workflow_run.head_sha }}
         run: |
           set -e
           cd gitops-manifests
