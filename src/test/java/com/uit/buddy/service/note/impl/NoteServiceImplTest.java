@@ -1,25 +1,15 @@
 package com.uit.buddy.service.note.impl;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.uit.buddy.dto.request.note.CreateNoteRequest;
-import com.uit.buddy.dto.request.note.UpdateNoteNodeRequest;
-import com.uit.buddy.dto.request.note.UpdateNoteRequest;
-import com.uit.buddy.dto.response.note.NoteDetailResponse;
-import com.uit.buddy.dto.response.note.NoteSummaryResponse;
-import com.uit.buddy.dto.response.note.NoteTreeResponse;
+import com.uit.buddy.dto.request.note.UpsertNoteRequest;
+import com.uit.buddy.dto.response.note.NoteResponse;
 import com.uit.buddy.entity.note.Note;
-import com.uit.buddy.entity.note.NoteNode;
-import com.uit.buddy.exception.note.NoteException;
-import com.uit.buddy.repository.note.NoteNodeRepository;
 import com.uit.buddy.repository.note.NoteRepository;
 import java.time.LocalDateTime;
-import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -28,16 +18,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
 
 @ExtendWith(MockitoExtension.class)
 class NoteServiceImplTest {
-
-    @Mock
-    private NoteNodeRepository noteNodeRepository;
 
     @Mock
     private NoteRepository noteRepository;
@@ -46,150 +29,118 @@ class NoteServiceImplTest {
     private NoteServiceImpl noteService;
 
     private static final String MSSV = "22100001";
-    private UUID rootId;
-    private UUID childId;
     private UUID noteId;
+    private LocalDateTime now;
 
     @BeforeEach
     void setUp() {
-        rootId = UUID.randomUUID();
-        childId = UUID.randomUUID();
         noteId = UUID.randomUUID();
+        now = LocalDateTime.now();
     }
 
     @Test
-    void shouldBuildTreeSuccessfully() {
-        NoteNode root = createNode(rootId, null, "Root");
-        NoteNode child = createNode(childId, rootId, "Child");
+    void shouldReturnEmptyNoteWhenNoteNotFound() {
+        when(noteRepository.findByMssv(MSSV)).thenReturn(Optional.empty());
 
-        Note categorized = createNote(noteId, childId, "Node Note", LocalDateTime.now().minusHours(1));
-        Note uncategorized = createNote(UUID.randomUUID(), null, "Loose Note", LocalDateTime.now());
+        NoteResponse result = noteService.getNote(MSSV);
 
-        when(noteNodeRepository.findByMssvOrderByCreatedAtAsc(MSSV)).thenReturn(List.of(root, child));
-        when(noteRepository.findByMssvOrderByUpdatedAtDesc(MSSV)).thenReturn(List.of(categorized, uncategorized));
-
-        NoteTreeResponse result = noteService.getTree(MSSV);
-
-        assertThat(result.nodes()).hasSize(1);
-        assertThat(result.nodes().get(0).getId()).isEqualTo(rootId);
-        assertThat(result.nodes().get(0).getChildren()).hasSize(1);
-        assertThat(result.nodes().get(0).getChildren().get(0).getId()).isEqualTo(childId);
-        assertThat(result.nodes().get(0).getChildren().get(0).getNotes()).hasSize(1);
-        assertThat(result.uncategorizedNotes()).hasSize(1);
+        assertThat(result.mssv()).isEqualTo(MSSV);
+        assertThat(result.content()).isEmpty();
+        assertThat(result.updatedAt()).isNull();
     }
 
     @Test
-    void shouldThrowWhenMoveNodeToItself() {
-        NoteNode node = createNode(rootId, null, "Self");
-        when(noteNodeRepository.findByIdAndMssv(rootId, MSSV)).thenReturn(Optional.of(node));
+    void shouldReturnExistingNote() {
+        Note existingNote = createNote(MSSV, "My existing note content", now);
+        when(noteRepository.findByMssv(MSSV)).thenReturn(Optional.of(existingNote));
 
-        UpdateNoteNodeRequest request = new UpdateNoteNodeRequest("Self", rootId);
+        NoteResponse result = noteService.getNote(MSSV);
 
-        assertThatThrownBy(() -> noteService.updateNode(MSSV, rootId, request)).isInstanceOf(NoteException.class);
-        verify(noteNodeRepository, never()).save(any());
+        assertThat(result.mssv()).isEqualTo(MSSV);
+        assertThat(result.content()).isEqualTo("My existing note content");
+        assertThat(result.updatedAt()).isEqualTo(now);
     }
 
     @Test
-    void shouldThrowWhenMoveNodeToDescendant() {
-        UUID grandChildId = UUID.randomUUID();
+    void shouldReturnEmptyStringWhenContentIsNull() {
+        Note noteWithNullContent = createNote(MSSV, null, now);
+        when(noteRepository.findByMssv(MSSV)).thenReturn(Optional.of(noteWithNullContent));
 
-        NoteNode current = createNode(rootId, null, "Current");
-        NoteNode parent = createNode(childId, grandChildId, "ParentCandidate");
-        NoteNode grandChild = createNode(grandChildId, rootId, "GrandChild");
+        NoteResponse result = noteService.getNote(MSSV);
 
-        when(noteNodeRepository.findByIdAndMssv(rootId, MSSV)).thenReturn(Optional.of(current));
-        when(noteNodeRepository.findByIdAndMssv(childId, MSSV)).thenReturn(Optional.of(parent));
-        when(noteNodeRepository.findByIdAndMssv(grandChildId, MSSV)).thenReturn(Optional.of(grandChild));
-
-        UpdateNoteNodeRequest request = new UpdateNoteNodeRequest("Current", childId);
-
-        assertThatThrownBy(() -> noteService.updateNode(MSSV, rootId, request)).isInstanceOf(NoteException.class);
-        verify(noteNodeRepository, never()).save(any());
+        assertThat(result.mssv()).isEqualTo(MSSV);
+        assertThat(result.content()).isEmpty();
+        assertThat(result.updatedAt()).isEqualTo(now);
     }
 
     @Test
-    void shouldDeleteOwnedNode() {
-        NoteNode node = createNode(rootId, null, "Delete me");
-        when(noteNodeRepository.findByIdAndMssv(rootId, MSSV)).thenReturn(Optional.of(node));
+    void shouldCreateNewNoteWhenNoteDoesNotExist() {
+        UpsertNoteRequest request = new UpsertNoteRequest("New note content");
+        Note newNote = createNote(MSSV, "New note content", now);
 
-        noteService.deleteNode(MSSV, rootId);
+        when(noteRepository.findByMssv(MSSV)).thenReturn(Optional.empty());
+        when(noteRepository.saveAndFlush(any(Note.class))).thenReturn(newNote);
 
-        verify(noteNodeRepository).delete(node);
+        NoteResponse result = noteService.upsertNote(MSSV, request);
+
+        assertThat(result.mssv()).isEqualTo(MSSV);
+        assertThat(result.content()).isEqualTo("New note content");
+        assertThat(result.updatedAt()).isEqualTo(now);
+        verify(noteRepository).saveAndFlush(any(Note.class));
     }
 
     @Test
-    void shouldValidateNodeAndTrimKeywordWhenGetNotes() {
-        UUID nodeFilterId = UUID.randomUUID();
-        Pageable pageable = PageRequest.of(0, 10);
+    void shouldUpdateExistingNote() {
+        Note existingNote = createNote(MSSV, "Old content", now.minusDays(1));
+        UpsertNoteRequest request = new UpsertNoteRequest("Updated content");
 
-        NoteNode node = createNode(nodeFilterId, null, "Filter");
-        Note note = createNote(noteId, nodeFilterId, "Java", LocalDateTime.now());
-        Page<Note> page = new PageImpl<>(List.of(note), pageable, 1);
+        Note updatedNote = createNote(MSSV, "Updated content", now);
 
-        when(noteNodeRepository.findByIdAndMssv(nodeFilterId, MSSV)).thenReturn(Optional.of(node));
-        when(noteRepository.searchNotes(MSSV, nodeFilterId, "abc", pageable)).thenReturn(page);
+        when(noteRepository.findByMssv(MSSV)).thenReturn(Optional.of(existingNote));
+        when(noteRepository.saveAndFlush(existingNote)).thenReturn(updatedNote);
 
-        Page<NoteSummaryResponse> result = noteService.getNotes(MSSV, nodeFilterId, "  abc  ", pageable);
+        NoteResponse result = noteService.upsertNote(MSSV, request);
 
-        assertThat(result.getContent()).hasSize(1);
-        verify(noteRepository).searchNotes(MSSV, nodeFilterId, "abc", pageable);
+        assertThat(result.mssv()).isEqualTo(MSSV);
+        assertThat(result.content()).isEqualTo("Updated content");
+        assertThat(result.updatedAt()).isEqualTo(now);
+        assertThat(existingNote.getContent()).isEqualTo("Updated content");
+        verify(noteRepository).saveAndFlush(existingNote);
     }
 
     @Test
-    void shouldCreateNoteSuccessfully() {
-        UUID nodeId = UUID.randomUUID();
-        NoteNode node = createNode(nodeId, null, "Folder");
-        CreateNoteRequest request = new CreateNoteRequest("  New Note  ", "content", nodeId);
+    void shouldHandleEmptyContentInUpsert() {
+        UpsertNoteRequest request = new UpsertNoteRequest("");
+        Note newNote = createNote(MSSV, "", now);
 
-        Note saved = createNote(noteId, nodeId, "New Note", LocalDateTime.now());
+        when(noteRepository.findByMssv(MSSV)).thenReturn(Optional.empty());
+        when(noteRepository.saveAndFlush(any(Note.class))).thenReturn(newNote);
 
-        when(noteNodeRepository.findByIdAndMssv(nodeId, MSSV)).thenReturn(Optional.of(node));
-        when(noteRepository.saveAndFlush(any(Note.class))).thenReturn(saved);
+        NoteResponse result = noteService.upsertNote(MSSV, request);
 
-        NoteDetailResponse result = noteService.createNote(MSSV, request);
-
-        assertThat(result.id()).isEqualTo(noteId);
-        assertThat(result.title()).isEqualTo("New Note");
+        assertThat(result.mssv()).isEqualTo(MSSV);
+        assertThat(result.content()).isEmpty();
+        assertThat(result.updatedAt()).isEqualTo(now);
     }
 
     @Test
-    void shouldUpdateNoteSuccessfully() {
-        UUID targetNodeId = UUID.randomUUID();
-        NoteNode targetNode = createNode(targetNodeId, null, "Target");
-        Note existing = createNote(noteId, null, "Old", LocalDateTime.now().minusDays(1));
+    void shouldPreserveNullContentAsEmptyString() {
+        Note noteWithNullContent = createNote(MSSV, null, now);
+        UpsertNoteRequest request = new UpsertNoteRequest("New content");
 
-        UpdateNoteRequest request = new UpdateNoteRequest("  Updated  ", "new body", targetNodeId);
+        Note updatedNote = createNote(MSSV, "New content", now);
 
-        when(noteRepository.findByIdAndMssv(noteId, MSSV)).thenReturn(Optional.of(existing));
-        when(noteNodeRepository.findByIdAndMssv(targetNodeId, MSSV)).thenReturn(Optional.of(targetNode));
-        when(noteRepository.saveAndFlush(existing)).thenReturn(existing);
+        when(noteRepository.findByMssv(MSSV)).thenReturn(Optional.of(noteWithNullContent));
+        when(noteRepository.saveAndFlush(noteWithNullContent)).thenReturn(updatedNote);
 
-        NoteDetailResponse result = noteService.updateNote(MSSV, noteId, request);
+        NoteResponse result = noteService.upsertNote(MSSV, request);
 
-        assertThat(existing.getTitle()).isEqualTo("Updated");
-        assertThat(existing.getContent()).isEqualTo("new body");
-        assertThat(existing.getNodeId()).isEqualTo(targetNodeId);
-        assertThat(result.id()).isEqualTo(noteId);
+        assertThat(result.content()).isEqualTo("New content");
     }
 
-    @Test
-    void shouldThrowWhenNoteNotFound() {
-        when(noteRepository.findByIdAndMssv(noteId, MSSV)).thenReturn(Optional.empty());
-
-        assertThatThrownBy(() -> noteService.getNoteDetail(MSSV, noteId)).isInstanceOf(NoteException.class);
-    }
-
-    private NoteNode createNode(UUID id, UUID parentId, String name) {
-        NoteNode node = NoteNode.builder().mssv(MSSV).name(name).parentId(parentId).build();
-        node.setId(id);
-        node.setCreatedAt(LocalDateTime.now());
-        node.setUpdatedAt(LocalDateTime.now());
-        return node;
-    }
-
-    private Note createNote(UUID id, UUID nodeId, String title, LocalDateTime updatedAt) {
-        Note note = Note.builder().mssv(MSSV).nodeId(nodeId).title(title).content("content").build();
-        note.setId(id);
+    private Note createNote(String mssv, String content, LocalDateTime updatedAt) {
+        Note note = Note.builder().mssv(mssv).content(content).build();
+        note.setId(noteId);
         note.setCreatedAt(updatedAt.minusDays(1));
         note.setUpdatedAt(updatedAt);
         return note;

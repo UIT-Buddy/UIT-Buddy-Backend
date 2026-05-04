@@ -261,7 +261,7 @@ public class ScheduleServiceImpl implements ScheduleService {
         List<CourseContentResponse> moodleDeadlines = savedDeadlines.stream()
                 .collect(Collectors.groupingBy(TemporaryDeadline::getClassCode)).entrySet().stream()
                 .map(entry -> new CourseContentResponse(entry.getKey(), entry.getValue().stream()
-                        .map(td -> new CourseContentResponse.exercise(td.getId(), td.getDeadlineName(), td.getDueDate(),
+                        .map(td -> new CourseContentResponse.Exercise(td.getId(), td.getDeadlineName(), td.getDueDate(),
                                 td.getUrl(), td.getStatus() != null ? td.getStatus() : DeadlineStatus.UPCOMING, false))
                         .toList()))
                 .toList();
@@ -298,7 +298,7 @@ public class ScheduleServiceImpl implements ScheduleService {
         for (CourseContentResponse course : freshDeadlines) {
             String classCode = course.courseName() == null || course.courseName().isBlank()
                     ? ScheduleConstant.UNKNOWN_CLASS_CODE : course.courseName();
-            for (CourseContentResponse.exercise exercise : course.exercises()) {
+            for (CourseContentResponse.Exercise exercise : course.exercises()) {
                 if (exercise.dueDate() == null || exercise.exerciseName() == null || exercise.exerciseName().isBlank())
                     continue;
                 // Always resolve status from due date (mirrors mapDeadlineStatus in
@@ -683,13 +683,13 @@ public class ScheduleServiceImpl implements ScheduleService {
                 assignmentIds);
 
         // ── Pass 3: resolve deadline status using cached results ────────────────────
-        List<CourseContentResponse.exercise> exercises = modulesWithDueDates.stream().map(m -> {
+        List<CourseContentResponse.Exercise> exercises = modulesWithDueDates.stream().map(m -> {
             DeadlineStatus status = determineDeadlineStatusFromCache(m.dueDate, submissionStatuses.get(m.id));
-            return new CourseContentResponse.exercise(null, m.name, m.dueDate, m.url, status, false);
+            return new CourseContentResponse.Exercise(null, m.name, m.dueDate, m.url, status, false);
         }).toList();
 
-        List<CourseContentResponse.exercise> sortedExercises = exercises.stream()
-                .sorted(Comparator.comparing(CourseContentResponse.exercise::dueDate).reversed()).toList();
+        List<CourseContentResponse.Exercise> sortedExercises = exercises.stream()
+                .sorted(Comparator.comparing(CourseContentResponse.Exercise::dueDate).reversed()).toList();
 
         return new CourseContentResponse(courseName, sortedExercises);
     }
@@ -733,7 +733,7 @@ public class ScheduleServiceImpl implements ScheduleService {
         int end = Math.min(start + pageable.getPageSize(), flattened.size());
         List<DeadlineEntry> paged = flattened.subList(start, end);
 
-        Map<String, List<CourseContentResponse.exercise>> groupedByCourse = new LinkedHashMap<>();
+        Map<String, List<CourseContentResponse.Exercise>> groupedByCourse = new LinkedHashMap<>();
         for (DeadlineEntry entry : paged) {
             groupedByCourse.computeIfAbsent(entry.courseName(), ignored -> new ArrayList<>()).add(entry.exercise());
         }
@@ -742,7 +742,7 @@ public class ScheduleServiceImpl implements ScheduleService {
                 .map(entry -> new CourseContentResponse(entry.getKey(), entry.getValue())).toList();
     }
 
-    private record DeadlineEntry(String courseName, CourseContentResponse.exercise exercise) {
+    private record DeadlineEntry(String courseName, CourseContentResponse.Exercise exercise) {
     }
 
     private boolean hasNoDeadline(List<CourseDetailResponse> details) {
@@ -956,8 +956,8 @@ public class ScheduleServiceImpl implements ScheduleService {
                 return course;
             }
 
-            List<CourseContentResponse.exercise> sortedExercises = course.deadline().exercises().stream()
-                    .sorted(Comparator.comparing(CourseContentResponse.exercise::dueDate).reversed()).toList();
+            List<CourseContentResponse.Exercise> sortedExercises = course.deadline().exercises().stream()
+                    .sorted(Comparator.comparing(CourseContentResponse.Exercise::dueDate).reversed()).toList();
 
             CourseContentResponse sortedDeadline = new CourseContentResponse(course.deadline().courseName(),
                     sortedExercises);
