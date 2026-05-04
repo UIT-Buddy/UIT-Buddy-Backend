@@ -1,0 +1,3 @@
+ALTER TABLE temporary_deadline ADD COLUMN IF NOT EXISTS status VARCHAR(20);
+ALTER TABLE temporary_deadline ADD COLUMN IF NOT EXISTS semester_code VARCHAR(20);
+ALTER TABLE temporary_deadline ADD COLUMN IF NOT EXISTS url VARCHAR(500);

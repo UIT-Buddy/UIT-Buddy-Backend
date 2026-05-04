@@ -9,6 +9,7 @@ import com.uit.buddy.dto.request.document.ShareResourceRequest;
 import com.uit.buddy.dto.request.document.ShareResourceViaMessageRequest;
 import com.uit.buddy.dto.request.document.UnshareResourceRequest;
 import com.uit.buddy.dto.request.document.UpdateFileRequest;
+import com.uit.buddy.dto.request.document.UpdateFolderRequest;
 import com.uit.buddy.dto.response.document.DocumentFileResponse;
 import com.uit.buddy.dto.response.document.DocumentSearchResult;
 import com.uit.buddy.dto.response.document.DocumentUploadResult;

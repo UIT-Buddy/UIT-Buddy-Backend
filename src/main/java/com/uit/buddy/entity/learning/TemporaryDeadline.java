@@ -42,4 +42,7 @@ public class TemporaryDeadline extends AbstractBaseEntity {
     @Column(name = "semester_code", length = 20)
     private String semesterCode;
 
+    @Column(name = "url", length = 500)
+    private String url;
+
 }

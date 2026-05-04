@@ -3,6 +3,7 @@ package com.uit.buddy.mapper.document;
 import com.uit.buddy.constant.StorageConstants;
 import com.uit.buddy.dto.response.document.DocumentFileResponse;
 import com.uit.buddy.dto.response.document.DocumentSearchResult;
+import com.uit.buddy.dto.response.document.UpdateFolderResponse;
 import com.uit.buddy.dto.response.document.ViewFolderDetailResponse.FileResponse;
 import com.uit.buddy.dto.response.document.ViewFolderDetailResponse.FolderResponse;
 import com.uit.buddy.entity.document.Document;
