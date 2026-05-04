@@ -1,5 +1,6 @@
 package com.uit.buddy.dto.response.home;
 
+import com.uit.buddy.enums.TimeUnit;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -10,7 +11,9 @@ public record HomepageResponse(String studentName, int todayClass, int unreadNot
             String roomCode, String lecturerName) {
     }
 
-    public record IncomingDeadline(String deadlineName, int remainingTime, LocalDateTime dueDate) {
+    public record IncomingDeadline(String deadlineName, RemainingTime remainingTime, LocalDateTime dueDate) {
+        public record RemainingTime(int unit, TimeUnit unitName) {
+        }
     }
 
     public record PagingMetadata(int currentPage, int totalPages, long totalElements) {

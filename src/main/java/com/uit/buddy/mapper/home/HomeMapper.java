@@ -3,6 +3,7 @@ package com.uit.buddy.mapper.home;
 import com.uit.buddy.dto.response.home.HomepageResponse;
 import com.uit.buddy.entity.academic.SubjectClass;
 import com.uit.buddy.entity.learning.TemporaryDeadline;
+import com.uit.buddy.enums.TimeUnit;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -34,7 +35,7 @@ public interface HomeMapper {
     HomepageResponse.IncomingClass toIncomingClass(SubjectClass subjectClass);
 
     @Mapping(target = "deadlineName", source = "deadlineName")
-    @Mapping(target = "remainingTime", source = "dueDate", qualifiedByName = "calculateRemainingMinutesDateTime")
+    @Mapping(target = "remainingTime", source = "dueDate", qualifiedByName = "calculateRemainingTime")
     @Mapping(target = "dueDate", source = "dueDate")
     HomepageResponse.IncomingDeadline toIncomingDeadline(TemporaryDeadline deadline);
 
@@ -48,13 +49,28 @@ public interface HomeMapper {
         return (int) Duration.between(now, startTime).toMinutes();
     }
 
-    @Named("calculateRemainingMinutesDateTime")
-    default int calculateRemainingMinutesDateTime(LocalDateTime dueDate) {
-        if (dueDate == null)
-            return 0;
+    @Named("calculateRemainingTime")
+    default HomepageResponse.IncomingDeadline.RemainingTime calculateRemainingTime(LocalDateTime dueDate) {
+        if (dueDate == null) {
+            return new HomepageResponse.IncomingDeadline.RemainingTime(0, TimeUnit.MINUTE);
+        }
+
         LocalDateTime now = LocalDateTime.now();
-        if (now.isAfter(dueDate))
-            return 0;
-        return (int) Duration.between(now, dueDate).toMinutes();
+        if (now.isAfter(dueDate)) {
+            return new HomepageResponse.IncomingDeadline.RemainingTime(0, TimeUnit.MINUTE);
+        }
+
+        Duration duration = Duration.between(now, dueDate);
+        long minutes = duration.toMinutes();
+
+        if (minutes >= 10080) { // 7 days * 1440 minutes
+            return new HomepageResponse.IncomingDeadline.RemainingTime((int) (minutes / 10080), TimeUnit.WEEK);
+        } else if (minutes >= 1440) { // 24 hours * 60 minutes
+            return new HomepageResponse.IncomingDeadline.RemainingTime((int) (minutes / 1440), TimeUnit.DAY);
+        } else if (minutes >= 60) {
+            return new HomepageResponse.IncomingDeadline.RemainingTime((int) (minutes / 60), TimeUnit.HOUR);
+        } else {
+            return new HomepageResponse.IncomingDeadline.RemainingTime((int) minutes, TimeUnit.MINUTE);
+        }
     }
 }
