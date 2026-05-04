@@ -4,6 +4,7 @@ import com.uit.buddy.controller.AbstractBaseController;
 import com.uit.buddy.dto.base.CursorPageResponse;
 import com.uit.buddy.dto.base.SingleResponse;
 import com.uit.buddy.dto.base.SuccessResponse;
+import com.uit.buddy.dto.response.notification.NotificationListResponse;
 import com.uit.buddy.dto.response.notification.NotificationResponse;
 import com.uit.buddy.dto.response.notification.UnreadCountResponse;
 import com.uit.buddy.service.notification.NotificationService;
@@ -28,17 +29,29 @@ public class NotificationController extends AbstractBaseController {
     private final NotificationService notificationService;
 
     @GetMapping
-    @Operation(summary = "Get notifications", description = "Get paginated notifications with cursor-based pagination")
-    public ResponseEntity<CursorPageResponse<NotificationResponse>> getNotifications(
+    @Operation(summary = "Get notifications", description = "Get paginated notifications with unread count")
+    public ResponseEntity<SingleResponse<NotificationListResponse>> getNotifications(
             @RequestParam(required = false) String cursor, @RequestParam(defaultValue = "10") int limit,
             @AuthenticationPrincipal String mssv) {
 
         log.info("[GET /api/notifications] Getting notifications with cursor: {}, limit: {}", cursor, limit);
 
         List<NotificationResponse> notifications = notificationService.getNotifications(mssv, cursor, limit);
+        long unreadCount = notificationService.getUnreadCount(mssv);
 
-        return cursorPaging("Notifications retrieved successfully", notifications, limit,
-                notification -> CursorUtils.encode(notification.getCreatedAt(), notification.getId()));
+        boolean hasMore = notifications.size() > limit;
+        List<NotificationResponse> pagedData = hasMore ? notifications.subList(0, limit) : notifications;
+
+        String nextCursor = null;
+        if (!pagedData.isEmpty() && hasMore) {
+            NotificationResponse lastItem = pagedData.get(pagedData.size() - 1);
+            nextCursor = CursorUtils.encode(lastItem.getCreatedAt(), lastItem.getId());
+        }
+
+        NotificationListResponse response = NotificationListResponse.builder().notifications(pagedData)
+                .unreadCount(unreadCount).paging(new CursorPageResponse.PagingInfo(nextCursor, hasMore, limit)).build();
+
+        return successSingle(response, "Notifications retrieved successfully");
     }
 
     @GetMapping("/unread-count")
