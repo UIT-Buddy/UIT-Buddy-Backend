@@ -6,10 +6,12 @@ import com.uit.buddy.dto.request.document.ShareResourceRequest;
 import com.uit.buddy.dto.request.document.ShareResourceViaMessageRequest;
 import com.uit.buddy.dto.request.document.UnshareResourceRequest;
 import com.uit.buddy.dto.request.document.UpdateFileRequest;
+import com.uit.buddy.dto.request.document.UpdateFolderRequest;
 import com.uit.buddy.dto.response.document.DocumentFileResponse;
 import com.uit.buddy.dto.response.document.DocumentSearchResult;
 import com.uit.buddy.dto.response.document.SharedFolderResponse;
 import com.uit.buddy.dto.response.document.SharedUserResponse;
+import com.uit.buddy.dto.response.document.UpdateFolderResponse;
 import com.uit.buddy.dto.response.document.ViewFolderDetailResponse;
 import com.uit.buddy.enums.DocumentResourceType;
 import java.util.List;
@@ -42,6 +44,8 @@ public interface DocumentService {
     void unshareResource(String mssv, UnshareResourceRequest request);
 
     DocumentFileResponse updateDocument(String mssv, UUID documentId, UpdateFileRequest request);
+
+    UpdateFolderResponse updateFolder(String mssv, UUID folderId, UpdateFolderRequest request);
 
     void deleteDocument(String mssv, UUID documentId);
 

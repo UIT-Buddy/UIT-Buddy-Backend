@@ -3,6 +3,7 @@ package com.uit.buddy.mapper.document;
 import com.uit.buddy.constant.StorageConstants;
 import com.uit.buddy.dto.response.document.DocumentFileResponse;
 import com.uit.buddy.dto.response.document.DocumentSearchResult;
+import com.uit.buddy.dto.response.document.UpdateFolderResponse;
 import com.uit.buddy.dto.response.document.ViewFolderDetailResponse.FileResponse;
 import com.uit.buddy.dto.response.document.ViewFolderDetailResponse.FolderResponse;
 import com.uit.buddy.entity.document.Document;
@@ -44,6 +45,11 @@ public interface DocumentMapper {
     @Mapping(target = "documentId", source = "id")
     @Mapping(target = "url", source = "fileUrl")
     DocumentSearchResult toSearchResult(Document document);
+
+    @Mapping(target = "folderId", source = "id")
+    @Mapping(target = "folderName", source = "folderName")
+    @Mapping(target = "folderPath", expression = "java(buildFolderPath(folder))")
+    UpdateFolderResponse toUpdateFolderResponse(Folder folder);
 
     default float toDisplaySizeValue(Float sizeInMb) {
         float safeSizeInMb = sizeInMb == null ? 0f : sizeInMb;

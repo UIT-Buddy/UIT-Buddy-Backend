@@ -11,10 +11,12 @@ import com.uit.buddy.dto.request.document.ShareResourceRequest;
 import com.uit.buddy.dto.request.document.ShareResourceViaMessageRequest;
 import com.uit.buddy.dto.request.document.UnshareResourceRequest;
 import com.uit.buddy.dto.request.document.UpdateFileRequest;
+import com.uit.buddy.dto.request.document.UpdateFolderRequest;
 import com.uit.buddy.dto.response.document.DocumentFileResponse;
 import com.uit.buddy.dto.response.document.DocumentSearchResult;
 import com.uit.buddy.dto.response.document.SharedFolderResponse;
 import com.uit.buddy.dto.response.document.SharedUserResponse;
+import com.uit.buddy.dto.response.document.UpdateFolderResponse;
 import com.uit.buddy.dto.response.document.ViewFolderDetailResponse;
 import com.uit.buddy.enums.DocumentResourceType;
 import com.uit.buddy.service.document.DocumentService;
@@ -87,6 +89,15 @@ public class DocumentController extends AbstractBaseController {
         log.info("[PUT /api/document/{}] Updating file for mssv: {}", documentId, mssv);
         DocumentFileResponse response = documentService.updateDocument(mssv, documentId, request);
         return successSingle(response, "File updated successfully");
+    }
+
+    @PutMapping(value = "/folder/{folderId}")
+    @Operation(summary = "Update folder", description = "Rename a folder")
+    public ResponseEntity<SingleResponse<UpdateFolderResponse>> updateFolder(@AuthenticationPrincipal String mssv,
+            @PathVariable UUID folderId, @Valid @RequestBody UpdateFolderRequest request) {
+        log.info("[PUT /api/document/folder/{}] Updating folder for mssv: {}", folderId, mssv);
+        UpdateFolderResponse response = documentService.updateFolder(mssv, folderId, request);
+        return successSingle(response, "Folder updated successfully");
     }
 
     @DeleteMapping(value = "/{documentId}")
