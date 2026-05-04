@@ -78,9 +78,9 @@ public interface ScheduleMapper {
         return DeadlineStatus.UPCOMING;
     }
 
-    default CourseContentResponse.exercise toExercise(StudentTask studentTask) {
+    default CourseContentResponse.Exercise toExercise(StudentTask studentTask) {
         boolean isPersonal = studentTask.getTaskType() == TaskType.PERSONAL;
-        return new CourseContentResponse.exercise(studentTask.getId(), studentTask.getPersonalTitle(),
+        return new CourseContentResponse.Exercise(studentTask.getId(), studentTask.getPersonalTitle(),
                 studentTask.getReminderAt(), null, mapDeadlineStatus(studentTask), isPersonal);
     }
 

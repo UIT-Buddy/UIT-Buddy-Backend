@@ -61,8 +61,10 @@ public class ScheduleScheduler {
     }
 
     /**
-     * Global scheduler — runs every 15 minutes. For the active semester, fetches all deadlines from Moodle + student
-     * tasks for every enrolled month, checks for new deadlines and pushes notifications, then saves to
+     * Global scheduler — runs every 15 minutes. For the active semester, fetches
+     * all deadlines from Moodle + student
+     * tasks for every enrolled month, checks for new deadlines and pushes
+     * notifications, then saves to
      * TemporaryDeadline table.
      */
     @Scheduled(fixedDelay = ScheduleConstant.SCRAPE_DEADLINE_INTERVAL)
@@ -105,7 +107,8 @@ public class ScheduleScheduler {
     }
 
     /**
-     * Returns all (month, year) pairs that fall within the semester's startDate and endDate. Example: Sem1 (Jan–Jun) →
+     * Returns all (month, year) pairs that fall within the semester's startDate and
+     * endDate. Example: Sem1 (Jan–Jun) →
      * (1,2025)..(6,2025); Sem2 (Aug–Jan) → (8,2025)..(1,2026).
      */
     private List<MonthYear> getSemesterMonthYears(Semester semester) {
@@ -129,7 +132,8 @@ public class ScheduleScheduler {
     }
 
     /**
-     * Child scheduler — runs every 30 seconds. Compares due time in TemporaryDeadline to push deadline reminders for
+     * Child scheduler — runs every 30 seconds. Compares due time in
+     * TemporaryDeadline to push deadline reminders for
      * two cases: at due time (on-time) and 24 hours before due.
      */
     @Scheduled(fixedDelay = ScheduleConstant.PUSH_NOTIFICATION_INTERVAL)
@@ -187,17 +191,17 @@ public class ScheduleScheduler {
             return;
 
         for (CourseContentResponse course : allDeadlinesFlat) {
-            for (CourseContentResponse.exercise exercise : course.exercises()) {
+            for (CourseContentResponse.Exercise exercise : course.exercises()) {
                 syncDeadline(mssv, course.courseName(), exercise);
             }
         }
     }
 
-    private boolean isTrackedStatus(CourseContentResponse.exercise exercise) {
+    private boolean isTrackedStatus(CourseContentResponse.Exercise exercise) {
         return exercise.status() == DeadlineStatus.UPCOMING || exercise.status() == DeadlineStatus.NEARDEADLINE;
     }
 
-    private boolean isWithinBuffer(CourseContentResponse.exercise exercise) {
+    private boolean isWithinBuffer(CourseContentResponse.Exercise exercise) {
         if (exercise.dueDate() == null)
             return false;
         long minutesUntilDue = java.time.Duration.between(LocalDateTime.now(), exercise.dueDate()).toMinutes();
@@ -209,7 +213,7 @@ public class ScheduleScheduler {
         return minutesUntilDue < ScheduleConstant.OVERDUE_BUFFER_MINUTES;
     }
 
-    private void syncDeadline(String mssv, String courseName, CourseContentResponse.exercise exercise) {
+    private void syncDeadline(String mssv, String courseName, CourseContentResponse.Exercise exercise) {
         String classCode = (courseName == null || courseName.isBlank()) ? ScheduleConstant.UNKNOWN_CLASS_CODE
                 : courseName;
         String deadlineName = exercise.exerciseName();
