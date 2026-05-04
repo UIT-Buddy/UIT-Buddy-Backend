@@ -58,6 +58,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -260,8 +261,13 @@ public class ScheduleServiceImpl implements ScheduleService {
         List<CourseContentResponse> moodleDeadlines = savedDeadlines.stream()
                 .collect(Collectors.groupingBy(TemporaryDeadline::getClassCode)).entrySet().stream()
                 .map(entry -> new CourseContentResponse(entry.getKey(), entry.getValue().stream()
+<<<<<<< HEAD
                         .map(td -> new CourseContentResponse.exercise(null, td.getDeadlineName(), td.getDueDate(), null,
                                 td.getStatus() != null ? td.getStatus() : DeadlineStatus.UPCOMING, false))
+=======
+                        .map(td -> new CourseContentResponse.exercise(td.getId(), td.getDeadlineName(), td.getDueDate(),
+                                td.getUrl(), td.getStatus() != null ? td.getStatus() : DeadlineStatus.UPCOMING, false))
+>>>>>>> d91f3d347f36f3fb08fa6ee16e85f9cb3c76c5fb
                         .toList()))
                 .toList();
 
@@ -307,10 +313,20 @@ public class ScheduleServiceImpl implements ScheduleService {
                 if (existingTd == null) {
                     toSave.add(TemporaryDeadline.builder().mssv(mssv).classCode(classCode)
                             .deadlineName(exercise.exerciseName()).dueDate(exercise.dueDate()).status(exercise.status())
-                            .semesterCode(semesterCode).build());
-                } else if (!java.util.Objects.equals(existingTd.getStatus(), exercise.status())) {
-                    existingTd.setStatus(exercise.status());
-                    toSave.add(existingTd);
+                            .semesterCode(semesterCode).url(exercise.url()).build());
+                } else {
+                    boolean updated = false;
+                    if (!Objects.equals(existingTd.getStatus(), exercise.status())) {
+                        existingTd.setStatus(exercise.status());
+                        updated = true;
+                    }
+                    if (!Objects.equals(existingTd.getUrl(), exercise.url())) {
+                        existingTd.setUrl(exercise.url());
+                        updated = true;
+                    }
+                    if (updated) {
+                        toSave.add(existingTd);
+                    }
                 }
             }
         }
@@ -325,20 +341,42 @@ public class ScheduleServiceImpl implements ScheduleService {
     }
 
     @Override
+    @Transactional
     public CreateDeadlineResponse updateDeadline(String mssv, UpdateDeadlineRequest request) {
-        if (request.exerciseName() == null || request.exerciseName().isBlank())
-            throw new ScheduleException(ScheduleErrorCode.INVALID_EXERCISE_NAME);
-        if (request.dueDate() == null)
-            throw new ScheduleException(ScheduleErrorCode.INVALID_DUE_TIME);
+        // Try StudentTask first
+        var studentTaskOpt = studentTaskRepository.findByIdAndMssv(request.studentTaskId(), mssv);
+        if (studentTaskOpt.isPresent()) {
+            StudentTask studentTask = studentTaskOpt.get();
+            if (request.exerciseName() != null)
+                studentTask.setPersonalTitle(request.exerciseName());
+            if (request.dueDate() != null)
+                studentTask.setReminderAt(request.dueDate());
+            if (request.status() != null) {
+                studentTask.setIsCompleted(request.status() == DeadlineStatus.DONE);
+            }
+            studentTaskRepository.save(studentTask);
+            return scheduleMapper.toCreateDeadlineResponse(studentTask);
+        }
 
-        StudentTask studentTask = studentTaskRepository.findByIdAndMssv(request.studentTaskId(), mssv)
-                .orElseThrow(() -> new ScheduleException(ScheduleErrorCode.ASSIGNMENT_NOT_EXIST));
+        // Try TemporaryDeadline
+        var temporaryDeadlineOpt = temporaryDeadlineRepository.findById(request.studentTaskId());
+        if (temporaryDeadlineOpt.isPresent() && temporaryDeadlineOpt.get().getMssv().equals(mssv)) {
+            TemporaryDeadline td = temporaryDeadlineOpt.get();
+            if (request.exerciseName() != null)
+                td.setDeadlineName(request.exerciseName());
+            if (request.dueDate() != null)
+                td.setDueDate(request.dueDate());
+            if (request.status() != null) {
+                td.setStatus(request.status());
+            }
+            temporaryDeadlineRepository.save(td);
 
-        studentTask.setPersonalTitle(request.exerciseName());
-        studentTask.setReminderAt(request.dueDate());
-        studentTaskRepository.save(studentTask);
+            // Map TemporaryDeadline back to CreateDeadlineResponse
+            return new CreateDeadlineResponse(td.getId(), td.getClassCode(), false, td.getDeadlineName(),
+                    td.getDueDate(), td.getStatus());
+        }
 
-        return scheduleMapper.toCreateDeadlineResponse(studentTask);
+        throw new ScheduleException(ScheduleErrorCode.ASSIGNMENT_NOT_EXIST);
     }
 
     @Override
@@ -431,7 +469,7 @@ public class ScheduleServiceImpl implements ScheduleService {
     private StudentClassStatus resolveClassStatus(Semester semester) {
         Semester activeSemester = getActiveSemester();
         boolean isActiveSemester = semester != null && activeSemester != null
-                && java.util.Objects.equals(semester.getSemesterCode(), activeSemester.getSemesterCode());
+                && Objects.equals(semester.getSemesterCode(), activeSemester.getSemesterCode());
         return isActiveSemester ? StudentClassStatus.STUDYING : StudentClassStatus.COMPLETED;
     }
 
@@ -456,52 +494,52 @@ public class ScheduleServiceImpl implements ScheduleService {
     private boolean applyEventDataToSubjectClass(SubjectClass subjectClass, IcsEvent event) {
         boolean changed = false;
 
-        if (!java.util.Objects.equals(subjectClass.getTeacherName(), event.getTeacherName())) {
+        if (!Objects.equals(subjectClass.getTeacherName(), event.getTeacherName())) {
             subjectClass.setTeacherName(event.getTeacherName());
             changed = true;
         }
-        if (!java.util.Objects.equals(subjectClass.getDayOfWeek(), event.getDayOfWeek())) {
+        if (!Objects.equals(subjectClass.getDayOfWeek(), event.getDayOfWeek())) {
             subjectClass.setDayOfWeek(event.getDayOfWeek());
             changed = true;
         }
-        if (!java.util.Objects.equals(subjectClass.getStartLesson(), event.getStartLesson())) {
+        if (!Objects.equals(subjectClass.getStartLesson(), event.getStartLesson())) {
             subjectClass.setStartLesson(event.getStartLesson());
             changed = true;
         }
-        if (!java.util.Objects.equals(subjectClass.getEndLesson(), event.getEndLesson())) {
+        if (!Objects.equals(subjectClass.getEndLesson(), event.getEndLesson())) {
             subjectClass.setEndLesson(event.getEndLesson());
             changed = true;
         }
-        if (!java.util.Objects.equals(subjectClass.getStartTime(), event.getStartTime())) {
+        if (!Objects.equals(subjectClass.getStartTime(), event.getStartTime())) {
             subjectClass.setStartTime(event.getStartTime());
             changed = true;
         }
-        if (!java.util.Objects.equals(subjectClass.getEndTime(), event.getEndTime())) {
+        if (!Objects.equals(subjectClass.getEndTime(), event.getEndTime())) {
             subjectClass.setEndTime(event.getEndTime());
             changed = true;
         }
-        if (!java.util.Objects.equals(subjectClass.getStartDate(), event.getStartDate())) {
+        if (!Objects.equals(subjectClass.getStartDate(), event.getStartDate())) {
             subjectClass.setStartDate(event.getStartDate());
             changed = true;
         }
-        if (!java.util.Objects.equals(subjectClass.getEndDate(), event.getEndDate())) {
+        if (!Objects.equals(subjectClass.getEndDate(), event.getEndDate())) {
             subjectClass.setEndDate(event.getEndDate());
             changed = true;
         }
-        if (!java.util.Objects.equals(subjectClass.getRoomCode(), event.getRoomCode())) {
+        if (!Objects.equals(subjectClass.getRoomCode(), event.getRoomCode())) {
             subjectClass.setRoomCode(event.getRoomCode());
             changed = true;
         }
 
         Integer interval = event.getInterval() != null ? event.getInterval() : 1;
-        if (!java.util.Objects.equals(subjectClass.getInterval(), interval)) {
+        if (!Objects.equals(subjectClass.getInterval(), interval)) {
             subjectClass.setInterval(interval);
             changed = true;
         }
 
         String classType = Boolean.TRUE.equals(event.getIsBlendedLearning()) ? IcsConstants.BLENDED_LEARNING
                 : IcsConstants.WEEKLY;
-        if (!java.util.Objects.equals(subjectClass.getClassType(), classType)) {
+        if (!Objects.equals(subjectClass.getClassType(), classType)) {
             subjectClass.setClassType(classType);
             changed = true;
         }

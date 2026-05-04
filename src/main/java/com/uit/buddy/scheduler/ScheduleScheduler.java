@@ -188,7 +188,7 @@ public class ScheduleScheduler {
 
         for (CourseContentResponse course : allDeadlinesFlat) {
             for (CourseContentResponse.exercise exercise : course.exercises()) {
-                saveDeadlineIfAbsent(mssv, course.courseName(), exercise);
+                syncDeadline(mssv, course.courseName(), exercise);
             }
         }
     }
@@ -209,24 +209,37 @@ public class ScheduleScheduler {
         return minutesUntilDue < ScheduleConstant.OVERDUE_BUFFER_MINUTES;
     }
 
-    private void saveDeadlineIfAbsent(String mssv, String courseName, CourseContentResponse.exercise exercise) {
-        String classCode = (courseName == null || courseName.isBlank()) ? "unknown" : courseName;
+    private void syncDeadline(String mssv, String courseName, CourseContentResponse.exercise exercise) {
+        String classCode = (courseName == null || courseName.isBlank()) ? ScheduleConstant.UNKNOWN_CLASS_CODE
+                : courseName;
         String deadlineName = exercise.exerciseName();
         LocalDateTime dueDate = exercise.dueDate();
         if (deadlineName == null || deadlineName.isBlank() || dueDate == null)
             return;
 
         // Check if already exists
-        List<TemporaryDeadline> existing = temporaryDeadlineRepository.findByMssv(mssv);
-        boolean found = existing.stream().anyMatch(td -> td.getClassCode().equalsIgnoreCase(classCode)
-                && td.getDeadlineName().equalsIgnoreCase(deadlineName.trim()) && td.getDueDate().equals(dueDate));
-        if (found)
-            return;
+        List<TemporaryDeadline> existingList = temporaryDeadlineRepository.findByMssv(mssv);
+        TemporaryDeadline existing = existingList.stream()
+                .filter(td -> td.getClassCode().equalsIgnoreCase(classCode)
+                        && td.getDeadlineName().equalsIgnoreCase(deadlineName.trim())
+                        && td.getDueDate().equals(dueDate))
+                .findFirst().orElse(null);
 
-        TemporaryDeadline td = TemporaryDeadline.builder().mssv(mssv).classCode(classCode)
-                .deadlineName(deadlineName.trim()).dueDate(dueDate).build();
-        temporaryDeadlineRepository.save(td);
-        log.info("[SCHEDULER] Saved new deadline for mssv={}, classCode={}, deadline={}", mssv, classCode,
-                deadlineName);
+        if (existing == null) {
+            TemporaryDeadline td = TemporaryDeadline.builder().mssv(mssv).classCode(classCode)
+                    .deadlineName(deadlineName.trim()).dueDate(dueDate).status(exercise.status()).url(exercise.url())
+                    .build();
+            temporaryDeadlineRepository.save(td);
+            log.info("[SCHEDULER] Saved new deadline for mssv={}, classCode={}, deadline={}", mssv, classCode,
+                    deadlineName);
+        } else {
+            if (existing.getStatus() != exercise.status()) {
+                existing.setStatus(exercise.status());
+            }
+            if (!java.util.Objects.equals(existing.getUrl(), exercise.url())) {
+                existing.setUrl(exercise.url());
+            }
+
+        }
     }
 }

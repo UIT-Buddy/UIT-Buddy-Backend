@@ -9,11 +9,13 @@ import com.uit.buddy.dto.request.document.ShareResourceRequest;
 import com.uit.buddy.dto.request.document.ShareResourceViaMessageRequest;
 import com.uit.buddy.dto.request.document.UnshareResourceRequest;
 import com.uit.buddy.dto.request.document.UpdateFileRequest;
+import com.uit.buddy.dto.request.document.UpdateFolderRequest;
 import com.uit.buddy.dto.response.document.DocumentFileResponse;
 import com.uit.buddy.dto.response.document.DocumentSearchResult;
 import com.uit.buddy.dto.response.document.DocumentUploadResult;
 import com.uit.buddy.dto.response.document.SharedFolderResponse;
 import com.uit.buddy.dto.response.document.SharedUserResponse;
+import com.uit.buddy.dto.response.document.UpdateFolderResponse;
 import com.uit.buddy.dto.response.document.ViewFolderDetailResponse;
 import com.uit.buddy.dto.response.document.ViewFolderDetailResponse.FileResponse;
 import com.uit.buddy.dto.response.document.ViewFolderDetailResponse.PaginationMeta;
@@ -283,7 +285,6 @@ public class DocumentServiceImpl implements DocumentService {
     public DocumentFileResponse updateDocument(String mssv, UUID documentId, UpdateFileRequest request) {
         Document document = documentRepository.findByIdAndMssv(documentId, mssv)
                 .orElseThrow(() -> new DocumentException(DocumentErrorCode.FILE_NOT_FOUND));
-
         String newFileName = request.fileName().trim();
         if (!newFileName.equalsIgnoreCase(document.getFileName())) {
             boolean nameExists = documentRepository.existsByFolderIdAndFileNameIgnoreCase(document.getFolderId(),
@@ -306,6 +307,22 @@ public class DocumentServiceImpl implements DocumentService {
 
         document = documentRepository.save(document);
         return documentMapper.toDocumentFileResponse(document);
+    }
+
+    @Override
+    @Transactional
+    public UpdateFolderResponse updateFolder(String mssv, UUID folderId, UpdateFolderRequest request) {
+        Folder folder = findOwnedFolder(mssv, folderId);
+
+        UUID currentParentId = folder.getParent() != null ? folder.getParent().getId() : null;
+        if (request.parentFolderId() != null && !request.parentFolderId().equals(currentParentId)) {
+            Folder targetFolder = findOwnedFolder(mssv, request.parentFolderId());
+            folder.setParent(targetFolder);
+        }
+
+        folder.setFolderName(request.folderName());
+        folder = folderRepository.save(folder);
+        return documentMapper.toUpdateFolderResponse(folder);
     }
 
     @Override

@@ -17,6 +17,26 @@ public interface TemporaryDeadlineRepository extends JpaRepository<TemporaryDead
     List<TemporaryDeadline> findDeadlinesDueBetween(@Param("now") LocalDateTime now,
             @Param("threshold") LocalDateTime threshold);
 
+    @Query("SELECT t FROM TemporaryDeadline t WHERE t.mssv = :mssv AND t.dueDate BETWEEN :now AND :threshold ORDER BY t.dueDate ASC")
+    List<TemporaryDeadline> findDeadlinesByMssvAndDueBetween(@Param("mssv") String mssv,
+            @Param("now") LocalDateTime now, @Param("threshold") LocalDateTime threshold);
+
+    @Query("SELECT t FROM TemporaryDeadline t WHERE t.mssv = :mssv AND t.dueDate BETWEEN :now AND :threshold ORDER BY t.dueDate ASC")
+    org.springframework.data.domain.Page<TemporaryDeadline> findDeadlinesByMssvAndDueBetweenPaginated(
+            @Param("mssv") String mssv, @Param("now") LocalDateTime now, @Param("threshold") LocalDateTime threshold,
+            org.springframework.data.domain.Pageable pageable);
+
+    @Query("SELECT COUNT(t) FROM TemporaryDeadline t WHERE t.mssv = :mssv AND t.dueDate BETWEEN :now AND :threshold")
+    long countDeadlinesByMssvAndDueBetween(@Param("mssv") String mssv, @Param("now") LocalDateTime now,
+            @Param("threshold") LocalDateTime threshold);
+
+    @Query("SELECT t FROM TemporaryDeadline t WHERE t.mssv = :mssv AND t.dueDate >= :now")
+    org.springframework.data.domain.Page<TemporaryDeadline> findUpcomingDeadlinesPaginated(@Param("mssv") String mssv,
+            @Param("now") LocalDateTime now, org.springframework.data.domain.Pageable pageable);
+
+    @Query("SELECT COUNT(t) FROM TemporaryDeadline t WHERE t.mssv = :mssv AND t.dueDate >= :now")
+    long countUpcomingDeadlines(@Param("mssv") String mssv, @Param("now") LocalDateTime now);
+
     @Query("SELECT t FROM TemporaryDeadline t WHERE t.dueDate <= :now")
     List<TemporaryDeadline> findOverdueDeadlines(@Param("now") LocalDateTime now);
 
