@@ -9,5 +9,5 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface NoteRepository extends JpaRepository<Note, UUID> {
 
-        Optional<Note> findByMssv(String mssv);
+    Optional<Note> findByMssv(String mssv);
 }

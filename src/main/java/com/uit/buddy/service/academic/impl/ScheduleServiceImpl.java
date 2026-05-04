@@ -278,10 +278,8 @@ public class ScheduleServiceImpl implements ScheduleService {
     }
 
     /**
-     * Fetches personal/course-linked deadlines from StudentTask table that fall
-     * within the given semester's date range.
-     * Delegates to {@link AssignmentService} which uses a proper JOIN FETCH query,
-     * avoiding LazyInitializationException
+     * Fetches personal/course-linked deadlines from StudentTask table that fall within the given semester's date range.
+     * Delegates to {@link AssignmentService} which uses a proper JOIN FETCH query, avoiding LazyInitializationException
      * on SubjectClass.
      */
     private List<CourseContentResponse> getCurrentSemesterDeadlines(String mssv, Integer month, Integer year) {
@@ -299,8 +297,7 @@ public class ScheduleServiceImpl implements ScheduleService {
         List<TemporaryDeadline> toSave = new ArrayList<>();
         for (CourseContentResponse course : freshDeadlines) {
             String classCode = course.courseName() == null || course.courseName().isBlank()
-                    ? ScheduleConstant.UNKNOWN_CLASS_CODE
-                    : course.courseName();
+                    ? ScheduleConstant.UNKNOWN_CLASS_CODE : course.courseName();
             for (CourseContentResponse.Exercise exercise : course.exercises()) {
                 if (exercise.dueDate() == null || exercise.exerciseName() == null || exercise.exerciseName().isBlank())
                     continue;
@@ -588,10 +585,8 @@ public class ScheduleServiceImpl implements ScheduleService {
     }
 
     /**
-     * Returns (userId, enrolledCourses) from Redis cache if present; otherwise
-     * fetches from Moodle and caches for
-     * MOODLE_ENROLLMENT_CACHE_TTL_SECONDS. Falls back to a live Moodle call on any
-     * error.
+     * Returns (userId, enrolledCourses) from Redis cache if present; otherwise fetches from Moodle and caches for
+     * MOODLE_ENROLLMENT_CACHE_TTL_SECONDS. Falls back to a live Moodle call on any error.
      */
     private EnrolledCoursesResult getCachedEnrolledCourses(String decryptedWstoken, String mssv) {
         return enrollmentCache.findByMssv(mssv)
@@ -815,10 +810,8 @@ public class ScheduleServiceImpl implements ScheduleService {
     }
 
     /**
-     * Like {@link #determineDeadlineStatus(LocalDateTime, String, String)} but
-     * reads from a pre-fetched map. When the
-     * map entry is null (circuit open or call failed), falls back to date-only
-     * inference so no additional HTTP call is
+     * Like {@link #determineDeadlineStatus(LocalDateTime, String, String)} but reads from a pre-fetched map. When the
+     * map entry is null (circuit open or call failed), falls back to date-only inference so no additional HTTP call is
      * made.
      */
     private DeadlineStatus determineDeadlineStatusFromCache(LocalDateTime dueDate,
@@ -982,8 +975,7 @@ public class ScheduleServiceImpl implements ScheduleService {
     }
 
     /**
-     * Syncs all Moodle deadlines for the active semester into the TemporaryDeadline
-     * table. Runs asynchronously after
+     * Syncs all Moodle deadlines for the active semester into the TemporaryDeadline table. Runs asynchronously after
      * signup to pre-populate the deadline cache without blocking the auth response.
      */
 }
