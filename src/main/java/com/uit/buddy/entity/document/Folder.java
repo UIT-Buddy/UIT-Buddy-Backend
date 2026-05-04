@@ -29,9 +29,11 @@ public class Folder extends AbstractBaseEntity {
     @JoinColumn(name = "parent_id")
     private Folder parent;
 
+    @Builder.Default
     @OneToMany(mappedBy = "parent", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Folder> children = new ArrayList<>();
 
+    @Builder.Default
     @OneToMany(mappedBy = "folder", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Document> files = new ArrayList<>();
 

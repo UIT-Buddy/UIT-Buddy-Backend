@@ -26,6 +26,9 @@ public interface NotificationRepository extends JpaRepository<Notification, UUID
 
     long countByStudentMssvAndIsReadFalse(String mssv);
 
+    @Query("SELECT COUNT(n) FROM Notification n WHERE n.student.mssv = :mssv AND n.isRead = false")
+    long countUnreadByMssv(@Param("mssv") String mssv);
+
     @Modifying
     @Query("UPDATE Notification n SET n.isRead = true WHERE n.id = :id AND n.student.mssv = :mssv")
     void markAsRead(@Param("id") UUID id, @Param("mssv") String mssv);
