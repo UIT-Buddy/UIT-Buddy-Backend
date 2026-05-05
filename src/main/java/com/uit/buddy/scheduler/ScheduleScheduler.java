@@ -187,17 +187,17 @@ public class ScheduleScheduler {
             return;
 
         for (CourseContentResponse course : allDeadlinesFlat) {
-            for (CourseContentResponse.exercise exercise : course.exercises()) {
+            for (CourseContentResponse.Exercise exercise : course.exercises()) {
                 syncDeadline(mssv, course.courseName(), exercise);
             }
         }
     }
 
-    private boolean isTrackedStatus(CourseContentResponse.exercise exercise) {
+    private boolean isTrackedStatus(CourseContentResponse.Exercise exercise) {
         return exercise.status() == DeadlineStatus.UPCOMING || exercise.status() == DeadlineStatus.NEARDEADLINE;
     }
 
-    private boolean isWithinBuffer(CourseContentResponse.exercise exercise) {
+    private boolean isWithinBuffer(CourseContentResponse.Exercise exercise) {
         if (exercise.dueDate() == null)
             return false;
         long minutesUntilDue = java.time.Duration.between(LocalDateTime.now(), exercise.dueDate()).toMinutes();
@@ -209,7 +209,7 @@ public class ScheduleScheduler {
         return minutesUntilDue < ScheduleConstant.OVERDUE_BUFFER_MINUTES;
     }
 
-    private void syncDeadline(String mssv, String courseName, CourseContentResponse.exercise exercise) {
+    private void syncDeadline(String mssv, String courseName, CourseContentResponse.Exercise exercise) {
         String classCode = (courseName == null || courseName.isBlank()) ? ScheduleConstant.UNKNOWN_CLASS_CODE
                 : courseName;
         String deadlineName = exercise.exerciseName();
