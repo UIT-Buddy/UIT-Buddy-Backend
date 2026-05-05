@@ -13,8 +13,6 @@ import com.uit.buddy.dto.response.document.SharedFolderResponse;
 import com.uit.buddy.dto.response.document.SharedUserResponse;
 import com.uit.buddy.dto.response.document.UpdateFolderResponse;
 import com.uit.buddy.dto.response.document.ViewFolderDetailResponse;
-import com.uit.buddy.dto.response.document.UpdateFolderResponse;
-import com.uit.buddy.dto.request.document.UpdateFolderRequest;
 import com.uit.buddy.enums.DocumentResourceType;
 import java.util.List;
 import java.util.UUID;

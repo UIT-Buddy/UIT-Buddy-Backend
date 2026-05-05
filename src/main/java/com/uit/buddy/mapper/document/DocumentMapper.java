@@ -13,7 +13,7 @@ import com.uit.buddy.enums.FileType;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.ReportingPolicy;
-import com.uit.buddy.dto.response.document.UpdateFolderResponse;
+
 @Mapper(componentModel = "spring", unmappedTargetPolicy = ReportingPolicy.IGNORE)
 public interface DocumentMapper {
 

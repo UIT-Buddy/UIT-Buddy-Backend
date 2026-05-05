@@ -17,6 +17,7 @@ import com.uit.buddy.service.home.HomeService;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.Comparator;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -52,9 +53,11 @@ public class HomeServiceImpl implements HomeService {
 
         long unreadCount = notificationRepository.countUnreadByMssv(mssv);
 
-        LocalTime nowTime = LocalTime.now();
+        // LocalTime nowTime = LocalTime.now();
+        LocalTime nowTime = LocalTime.of(17, 30);
         SubjectClass incomingClass = todayClasses.stream()
-                .filter(sc -> sc.getStartTime() != null && sc.getStartTime().isAfter(nowTime)).findFirst().orElse(null);
+                .filter(sc -> sc.getStartTime() != null && sc.getEndTime() != null && sc.getEndTime().isAfter(nowTime))
+                .min(Comparator.comparing(SubjectClass::getStartTime)).orElse(null);
 
         LocalDateTime nowDateTime = LocalDateTime.now();
 
@@ -68,6 +71,6 @@ public class HomeServiceImpl implements HomeService {
                 deadlinePage.getTotalPages(), deadlinePage.getTotalElements());
 
         return homeMapper.toHomepageResponse(student.getFullName(), todayClasses.size(), (int) unreadCount,
-                incomingClass, (int) totalElements, deadlinePage.getContent(), paging);
+                incomingClass, (int) totalElements, deadlinePage.getContent(), paging, nowTime);
     }
 }
