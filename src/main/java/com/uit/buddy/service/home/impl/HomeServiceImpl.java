@@ -53,15 +53,13 @@ public class HomeServiceImpl implements HomeService {
 
         long unreadCount = notificationRepository.countUnreadByMssv(mssv);
 
-        // LocalTime nowTime = LocalTime.now();
-        LocalTime nowTime = LocalTime.of(17, 30);
+        LocalTime nowTime = LocalTime.now();
         SubjectClass incomingClass = todayClasses.stream()
                 .filter(sc -> sc.getStartTime() != null && sc.getEndTime() != null && sc.getEndTime().isAfter(nowTime))
                 .min(Comparator.comparing(SubjectClass::getStartTime)).orElse(null);
 
         LocalDateTime nowDateTime = LocalDateTime.now();
 
-        // Fetch paginated deadlines
         Page<TemporaryDeadline> deadlinePage = temporaryDeadlineRepository.findUpcomingDeadlinesPaginated(mssv,
                 nowDateTime, pageable);
 
