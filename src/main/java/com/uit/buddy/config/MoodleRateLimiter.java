@@ -37,8 +37,6 @@ public class MoodleRateLimiter {
             @Value("${moodle.requests-per-second:5}") int requestsPerSecond) {
         this.semaphore = new Semaphore(maxConcurrentRequests, true);
         this.drainIntervalMs = Math.max(100, 1000 / requestsPerSecond);
-        log.info("[MoodleRateLimiter] Initialized with maxConcurrentRequests={}, drainIntervalMs={}",
-                maxConcurrentRequests, drainIntervalMs);
     }
 
     /**
@@ -48,11 +46,7 @@ public class MoodleRateLimiter {
      *             if the current thread is interrupted while waiting
      */
     public void acquire() throws InterruptedException {
-        log.debug("[MoodleRateLimiter] Thread {} waiting for permit (available={}/total={})",
-                Thread.currentThread().getName(), semaphore.availablePermits(), semaphore.getQueueLength());
         semaphore.acquire();
-        log.debug("[MoodleRateLimiter] Thread {} acquired permit (available={})", Thread.currentThread().getName(),
-                semaphore.availablePermits());
     }
 
     /**
@@ -70,8 +64,6 @@ public class MoodleRateLimiter {
      */
     public boolean tryAcquire(long timeout, TimeUnit unit) throws InterruptedException {
         boolean acquired = semaphore.tryAcquire(timeout, unit);
-        log.debug("[MoodleRateLimiter] Thread {} {} permit (available={})", Thread.currentThread().getName(),
-                acquired ? "acquired" : "failed to acquire", semaphore.availablePermits());
         return acquired;
     }
 
@@ -80,8 +72,6 @@ public class MoodleRateLimiter {
      */
     public void release() {
         semaphore.release();
-        log.debug("[MoodleRateLimiter] Thread {} released permit (available={})", Thread.currentThread().getName(),
-                semaphore.availablePermits());
     }
 
     /**
