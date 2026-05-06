@@ -29,7 +29,6 @@ import com.uit.buddy.exception.user.UserException;
 import com.uit.buddy.mapper.schedule.ScheduleMapper;
 import com.uit.buddy.repository.academic.CourseRepository;
 import com.uit.buddy.repository.academic.CurriculumCourseRepository;
-import com.uit.buddy.repository.academic.MoodleEnrollmentCacheRepository;
 import com.uit.buddy.repository.academic.SemesterRepository;
 import com.uit.buddy.repository.academic.StudentSubjectClassRepository;
 import com.uit.buddy.repository.academic.SubjectClassRepository;
@@ -94,8 +93,6 @@ class ScheduleServiceImplTest {
     private AssignmentService assignmentService;
     @Mock
     private NotificationService notificationService;
-    @Mock
-    private MoodleEnrollmentCacheRepository enrollmentCache;
 
     @InjectMocks
     private ScheduleServiceImpl scheduleService;

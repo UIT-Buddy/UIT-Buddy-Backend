@@ -62,20 +62,20 @@ public class UitClientImpl extends AbstractBaseClient implements UitClient {
         moodleResponseValidator.validate(response);
     }
 
+    @Retryable(retryFor = { ExternalClientException.class,
+            RestClientException.class }, maxAttemptsExpression = "${moodle.retry.max-attempts:3}", backoff = @Backoff(delayExpression = "${moodle.retry.delay-ms:1000}", multiplierExpression = "${moodle.retry.multiplier:2}"))
+    @CircuitBreaker(name = "moodleSiteInfo", fallbackMethod = "fallbackFetchSiteInfo")
     @Override
     public SiteInfoResponse fetchSiteInfo(String wstoken) {
         try {
             rateLimiter.acquire();
             Map<String, String> queryParams = buildBaseParams(wstoken, MoodleApiConstants.FUNCTION_GET_SITE_INFO);
-            SiteInfoResponse response = null;
             try {
-                response = get(moodleServerPath, SiteInfoResponse.class, queryParams, null);
-
+                return get(moodleServerPath, SiteInfoResponse.class, queryParams, null);
             } catch (ExternalClientException e) {
                 log.error("Failed to fetch site info with provided wstoken", e);
                 throw new UserException(UserErrorCode.INVALID_WSTOKEN);
             }
-            return response;
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new RuntimeException("Interrupted while waiting for rate limiter permit", e);
@@ -84,8 +84,14 @@ public class UitClientImpl extends AbstractBaseClient implements UitClient {
         }
     }
 
+    public SiteInfoResponse fallbackFetchSiteInfo(String wstoken, Throwable t) {
+        log.warn("[UitClient] Circuit breaker OPEN for fetchSiteInfo: {}", t.getMessage());
+        return null;
+    }
+
     @Retryable(retryFor = { ExternalClientException.class,
             RestClientException.class }, maxAttemptsExpression = "${moodle.retry.max-attempts:3}", backoff = @Backoff(delayExpression = "${moodle.retry.delay-ms:1000}", multiplierExpression = "${moodle.retry.multiplier:2}"))
+    @CircuitBreaker(name = "moodleUserCourses", fallbackMethod = "fallbackGetUserCourses")
     @Override
     public List<EnrolledCourseResponse> getUserCourses(String wstoken, Long userId) {
         try {
@@ -101,6 +107,11 @@ public class UitClientImpl extends AbstractBaseClient implements UitClient {
         } finally {
             rateLimiter.release();
         }
+    }
+
+    public List<EnrolledCourseResponse> fallbackGetUserCourses(String wstoken, Long userId, Throwable t) {
+        log.warn("[UitClient] Circuit breaker OPEN for getUserCourses (userId={}): {}", userId, t.getMessage());
+        return List.of();
     }
 
     @Retryable(retryFor = { ExternalClientException.class,
@@ -124,29 +135,21 @@ public class UitClientImpl extends AbstractBaseClient implements UitClient {
      * Outer wrapper: acquires/releases rate-limiter permit around the entire call so that circuit-open calls (which
      * bypass the method body entirely) do NOT leak permits.
      */
+    @Retryable(retryFor = { ExternalClientException.class,
+            RestClientException.class }, maxAttemptsExpression = "${moodle.retry.max-attempts:3}", backoff = @Backoff(delayExpression = "${moodle.retry.delay-ms:1000}", multiplierExpression = "${moodle.retry.multiplier:2}"))
+    @CircuitBreaker(name = "moodleAssignments", fallbackMethod = "fallbackGetCourseAssignments")
     @Override
     public AssignmentDetailResponse getCourseAssignments(String wstoken, String assignmentId) {
         try {
             rateLimiter.acquire();
-            return doGetCourseAssignments(wstoken, assignmentId);
+            Map<String, String> queryParams = buildAssignmentSubmissionsParams(wstoken, assignmentId);
+            return get(moodleServerPath, AssignmentDetailResponse.class, queryParams, null);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new RuntimeException("Interrupted while waiting for rate limiter permit", e);
         } finally {
             rateLimiter.release();
         }
-    }
-
-    /**
-     * Inner method holds the resilience annotations. When the circuit is OPEN the fallback fires immediately — without
-     * running this method body — so acquire() is never called and no permit leaks.
-     */
-    @Retryable(retryFor = { ExternalClientException.class,
-            RestClientException.class }, maxAttemptsExpression = "${moodle.retry.max-attempts:3}", backoff = @Backoff(delayExpression = "${moodle.retry.delay-ms:1000}", multiplierExpression = "${moodle.retry.multiplier:2}"))
-    @CircuitBreaker(name = "moodleAssignments", fallbackMethod = "fallbackGetCourseAssignments")
-    private AssignmentDetailResponse doGetCourseAssignments(String wstoken, String assignmentId) {
-        Map<String, String> queryParams = buildAssignmentSubmissionsParams(wstoken, assignmentId);
-        return get(moodleServerPath, AssignmentDetailResponse.class, queryParams, null);
     }
 
     public AssignmentDetailResponse fallbackGetCourseAssignments(String wstoken, String assignmentId, Throwable t) {
