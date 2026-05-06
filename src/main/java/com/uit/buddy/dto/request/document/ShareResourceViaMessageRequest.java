@@ -1,5 +1,6 @@
 package com.uit.buddy.dto.request.document;
 
+import com.uit.buddy.enums.AccessRole;
 import com.uit.buddy.enums.DocumentResourceType;
 import com.uit.buddy.enums.ShareTargetType;
 import jakarta.validation.constraints.NotBlank;
@@ -12,5 +13,6 @@ public record ShareResourceViaMessageRequest(
         @NotNull(message = "Resource ID is required") UUID resourceId,
         @NotBlank(message = "Receiver ID is required") String receiverId,
         @NotNull(message = "Receiver type is required") ShareTargetType receiverType,
+        @NotNull(message = "Access role is required") AccessRole accessRole,
         @Size(max = 500, message = "Not too much, not exceed 500 characters") String content) {
 }

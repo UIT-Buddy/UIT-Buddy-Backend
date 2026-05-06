@@ -283,8 +283,14 @@ public class DocumentServiceImpl implements DocumentService {
     @Override
     @Transactional
     public DocumentFileResponse updateDocument(String mssv, UUID documentId, UpdateFileRequest request) {
-        Document document = documentRepository.findByIdAndMssv(documentId, mssv)
+        Document document = documentRepository.findById(documentId)
                 .orElseThrow(() -> new DocumentException(DocumentErrorCode.FILE_NOT_FOUND));
+
+        // Check if user has EDITOR or OWNER permission
+        if (!hasDocumentEditPermission(mssv, document)) {
+            throw new DocumentException(DocumentErrorCode.FILE_ACCESS_DENIED);
+        }
+
         String newFileName = request.fileName().trim();
         if (!newFileName.equalsIgnoreCase(document.getFileName())) {
             boolean nameExists = documentRepository.existsByFolderIdAndFileNameIgnoreCase(document.getFolderId(),
@@ -296,6 +302,11 @@ public class DocumentServiceImpl implements DocumentService {
         }
 
         if (request.folderId() != null && !request.folderId().equals(document.getFolderId())) {
+            // Only owner can move files between folders
+            if (!mssv.equals(document.getMssv())) {
+                throw new DocumentException(DocumentErrorCode.FILE_ACCESS_DENIED);
+            }
+
             Folder targetFolder = findOwnedFolder(mssv, request.folderId());
             boolean nameExistsInTarget = documentRepository.existsByFolderIdAndFileNameIgnoreCase(request.folderId(),
                     newFileName, documentId);
@@ -364,7 +375,8 @@ public class DocumentServiceImpl implements DocumentService {
 
         if (receiverType == ShareTargetType.USER) {
             validateShareTarget(mssv, receiverId);
-            shareResource(mssv, new ShareResourceRequest(request.resourceType(), request.resourceId(), receiverId));
+            shareResource(mssv, new ShareResourceRequest(request.resourceType(), request.resourceId(), receiverId,
+                    request.accessRole()));
         }
 
         SharedResourceMetadata metadata = resolveOwnedResourceMetadata(mssv, request.resourceType(),
@@ -415,7 +427,7 @@ public class DocumentServiceImpl implements DocumentService {
         ShareDocument shareDocument = existingShare.orElseGet(() -> ShareDocument.builder().document(document)
                 .recipient(studentRepository.getReferenceById(request.targetMssv())).build());
 
-        shareDocument.setAccessRole(AccessRole.VIEWER);
+        shareDocument.setAccessRole(request.accessRole());
         shareDocumentRepository.save(shareDocument);
     }
 
@@ -428,7 +440,7 @@ public class DocumentServiceImpl implements DocumentService {
         ShareFolder shareFolder = existingShare.orElseGet(() -> ShareFolder.builder().folder(folder)
                 .recipient(studentRepository.getReferenceById(request.targetMssv())).build());
 
-        shareFolder.setAccessRole(AccessRole.VIEWER);
+        shareFolder.setAccessRole(request.accessRole());
         shareFolderRepository.save(shareFolder);
     }
 
@@ -491,6 +503,33 @@ public class DocumentServiceImpl implements DocumentService {
         while (folder != null) {
             if (shareFolderRepository.existsByFolderIdAndMssv(folder.getId(), mssv)) {
                 return true;
+            }
+            folder = folder.getParent();
+        }
+
+        return false;
+    }
+
+    private boolean hasDocumentEditPermission(String mssv, Document document) {
+        // Owner has full permission
+        if (mssv.equals(document.getMssv())) {
+            return true;
+        }
+
+        // Check direct document share with EDITOR or OWNER role
+        Optional<ShareDocument> directShare = shareDocumentRepository.findByDocumentIdAndMssv(document.getId(), mssv);
+        if (directShare.isPresent()) {
+            AccessRole role = directShare.get().getAccessRole();
+            return role == AccessRole.EDITOR || role == AccessRole.OWNER;
+        }
+
+        // Check folder share with EDITOR or OWNER role
+        Folder folder = document.getFolder();
+        while (folder != null) {
+            Optional<ShareFolder> folderShare = shareFolderRepository.findByFolderIdAndMssv(folder.getId(), mssv);
+            if (folderShare.isPresent()) {
+                AccessRole role = folderShare.get().getAccessRole();
+                return role == AccessRole.EDITOR || role == AccessRole.OWNER;
             }
             folder = folder.getParent();
         }
