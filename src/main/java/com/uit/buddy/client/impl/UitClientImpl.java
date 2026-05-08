@@ -169,7 +169,8 @@ public class UitClientImpl extends AbstractBaseClient implements UitClient {
             return Map.of();
         }
 
-        // Obtain the AOP proxy so interceptors (CircuitBreaker, Retryable) fire on each call
+        // Obtain the AOP proxy so interceptors (CircuitBreaker, Retryable) fire on each
+        // call
         UitClient uitClientProxy = applicationContext.getBean(UitClient.class);
 
         List<CompletableFuture<Map.Entry<String, AssignmentDetailResponse>>> futures = new java.util.ArrayList<>();
@@ -213,14 +214,14 @@ public class UitClientImpl extends AbstractBaseClient implements UitClient {
 
     @Recover
     public List<EnrolledCourseResponse> recoverGetUserCourses(ExternalClientException e, String wstoken, Long userId) {
-        log.warn("[UitClient] All retries exhausted for getUserCourses: {}", e.getMessage());
+        log.error("[UitClient] All retries exhausted for getUserCourses: {}", e.getMessage());
         throw e;
     }
 
     @Recover
     public List<EnrolledCourseResponse> recoverGetUserCoursesFromParseError(HttpMessageNotReadableException e,
             String wstoken, Long userId) {
-        log.warn("[UitClient] All retries exhausted for getUserCourses due to parse error: {}", e.getMessage());
+        log.error("[UitClient] All retries exhausted for getUserCourses due to parse error: {}", e.getMessage());
         throw new ExternalClientException(ExternalClientErrorCode.RESPONSE_PARSING_ERROR,
                 "Failed to parse Moodle enrolled courses response", e);
     }
@@ -228,7 +229,7 @@ public class UitClientImpl extends AbstractBaseClient implements UitClient {
     @Recover
     public List<EnrolledCourseResponse> recoverGetUserCoursesFromRestClient(RestClientException e, String wstoken,
             Long userId) {
-        log.warn("[UitClient] All retries exhausted for getUserCourses due to RestClient error: {}", e.getMessage());
+        log.error("[UitClient] All retries exhausted for getUserCourses due to RestClient error: {}", e.getMessage());
         throw new ExternalClientException(ExternalClientErrorCode.EXTERNAL_SERVICE_ERROR,
                 "External service error during getUserCourses", e);
     }

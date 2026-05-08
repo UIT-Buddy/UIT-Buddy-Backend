@@ -184,7 +184,8 @@ public class ScheduleServiceImpl implements ScheduleService {
 
         String decryptedWstoken = encryptionUtils.decrypt(student.getEncryptedWstoken());
 
-        // Fetch the Moodle course ID from enrolled courses (bypassing cache for fresh data)
+        // Fetch the Moodle course ID from enrolled courses (bypassing cache for fresh
+        // data)
         EnrolledCoursesResult result = getEnrolledCoursesFromMoodle(decryptedWstoken, mssv);
         List<EnrolledCourseResponse> enrolledCourses = result.enrolledCourses();
 
