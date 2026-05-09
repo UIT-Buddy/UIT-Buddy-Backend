@@ -218,6 +218,8 @@ public class ScheduleScheduler {
         if (existing != null) {
             boolean isUpdated = false;
             if (existing.getStatus() != exercise.status()) {
+                if (existing.getStatus() == DeadlineStatus.DONE)
+                    return;
                 existing.setStatus(exercise.status());
                 isUpdated = true;
             }
