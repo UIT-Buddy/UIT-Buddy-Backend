@@ -11,6 +11,7 @@ import com.uit.buddy.security.JwtAuthenticationFilter;
 import java.util.HashMap;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
@@ -22,7 +23,7 @@ public class AIChatClientImpl extends AbstractBaseClient implements AIChatClient
     private final String apiUrl;
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
 
-    public AIChatClientImpl(RestClient restClient, ObjectMapper objectMapper,
+    public AIChatClientImpl(@Qualifier("aiChatClient") RestClient restClient, ObjectMapper objectMapper,
             JwtAuthenticationFilter jwtAuthenticationFilter, @Value("${ai.chat.api-url}") String apiUrl) {
         super(restClient, objectMapper);
         this.apiUrl = apiUrl;
