@@ -1,4 +1,6 @@
 package com.uit.buddy.dto.response.chat;
 
-public record ChatResponse(String answer) {
+import com.fasterxml.jackson.annotation.JsonProperty;
+
+public record ChatResponse(@JsonProperty("answer") String answer) {
 }

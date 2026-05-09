@@ -35,6 +35,15 @@ public class RestClientConfig {
     @Value("${COMETCHAT_READ_TIMEOUT:10000}")
     private int cometChatReadTimeout;
 
+    @Value("${AI_CHAT_BASE_URL}")
+    private String aiChatBaseUrl;
+
+    @Value("${AI_CHAT_CONNECT_TIMEOUT:30000}")
+    private int aiChatConnectTimeout;
+
+    @Value("${AI_CHAT_READ_TIMEOUT:300000}")
+    private int aiChatReadTimeout;
+
     @Value("${DEFAULT_CONNECT_TIMEOUT:30000}")
     private int defaultConnectTimeout;
 
@@ -56,6 +65,12 @@ public class RestClientConfig {
     public RestClient cometChatClient() {
         return RestClient.builder().baseUrl(cometChatBaseUrl)
                 .requestFactory(createFactory(cometChatConnectTimeout, cometChatReadTimeout)).build();
+    }
+
+    @Bean
+    public RestClient aiChatClient() {
+        return RestClient.builder().baseUrl(aiChatBaseUrl)
+                .requestFactory(createFactory(aiChatConnectTimeout, aiChatReadTimeout)).build();
     }
 
     @Bean
