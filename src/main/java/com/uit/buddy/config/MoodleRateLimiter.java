@@ -25,7 +25,6 @@ import org.springframework.stereotype.Component;
 public class MoodleRateLimiter {
 
     private final Semaphore semaphore;
-    private final Semaphore schedulerSemaphore;
     private final long drainIntervalMs;
 
     /**
@@ -35,10 +34,8 @@ public class MoodleRateLimiter {
      *            target request rate to Moodle (default 5); used to derive drain interval
      */
     public MoodleRateLimiter(@Value("${moodle.max-concurrent-requests:5}") int maxConcurrentRequests,
-            @Value("${moodle.requests-per-second:5}") int requestsPerSecond,
-            @Value("${moodle.max-scheduler-concurrent-requests:3}") int maxSchedulerConcurrentRequests) {
+            @Value("${moodle.requests-per-second:5}") int requestsPerSecond) {
         this.semaphore = new Semaphore(maxConcurrentRequests, true);
-        this.schedulerSemaphore = new Semaphore(maxSchedulerConcurrentRequests, true);
         this.drainIntervalMs = Math.max(100, 1000 / requestsPerSecond);
     }
 
@@ -49,9 +46,6 @@ public class MoodleRateLimiter {
      *             if the current thread is interrupted while waiting
      */
     public void acquire() throws InterruptedException {
-        if (MoodleRateLimiterContext.isScheduler()) {
-            schedulerSemaphore.acquire();
-        }
         semaphore.acquire();
     }
 
@@ -69,25 +63,7 @@ public class MoodleRateLimiter {
      *             if the current thread is interrupted while waiting
      */
     public boolean tryAcquire(long timeout, TimeUnit unit) throws InterruptedException {
-        long nanosTimeout = unit.toNanos(timeout);
-        long start = System.nanoTime();
-
-        if (MoodleRateLimiterContext.isScheduler()) {
-            if (!schedulerSemaphore.tryAcquire(nanosTimeout, TimeUnit.NANOSECONDS)) {
-                return false;
-            }
-            long elapsed = System.nanoTime() - start;
-            nanosTimeout -= elapsed;
-            if (nanosTimeout <= 0) {
-                schedulerSemaphore.release();
-                return false;
-            }
-        }
-
-        boolean acquired = semaphore.tryAcquire(nanosTimeout, TimeUnit.NANOSECONDS);
-        if (!acquired && MoodleRateLimiterContext.isScheduler()) {
-            schedulerSemaphore.release();
-        }
+        boolean acquired = semaphore.tryAcquire(timeout, unit);
         return acquired;
     }
 
@@ -96,9 +72,6 @@ public class MoodleRateLimiter {
      */
     public void release() {
         semaphore.release();
-        if (MoodleRateLimiterContext.isScheduler()) {
-            schedulerSemaphore.release();
-        }
     }
 
     /**

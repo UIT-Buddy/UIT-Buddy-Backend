@@ -1,7 +1,6 @@
 package com.uit.buddy.scheduler;
 
 import com.uit.buddy.client.UitClient;
-import com.uit.buddy.config.MoodleRateLimiterContext;
 import com.uit.buddy.constant.ScheduleConstant;
 import com.uit.buddy.dto.response.auth.AuthResponse;
 import com.uit.buddy.dto.response.client.SiteInfoResponse;
@@ -78,52 +77,47 @@ public class ScheduleScheduler {
      */
     @Scheduled(fixedDelay = ScheduleConstant.SCRAPE_DEADLINE_INTERVAL)
     public void scrapeAllDeadlineOfStudent() {
-        MoodleRateLimiterContext.setScheduler(true);
-        try {
-            Semester semester = semesterRepository.findCurrentSemester(LocalDate.now()).orElse(null);
-            if (semester == null) {
-                log.warn("[SCHEDULER] No active semester found, skipping deadline scrape");
-                return;
+        Semester semester = semesterRepository.findCurrentSemester(LocalDate.now()).orElse(null);
+        if (semester == null) {
+            log.warn("[SCHEDULER] No active semester found, skipping deadline scrape");
+            return;
+        }
+
+        List<MonthYear> semesterMonths = getSemesterMonthYears(semester);
+        if (semesterMonths.isEmpty()) {
+            log.warn("[SCHEDULER] Active semester has no valid month range: {}", semester.getSemesterCode());
+            return;
+        }
+
+        log.info("[START GLOBAL SCHEDULER] for semester {} ({} months)", semester.getSemesterCode(),
+                semesterMonths.size());
+
+        List<String> listMssv = studentRepository.findMssvAll();
+        for (String mssv : listMssv) {
+            String encryptedWstoken = studentRepository.findMoodleWstokenByMssv(mssv);
+            String decryptedWstoken = wsTokenEncryptionService.decryptWstoken(encryptedWstoken);
+            SiteInfoResponse siteInfo = uitClient.fetchSiteInfo(decryptedWstoken);
+            if (siteInfo.username() == null || siteInfo.userid() == null || siteInfo.fullname() == null) {
+                log.error("[SCHEDULER SKIP] Invalid token for mssv={}", mssv);
+                continue;
             }
-
-            List<MonthYear> semesterMonths = getSemesterMonthYears(semester);
-            if (semesterMonths.isEmpty()) {
-                log.warn("[SCHEDULER] Active semester has no valid month range: {}", semester.getSemesterCode());
-                return;
-            }
-
-            log.info("[START GLOBAL SCHEDULER] for semester {} ({} months)", semester.getSemesterCode(),
-                    semesterMonths.size());
-
-            List<String> listMssv = studentRepository.findMssvAll();
-            for (String mssv : listMssv) {
-                String encryptedWstoken = studentRepository.findMoodleWstokenByMssv(mssv);
-                String decryptedWstoken = wsTokenEncryptionService.decryptWstoken(encryptedWstoken);
-                SiteInfoResponse siteInfo = uitClient.fetchSiteInfo(decryptedWstoken);
-                if (siteInfo.username() == null || siteInfo.userid() == null || siteInfo.fullname() == null) {
-                    log.error("[SCHEDULER SKIP] Invalid token for mssv={}", mssv);
-                    continue;
-                }
-                try {
-                    List<TemporaryDeadline> studentDeadlines = temporaryDeadlineRepository.findByMssv(mssv);
-                    for (MonthYear my : semesterMonths) {
-                        {
-                            List<CourseContentResponse> moodleDeadlines = scheduleService
-                                    .fetchCourseDeadlinesFromMoodle(mssv, my.month(), my.year());
-                            processDeadlines(moodleDeadlines, mssv, studentDeadlines);
-                        }
+            try {
+                List<TemporaryDeadline> studentDeadlines = temporaryDeadlineRepository.findByMssv(mssv);
+                for (MonthYear my : semesterMonths) {
+                    {
+                        List<CourseContentResponse> moodleDeadlines = scheduleService
+                                .fetchCourseDeadlinesFromMoodle(mssv, my.month(), my.year());
+                        processDeadlines(moodleDeadlines, mssv, studentDeadlines);
                     }
-                    Thread.sleep(ScheduleConstant.GAP_PER_STUDENT_PING_MOODLE);
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                    log.error("Scheduler interrupted for mssv={}", mssv);
-                    break;
-                } catch (Exception e) {
-                    log.error("Failed to fetch deadline for mssv={}", mssv, e);
                 }
+                Thread.sleep(ScheduleConstant.GAP_PER_STUDENT_PING_MOODLE);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                log.error("Scheduler interrupted for mssv={}", mssv);
+                break;
+            } catch (Exception e) {
+                log.error("Failed to fetch deadline for mssv={}", mssv, e);
             }
-        } finally {
-            MoodleRateLimiterContext.clear();
         }
     }
 
