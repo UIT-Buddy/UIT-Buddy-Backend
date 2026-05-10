@@ -6,6 +6,7 @@ import com.uit.buddy.dto.response.schedule.CourseContentResponse;
 import com.uit.buddy.dto.response.schedule.CreateDeadlineResponse;
 import com.uit.buddy.entity.academic.StudentSubjectClass;
 import com.uit.buddy.entity.learning.StudentTask;
+import com.uit.buddy.entity.learning.TemporaryDeadline;
 import com.uit.buddy.enums.DeadlineStatus;
 import com.uit.buddy.enums.TaskType;
 import java.time.LocalDateTime;
@@ -45,6 +46,13 @@ public interface ScheduleMapper {
     @Mapping(target = "dueDate", source = "reminderAt")
     @Mapping(target = "status", expression = "java(mapDeadlineStatus(studentTask))")
     CreateDeadlineResponse toCreateDeadlineResponse(StudentTask studentTask);
+
+    @Mapping(target = "classCode", source = "classCode")
+    @Mapping(target = "isPersonal", expression = "java(temporaryDeadline.getClassCode() == null || temporaryDeadline.getClassCode().equals(\"\"))")
+    @Mapping(target = "deadlineName", source = "deadlineName")
+    @Mapping(target = "dueDate", source = "dueDate")
+    @Mapping(target = "status", source = "status")
+    CreateDeadlineResponse toCreateDeadlineResponse(TemporaryDeadline temporaryDeadline);
 
     @Mapping(target = "courseName", expression = "java(resolveCourseName(studentTask))")
     @Mapping(target = "exercises", expression = "java(java.util.List.of(toExercise(studentTask)))")

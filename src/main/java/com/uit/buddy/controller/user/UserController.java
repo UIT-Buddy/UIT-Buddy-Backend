@@ -123,12 +123,4 @@ public class UserController extends AbstractBaseController {
         return success("User settings updated successfully");
     }
 
-    @PatchMapping("/wstoken")
-    @Operation(summary = "Update WsToken", description = "Update new WsToken to update new information")
-    public ResponseEntity<SuccessResponse> updateWsToken(@AuthenticationPrincipal String mssv,
-            @Valid @RequestBody UpdateWsTokenRequest request) {
-        log.info("[PATCH /api/user/wstoken] Updating WsToken for mssv: {}", mssv);
-        userService.updateWsToken(mssv, request);
-        return success("WsToken updated successfully");
-    }
 }

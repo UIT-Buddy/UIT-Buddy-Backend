@@ -8,17 +8,21 @@ import com.uit.buddy.dto.request.auth.ForgetPasswordRequest;
 import com.uit.buddy.dto.request.auth.ResetPasswordRequest;
 import com.uit.buddy.dto.request.auth.SignInRequest;
 import com.uit.buddy.dto.request.auth.ValidateTokenRequest;
+import com.uit.buddy.dto.request.user.UpdateWsTokenRequest;
 import com.uit.buddy.dto.response.auth.AuthResponse;
 import com.uit.buddy.dto.response.auth.ValidateTokenResponse;
 import com.uit.buddy.exception.auth.AuthErrorCode;
 import com.uit.buddy.exception.auth.AuthException;
 import com.uit.buddy.service.auth.AuthService;
+import com.uit.buddy.service.user.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
@@ -33,6 +37,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class AuthController extends AbstractBaseController {
 
     private final AuthService authService;
+    private final UserService userService;
 
     @PostMapping("/signup/init")
     @Operation(summary = "Validate Moodle Token", description = "Check if the provided wstoken is valid and extract student info")
@@ -101,5 +106,13 @@ public class AuthController extends AbstractBaseController {
         }
         authService.signOut(refreshToken);
         return success("Sign out successfully!");
+    }
+
+    @PatchMapping("/wstoken")
+    @Operation(summary = "Update WsToken", description = "Update new WsToken to update new information")
+    public ResponseEntity<SuccessResponse> updateWsToken(@Valid @RequestBody UpdateWsTokenRequest request) {
+        log.info("[PATCH /api/auth/wstoken] Updating WsToken for mssv: {}", request.mssv());
+        userService.updateWsToken(request);
+        return success("WsToken updated successfully");
     }
 }

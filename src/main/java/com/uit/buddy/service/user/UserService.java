@@ -29,5 +29,5 @@ public interface UserService {
 
     void updateUserSettings(String mssv, UpdateUserSettingRequest request);
 
-    void updateWsToken(String mssv, UpdateWsTokenRequest request);
+    void updateWsToken(UpdateWsTokenRequest request);
 }
