@@ -33,7 +33,6 @@ import com.uit.buddy.exception.user.UserException;
 import com.uit.buddy.mapper.schedule.ScheduleMapper;
 import com.uit.buddy.repository.academic.CourseRepository;
 import com.uit.buddy.repository.academic.CurriculumCourseRepository;
-import com.uit.buddy.repository.academic.MoodleEnrollmentCacheRepository;
 import com.uit.buddy.repository.academic.SemesterRepository;
 import com.uit.buddy.repository.academic.StudentSubjectClassRepository;
 import com.uit.buddy.repository.academic.SubjectClassRepository;
@@ -88,7 +87,6 @@ public class ScheduleServiceImpl implements ScheduleService {
     private final SemesterRepository semesterRepository;
     private final AssignmentService assignmentService;
     private final NotificationService notificationService;
-    private final MoodleEnrollmentCacheRepository enrollmentCache;
     private final UitClient uitClient;
     private final EncryptionUtils encryptionUtils;
     private final Executor executor;
@@ -100,9 +98,8 @@ public class ScheduleServiceImpl implements ScheduleService {
             CourseRepository courseRepository, CurriculumCourseRepository curriculumCourseRepository,
             AssignmentService assignmentService, SemesterRepository semesterRepository,
             TemporaryDeadlineRepository temporaryDeadlineRepository, NotificationService notificationService,
-            MoodleEnrollmentCacheRepository enrollmentCache, UitClient uitClient, EncryptionUtils encryptionUtils,
-            StudentTaskRepository studentTaskRepository, @Qualifier("uploadExecutor") Executor executor,
-            ScheduleMapper scheduleMapper) {
+            UitClient uitClient, EncryptionUtils encryptionUtils, StudentTaskRepository studentTaskRepository,
+            @Qualifier("uploadExecutor") Executor executor, ScheduleMapper scheduleMapper) {
         this.icsParser = icsParser;
         this.studentRepository = studentRepository;
         this.subjectClassRepository = subjectClassRepository;
@@ -112,7 +109,6 @@ public class ScheduleServiceImpl implements ScheduleService {
         this.semesterRepository = semesterRepository;
         this.temporaryDeadlineRepository = temporaryDeadlineRepository;
         this.notificationService = notificationService;
-        this.enrollmentCache = enrollmentCache;
         this.uitClient = uitClient;
         this.encryptionUtils = encryptionUtils;
         this.executor = executor;
@@ -166,6 +162,7 @@ public class ScheduleServiceImpl implements ScheduleService {
         Map<String, List<CourseDetailResponse>> courseContents = getCourseContents(decryptedWstoken, mssv);
         List<CourseContentResponse> deadlines = extractDeadlinesForCourses(mssv, courseContents, decryptedWstoken,
                 month, year);
+        syncDeadlinesToTable(mssv, deadlines);
         List<StudentSubjectClass> savedMappings = studentSubjectClassRepository.findSubjectsByMssv(mssv);
         List<CourseCalendarResponse.Course> courses = scheduleMapper.toListCourseWithDeadlines(savedMappings,
                 deadlines);
@@ -187,8 +184,9 @@ public class ScheduleServiceImpl implements ScheduleService {
 
         String decryptedWstoken = encryptionUtils.decrypt(student.getEncryptedWstoken());
 
-        // Find the Moodle course ID from enrolled courses (cached)
-        EnrolledCoursesResult result = getCachedEnrolledCourses(decryptedWstoken, mssv);
+        // Fetch the Moodle course ID from enrolled courses (bypassing cache for fresh
+        // data)
+        EnrolledCoursesResult result = getEnrolledCoursesFromMoodle(decryptedWstoken, mssv);
         List<EnrolledCourseResponse> enrolledCourses = result.enrolledCourses();
 
         EnrolledCourseResponse targetCourse = enrolledCourses.stream()
@@ -291,8 +289,10 @@ public class ScheduleServiceImpl implements ScheduleService {
         String semesterCode = semester != null ? semester.getSemesterCode() : null;
 
         List<TemporaryDeadline> existing = temporaryDeadlineRepository.findByMssv(mssv);
-        Map<String, TemporaryDeadline> existingMap = existing.stream().collect(java.util.stream.Collectors
-                .toMap(td -> buildDeadlineKey(td.getClassCode(), td.getDeadlineName(), td.getDueDate()), td -> td));
+        Map<String, TemporaryDeadline> existingMap = existing.stream()
+                .collect(java.util.stream.Collectors.toMap(
+                        td -> buildDeadlineKey(td.getClassCode(), td.getDeadlineName()), td -> td,
+                        (existingValue, newValue) -> existingValue));
 
         List<TemporaryDeadline> toSave = new ArrayList<>();
         for (CourseContentResponse course : freshDeadlines) {
@@ -303,7 +303,7 @@ public class ScheduleServiceImpl implements ScheduleService {
                     continue;
                 // Always resolve status from due date (mirrors mapDeadlineStatus in
                 // ScheduleMapper)
-                String key = buildDeadlineKey(classCode, exercise.exerciseName(), exercise.dueDate());
+                String key = buildDeadlineKey(classCode, exercise.exerciseName());
                 TemporaryDeadline existingTd = existingMap.get(key);
                 if (existingTd == null) {
                     toSave.add(TemporaryDeadline.builder().mssv(mssv).classCode(classCode)
@@ -319,6 +319,10 @@ public class ScheduleServiceImpl implements ScheduleService {
                         existingTd.setUrl(exercise.url());
                         updated = true;
                     }
+                    if (!Objects.equals(existingTd.getDueDate(), exercise.dueDate())) {
+                        existingTd.setDueDate(exercise.dueDate());
+                        updated = true;
+                    }
                     if (updated) {
                         toSave.add(existingTd);
                     }
@@ -330,9 +334,9 @@ public class ScheduleServiceImpl implements ScheduleService {
         }
     }
 
-    private String buildDeadlineKey(String classCode, String deadlineName, LocalDateTime dueDate) {
-        return String.format("%s|%s|%s", classCode == null ? "" : classCode.trim().toLowerCase(),
-                deadlineName == null ? "" : deadlineName.trim().toLowerCase(), dueDate);
+    private String buildDeadlineKey(String classCode, String deadlineName) {
+        return String.format("%s|%s", classCode == null ? "" : classCode.trim().toLowerCase(),
+                deadlineName == null ? "" : deadlineName.trim().toLowerCase());
     }
 
     @Override
@@ -585,26 +589,21 @@ public class ScheduleServiceImpl implements ScheduleService {
     }
 
     /**
-     * Returns (userId, enrolledCourses) from Redis cache if present; otherwise fetches from Moodle and caches for
-     * MOODLE_ENROLLMENT_CACHE_TTL_SECONDS. Falls back to a live Moodle call on any error.
+     * Fetches (userId, enrolledCourses) directly from Moodle (bypassing cache) to ensure fresh data. Still saves to
+     * cache after fetching so other parts of the system have updated info.
      */
-    private EnrolledCoursesResult getCachedEnrolledCourses(String decryptedWstoken, String mssv) {
-        return enrollmentCache.findByMssv(mssv)
-                .map(cache -> new EnrolledCoursesResult(cache.userId(), cache.enrolledCourses())).orElseGet(() -> {
-                    log.info("[Schedule Service] Enrollment cache miss for mssv={}, fetching from Moodle", mssv);
-                    SiteInfoResponse siteInfo = uitClient.fetchSiteInfo(decryptedWstoken);
-                    Long userId = siteInfo.userid();
-                    List<EnrolledCourseResponse> enrolledCourses = uitClient.getUserCourses(decryptedWstoken, userId);
-                    enrollmentCache.save(mssv, userId, enrolledCourses);
-                    return new EnrolledCoursesResult(userId, enrolledCourses);
-                });
+    private EnrolledCoursesResult getEnrolledCoursesFromMoodle(String decryptedWstoken, String mssv) {
+        SiteInfoResponse siteInfo = uitClient.fetchSiteInfo(decryptedWstoken);
+        Long userId = siteInfo.userid();
+        List<EnrolledCourseResponse> enrolledCourses = uitClient.getUserCourses(decryptedWstoken, userId);
+        return new EnrolledCoursesResult(userId, enrolledCourses);
     }
 
     private record EnrolledCoursesResult(Long userId, List<EnrolledCourseResponse> enrolledCourses) {
     }
 
     private Map<String, List<CourseDetailResponse>> getCourseContents(String wstoken, String mssv) {
-        EnrolledCoursesResult result = getCachedEnrolledCourses(wstoken, mssv);
+        EnrolledCoursesResult result = getEnrolledCoursesFromMoodle(wstoken, mssv);
         List<EnrolledCourseResponse> enrolledCourseResponses = result.enrolledCourses();
 
         List<CompletableFuture<Map.Entry<String, List<CourseDetailResponse>>>> futures = new ArrayList<>();
@@ -635,12 +634,8 @@ public class ScheduleServiceImpl implements ScheduleService {
             futures.add(CompletableFuture
                     .supplyAsync(() -> extractDeadlinesForCourse(courseName, details, decryptedWstoken, month, year)));
         }
-        List<CourseContentResponse> freshDeadlines = futures.stream().map(CompletableFuture::join)
+        return futures.stream().map(CompletableFuture::join)
                 .filter(courseContent -> !courseContent.exercises().isEmpty()).toList();
-        if (!freshDeadlines.isEmpty()) {
-            syncDeadlinesToTable(mssv, freshDeadlines);
-        }
-        return freshDeadlines;
     }
 
     private CourseContentResponse extractDeadlinesForCourse(String courseName, List<CourseDetailResponse> details,

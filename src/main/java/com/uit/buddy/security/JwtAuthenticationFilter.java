@@ -22,16 +22,17 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtUtils jwtUtils;
 
+    private String userJwt;
+
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
 
         try {
             String jwt = extractJwtFromRequest(request);
-
             if (StringUtils.hasText(jwt) && jwtUtils.validateToken(jwt)) {
                 String mssv = jwtUtils.getMssvFromToken(jwt);
-
+                this.userJwt = jwt;
                 UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(mssv, null,
                         Collections.emptyList());
                 authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
@@ -49,9 +50,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private String extractJwtFromRequest(HttpServletRequest request) {
         String bearerToken = request.getHeader("Authorization");
+        System.out.println(bearerToken);
         if (StringUtils.hasText(bearerToken) && bearerToken.startsWith("Bearer ")) {
             return bearerToken.substring(7);
         }
         return null;
+    }
+
+    public String getUserJwt() {
+        return this.userJwt;
     }
 }
