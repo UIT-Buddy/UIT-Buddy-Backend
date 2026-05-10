@@ -5,6 +5,7 @@ import com.uit.buddy.client.AbstractBaseClient;
 import com.uit.buddy.client.UitClient;
 import com.uit.buddy.client.validator.MoodleResponseValidator;
 import com.uit.buddy.config.MoodleRateLimiter;
+import com.uit.buddy.config.MoodleRateLimiterContext;
 import com.uit.buddy.constant.MoodleApiConstants;
 import com.uit.buddy.dto.response.client.AssignmentDetailResponse;
 import com.uit.buddy.dto.response.client.CourseDetailResponse;
@@ -132,7 +133,8 @@ public class UitClientImpl extends AbstractBaseClient implements UitClient {
     }
 
     /**
-     * Outer wrapper: acquires/releases rate-limiter permit around the entire call so that circuit-open calls (which
+     * Outer wrapper: acquires/releases rate-limiter permit around the entire call
+     * so that circuit-open calls (which
      * bypass the method body entirely) do NOT leak permits.
      */
     @Retryable(retryFor = { ExternalClientException.class,
@@ -159,8 +161,10 @@ public class UitClientImpl extends AbstractBaseClient implements UitClient {
     }
 
     /**
-     * Batch-fetch submission statuses for multiple assignments in parallel. Each call fires independently through the
-     * Spring proxy so @CircuitBreaker + @Retryable interceptors fire per-call. Calls that hit an open circuit or fail
+     * Batch-fetch submission statuses for multiple assignments in parallel. Each
+     * call fires independently through the
+     * Spring proxy so @CircuitBreaker + @Retryable interceptors fire per-call.
+     * Calls that hit an open circuit or fail
      * return null so the caller can fall back to date-only inference.
      */
     @Override
@@ -172,13 +176,19 @@ public class UitClientImpl extends AbstractBaseClient implements UitClient {
         // Obtain the AOP proxy so interceptors (CircuitBreaker, Retryable) fire on each
         // call
         UitClient uitClientProxy = applicationContext.getBean(UitClient.class);
+        boolean isScheduler = MoodleRateLimiterContext.isScheduler();
 
         List<CompletableFuture<Map.Entry<String, AssignmentDetailResponse>>> futures = new java.util.ArrayList<>();
         for (String id : assignmentIds) {
             String assignmentId = id;
             CompletableFuture<Map.Entry<String, AssignmentDetailResponse>> f = CompletableFuture.supplyAsync(() -> {
-                AssignmentDetailResponse resp = uitClientProxy.getCourseAssignments(wstoken, assignmentId);
-                return Map.entry(assignmentId, resp);
+                MoodleRateLimiterContext.setScheduler(isScheduler);
+                try {
+                    AssignmentDetailResponse resp = uitClientProxy.getCourseAssignments(wstoken, assignmentId);
+                    return Map.entry(assignmentId, resp);
+                } finally {
+                    MoodleRateLimiterContext.clear();
+                }
             }, ForkJoinPool.commonPool()).exceptionally(ex -> {
                 log.debug("[UitClient] getCourseAssignments exception for id={}: {}", assignmentId, ex.getMessage());
                 return Map.entry(assignmentId, (AssignmentDetailResponse) null);

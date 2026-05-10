@@ -1,6 +1,7 @@
 package com.uit.buddy.service.academic.impl;
 
 import com.uit.buddy.client.UitClient;
+import com.uit.buddy.config.MoodleRateLimiterContext;
 import com.uit.buddy.constant.IcsConstants;
 import com.uit.buddy.constant.ScheduleConstant;
 import com.uit.buddy.dto.request.schedule.CreateDeadlineRequest;
@@ -609,14 +610,20 @@ public class ScheduleServiceImpl implements ScheduleService {
         List<EnrolledCourseResponse> enrolledCourseResponses = result.enrolledCourses();
 
         List<CompletableFuture<Map.Entry<String, List<CourseDetailResponse>>>> futures = new ArrayList<>();
+        boolean isScheduler = MoodleRateLimiterContext.isScheduler();
 
         for (EnrolledCourseResponse course : enrolledCourseResponses) {
             String courseId = course.id();
             String courseName = course.shortName();
 
             futures.add(CompletableFuture.supplyAsync(() -> {
-                List<CourseDetailResponse> details = uitClient.getAllCourseDetail(wstoken, courseId);
-                return Map.entry(courseName, details);
+                MoodleRateLimiterContext.setScheduler(isScheduler);
+                try {
+                    List<CourseDetailResponse> details = uitClient.getAllCourseDetail(wstoken, courseId);
+                    return Map.entry(courseName, details);
+                } finally {
+                    MoodleRateLimiterContext.clear();
+                }
             }, executor));
         }
 
@@ -628,13 +635,20 @@ public class ScheduleServiceImpl implements ScheduleService {
             Map<String, List<CourseDetailResponse>> courseContents, String decryptedWstoken, Integer month,
             Integer year) {
         List<CompletableFuture<CourseContentResponse>> futures = new ArrayList<>();
+        boolean isScheduler = MoodleRateLimiterContext.isScheduler();
         for (Map.Entry<String, List<CourseDetailResponse>> entry : courseContents.entrySet()) {
             String courseName = entry.getKey();
             List<CourseDetailResponse> details = entry.getValue();
             if (hasNoDeadline(details))
                 continue;
-            futures.add(CompletableFuture
-                    .supplyAsync(() -> extractDeadlinesForCourse(courseName, details, decryptedWstoken, month, year)));
+            futures.add(CompletableFuture.supplyAsync(() -> {
+                MoodleRateLimiterContext.setScheduler(isScheduler);
+                try {
+                    return extractDeadlinesForCourse(courseName, details, decryptedWstoken, month, year);
+                } finally {
+                    MoodleRateLimiterContext.clear();
+                }
+            }));
         }
         return futures.stream().map(CompletableFuture::join)
                 .filter(courseContent -> !courseContent.exercises().isEmpty()).toList();
