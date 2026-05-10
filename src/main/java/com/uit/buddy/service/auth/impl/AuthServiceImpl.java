@@ -233,7 +233,7 @@ public class AuthServiceImpl implements AuthService {
 
         StudentResponse studentResponse = studentMapper.toStudentResponse(student);
 
-        return new AuthResponse(accessToken, refreshToken, studentResponse, student.getCometAuthToken());
+        return new AuthResponse(accessToken, refreshToken, studentResponse, student.getCometAuthToken(), false);
     }
 
     @Override
@@ -248,14 +248,8 @@ public class AuthServiceImpl implements AuthService {
             throw new AuthException(AuthErrorCode.INVALID_CREDENTIALS);
         }
 
-        String decryptedWstoken = wsTokenEncryptionService.decryptWstoken(student.getEncryptedWstoken());
-
-        try {
-            uitClient.fetchSiteInfo(decryptedWstoken);
-        } catch (ExternalClientException e) {
-            log.warn("Wstoken invalid for MSSV: {}. User needs to re-authenticate with Moodle", request.mssv());
-            throw new AuthException(AuthErrorCode.INVALID_WSTOKEN,
-                    "Your Moodle token has expired. Please re-authenticate.");
+        if (!checkWstoken(student)) {
+            return new AuthResponse(null, null, null, null, true);
         }
 
         if (request.fcmToken() != null && !request.fcmToken().isBlank()) {
@@ -271,7 +265,7 @@ public class AuthServiceImpl implements AuthService {
 
         StudentResponse studentResponse = studentMapper.toStudentResponse(student);
 
-        return new AuthResponse(accessToken, refreshToken, studentResponse, student.getCometAuthToken());
+        return new AuthResponse(accessToken, refreshToken, studentResponse, student.getCometAuthToken(), false);
     }
 
     @Override
@@ -332,6 +326,11 @@ public class AuthServiceImpl implements AuthService {
         Student student = studentRepository.findById(mssv)
                 .orElseThrow(() -> new AuthException(AuthErrorCode.STUDENT_NOT_FOUND));
 
+        if (!checkWstoken(student)) {
+            throw new AuthException(AuthErrorCode.INVALID_WSTOKEN,
+                    "Your Moodle token has expired. Please re-authenticate.");
+        }
+
         student.setPassword(passwordEncoder.encode(newPassword));
         studentRepository.save(student);
 
@@ -361,11 +360,15 @@ public class AuthServiceImpl implements AuthService {
         Student student = studentRepository.findById(mssv)
                 .orElseThrow(() -> new AuthException(AuthErrorCode.STUDENT_NOT_FOUND));
 
+        if (!checkWstoken(student)) {
+            return new AuthResponse(null, null, null, null, true);
+        }
+
         String newAccessToken = jwtUtils.generateAccessToken(mssv);
 
         StudentResponse studentResponse = studentMapper.toStudentResponse(student);
 
-        return new AuthResponse(newAccessToken, refreshToken, studentResponse, student.getCometAuthToken());
+        return new AuthResponse(newAccessToken, refreshToken, studentResponse, student.getCometAuthToken(), true);
     }
 
     @Override
@@ -521,5 +524,15 @@ public class AuthServiceImpl implements AuthService {
         student.setFullName(fullName);
         studentRepository.saveAndFlush(student);
         log.info("[Sync] Successfully committed new token for existing student: {}", student.getMssv());
+    }
+
+    private boolean checkWstoken(Student student) {
+        String decryptedWstoken = wsTokenEncryptionService.decryptWstoken(student.getEncryptedWstoken());
+        SiteInfoResponse siteInfo = fetchSiteInfo(decryptedWstoken);
+        if (siteInfo.username() == null || siteInfo.userid() == null || siteInfo.fullname() == null) {
+            log.warn("Invalid wstoken for MSSV: {}", student.getMssv());
+            return false;
+        }
+        return true;
     }
 }

@@ -1,6 +1,9 @@
 package com.uit.buddy.scheduler;
 
+import com.uit.buddy.client.UitClient;
 import com.uit.buddy.constant.ScheduleConstant;
+import com.uit.buddy.dto.response.auth.AuthResponse;
+import com.uit.buddy.dto.response.client.SiteInfoResponse;
 import com.uit.buddy.dto.response.schedule.CourseContentResponse;
 import com.uit.buddy.entity.academic.Semester;
 import com.uit.buddy.entity.learning.TemporaryDeadline;
@@ -9,6 +12,7 @@ import com.uit.buddy.repository.academic.SemesterRepository;
 import com.uit.buddy.repository.learning.TemporaryDeadlineRepository;
 import com.uit.buddy.repository.user.StudentRepository;
 import com.uit.buddy.service.academic.ScheduleService;
+import com.uit.buddy.service.encryption.WsTokenEncryptionService;
 import com.uit.buddy.service.learning.AssignmentService;
 import com.uit.buddy.service.notification.NotificationService;
 import java.time.LocalDate;
@@ -29,18 +33,24 @@ public class ScheduleScheduler {
     private final StudentRepository studentRepository;
     private final TemporaryDeadlineRepository temporaryDeadlineRepository;
     private final SemesterRepository semesterRepository;
+    private final WsTokenEncryptionService wsTokenEncryptionService;
+    private final UitClient uitClient;
+
     public static Boolean stop = false;
     public static Boolean isRunning = true;
 
     public ScheduleScheduler(ScheduleService scheduleService, AssignmentService assignmentService,
             NotificationService notificationService, StudentRepository studentRepository,
-            TemporaryDeadlineRepository temporaryDeadlineRepository, SemesterRepository semesterRepository) {
+            TemporaryDeadlineRepository temporaryDeadlineRepository, SemesterRepository semesterRepository,
+            WsTokenEncryptionService wsTokenEncryptionService, UitClient uitClient) {
         this.scheduleService = scheduleService;
         this.assignmentService = assignmentService;
         this.notificationService = notificationService;
         this.studentRepository = studentRepository;
         this.temporaryDeadlineRepository = temporaryDeadlineRepository;
         this.semesterRepository = semesterRepository;
+        this.wsTokenEncryptionService = wsTokenEncryptionService;
+        this.uitClient = uitClient;
     }
 
     /**
@@ -84,15 +94,21 @@ public class ScheduleScheduler {
 
         List<String> listMssv = studentRepository.findMssvAll();
         for (String mssv : listMssv) {
+            String encryptedWstoken = studentRepository.findMoodleWstokenByMssv(mssv);
+            String decryptedWstoken = wsTokenEncryptionService.decryptWstoken(encryptedWstoken);
+            SiteInfoResponse siteInfo = uitClient.fetchSiteInfo(decryptedWstoken);
+            if (siteInfo.username() == null || siteInfo.userid() == null || siteInfo.fullname() == null) {
+                log.error("[SCHEDULER SKIP] Invalid token for mssv={}", mssv);
+                continue;
+            }
             try {
                 List<TemporaryDeadline> studentDeadlines = temporaryDeadlineRepository.findByMssv(mssv);
                 for (MonthYear my : semesterMonths) {
-                    List<CourseContentResponse> moodleDeadlines = scheduleService.fetchCourseDeadlinesFromMoodle(mssv,
-                            my.month(), my.year());
-                    List<CourseContentResponse> studentTaskDeadlines = assignmentService.getDeadlineWithMssv(mssv,
-                            my.month(), my.year());
-                    processDeadlines(moodleDeadlines, studentTaskDeadlines, mssv, studentDeadlines);
-                    Thread.sleep(ScheduleConstant.GAP_PER_STUDENT_MONTHLY_FETCH_DEADLINE);
+                    {
+                        List<CourseContentResponse> moodleDeadlines = scheduleService
+                                .fetchCourseDeadlinesFromMoodle(mssv, my.month(), my.year());
+                        processDeadlines(moodleDeadlines, mssv, studentDeadlines);
+                    }
                 }
                 Thread.sleep(ScheduleConstant.GAP_PER_STUDENT_PING_MOODLE);
             } catch (InterruptedException e) {
@@ -173,12 +189,9 @@ public class ScheduleScheduler {
         return lessThan30SecBefore || crossedWithin30Sec;
     }
 
-    private void processDeadlines(List<CourseContentResponse> moodleDeadlines,
-            List<CourseContentResponse> studentTaskDeadlines, String mssv, List<TemporaryDeadline> existingInDb) {
-        List<CourseContentResponse> allDeadlines = new ArrayList<>(moodleDeadlines);
-        allDeadlines.addAll(studentTaskDeadlines);
-
-        for (CourseContentResponse course : allDeadlines) {
+    private void processDeadlines(List<CourseContentResponse> moodleDeadlines, String mssv,
+            List<TemporaryDeadline> existingInDb) {
+        for (CourseContentResponse course : moodleDeadlines) {
             if (course.exercises() == null)
                 continue;
             for (CourseContentResponse.Exercise exercise : course.exercises()) {

@@ -186,23 +186,24 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional
-    public void updateWsToken(String mssv, UpdateWsTokenRequest request) {
-        Student student = studentRepository.findById(mssv)
+    public void updateWsToken(UpdateWsTokenRequest request) {
+        Student student = studentRepository.findById(request.mssv())
                 .orElseThrow(() -> new UserException(UserErrorCode.STUDENT_NOT_FOUND));
 
         SiteInfoResponse siteInfo;
         try {
             siteInfo = uitClient.fetchSiteInfo(request.wstoken());
         } catch (RestClientException e) {
-            log.error("[User Service] Failed to connect Moodle API while updating wstoken for MSSV: {}", mssv, e);
+            log.error("[User Service] Failed to connect Moodle API while updating wstoken for MSSV: {}", request.mssv(),
+                    e);
             throw new UserException(UserErrorCode.INVALID_WSTOKEN, "Failed to validate WsToken");
         } catch (Exception e) {
-            log.warn("[User Service] Invalid wstoken while updating for MSSV: {}", mssv, e);
+            log.warn("[User Service] Invalid wstoken while updating for MSSV: {}", request.mssv(), e);
             throw new UserException(UserErrorCode.INVALID_WSTOKEN);
         }
 
         if (siteInfo.username() == null || siteInfo.username().isBlank()
-                || !mssv.equalsIgnoreCase(siteInfo.username().trim())) {
+                || !request.mssv().equalsIgnoreCase(siteInfo.username().trim())) {
             throw new UserException(UserErrorCode.INVALID_WSTOKEN, "WsToken does not belong to current user");
         }
 

@@ -221,15 +221,16 @@ public class ScheduleServiceImpl implements ScheduleService {
                 .orElseThrow(() -> new UserException(UserErrorCode.STUDENT_NOT_FOUND));
 
         StudentSubjectClass studentSubjectClass = resolveStudentSubjectClass(mssv, request.classCode());
-        TaskType taskType = studentSubjectClass == null ? TaskType.PERSONAL : TaskType.ASSIGNMENT;
+
         SubjectClass subjectClass = subjectClassRepository.findByClassCodeAndStudentMssv(student.getMssv(),
                 request.classCode());
-
+        String classCode = subjectClass != null ? subjectClass.getClassCode() : "";
         log.info("[SCHEDULE SERVICE]: Create task for user with id {}", mssv);
-        StudentTask studentTask = StudentTask.builder().student(student).taskType(taskType).subjectClass(subjectClass)
-                .personalTitle(request.exerciseName()).reminderAt(request.dueDate()).build();
-        studentTaskRepository.save(studentTask);
-        return scheduleMapper.toCreateDeadlineResponse(studentTask);
+        TemporaryDeadline temporaryDeadline = TemporaryDeadline.builder().mssv(mssv).classCode(classCode)
+                .deadlineName(request.exerciseName()).dueDate(request.dueDate()).status(DeadlineStatus.UPCOMING)
+                .build();
+        temporaryDeadlineRepository.save(temporaryDeadline);
+        return scheduleMapper.toCreateDeadlineResponse(temporaryDeadline);
     }
 
     private StudentSubjectClass resolveStudentSubjectClass(String mssv, String classCode) {
@@ -380,10 +381,11 @@ public class ScheduleServiceImpl implements ScheduleService {
 
     @Override
     public CreateDeadlineResponse getDeadlineDetail(String mssv, UUID deadlineId) {
-        StudentTask studentTask = studentTaskRepository.findByIdAndMssv(deadlineId, mssv)
-                .orElseThrow(() -> new ScheduleException(ScheduleErrorCode.ASSIGNMENT_NOT_EXIST));
-
-        return scheduleMapper.toCreateDeadlineResponse(studentTask);
+        TemporaryDeadline temporaryDeadline = temporaryDeadlineRepository.findByIdAndMssv(deadlineId, mssv);
+        if (temporaryDeadline == null) {
+            throw new ScheduleException(ScheduleErrorCode.ASSIGNMENT_NOT_EXIST);
+        }
+        return scheduleMapper.toCreateDeadlineResponse(temporaryDeadline);
     }
 
     @Override
