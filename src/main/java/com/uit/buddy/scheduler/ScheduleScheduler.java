@@ -107,9 +107,7 @@ public class ScheduleScheduler {
                     {
                         List<CourseContentResponse> moodleDeadlines = scheduleService
                                 .fetchCourseDeadlinesFromMoodle(mssv, my.month(), my.year());
-                        List<CourseContentResponse> studentTaskDeadlines = assignmentService.getDeadlineWithMssv(mssv,
-                                my.month(), my.year());
-                        processDeadlines(moodleDeadlines, studentTaskDeadlines, mssv, studentDeadlines);
+                        processDeadlines(moodleDeadlines, mssv, studentDeadlines);
                     }
                 }
                 Thread.sleep(ScheduleConstant.GAP_PER_STUDENT_PING_MOODLE);
@@ -191,12 +189,9 @@ public class ScheduleScheduler {
         return lessThan30SecBefore || crossedWithin30Sec;
     }
 
-    private void processDeadlines(List<CourseContentResponse> moodleDeadlines,
-            List<CourseContentResponse> studentTaskDeadlines, String mssv, List<TemporaryDeadline> existingInDb) {
-        List<CourseContentResponse> allDeadlines = new ArrayList<>(moodleDeadlines);
-        allDeadlines.addAll(studentTaskDeadlines);
-
-        for (CourseContentResponse course : allDeadlines) {
+    private void processDeadlines(List<CourseContentResponse> moodleDeadlines, String mssv,
+            List<TemporaryDeadline> existingInDb) {
+        for (CourseContentResponse course : moodleDeadlines) {
             if (course.exercises() == null)
                 continue;
             for (CourseContentResponse.Exercise exercise : course.exercises()) {
