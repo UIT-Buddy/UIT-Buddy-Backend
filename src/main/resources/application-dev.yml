@@ -107,6 +107,7 @@ schedule:
   core-thread-pool-size: ${CORE_SCHEDULE_THREAD_POOL_SIZE}
 moodle:
   max-concurrent-requests: ${MOODLE_MAX_CONCURRENT_REQUESTS:5}
+  max-scheduler-concurrent-requests: ${MOODLE_MAX_SCHEDULER_CONCURRENT_REQUESTS:3}
   requests-per-second: ${MOODLE_REQUESTS_PER_SECOND:5}
   retry:
     max-attempts: ${MOODLE_RETRY_MAX_ATTEMPTS:3}
