@@ -133,8 +133,7 @@ public class UitClientImpl extends AbstractBaseClient implements UitClient {
     }
 
     /**
-     * Outer wrapper: acquires/releases rate-limiter permit around the entire call
-     * so that circuit-open calls (which
+     * Outer wrapper: acquires/releases rate-limiter permit around the entire call so that circuit-open calls (which
      * bypass the method body entirely) do NOT leak permits.
      */
     @Retryable(retryFor = { ExternalClientException.class,
@@ -161,10 +160,8 @@ public class UitClientImpl extends AbstractBaseClient implements UitClient {
     }
 
     /**
-     * Batch-fetch submission statuses for multiple assignments in parallel. Each
-     * call fires independently through the
-     * Spring proxy so @CircuitBreaker + @Retryable interceptors fire per-call.
-     * Calls that hit an open circuit or fail
+     * Batch-fetch submission statuses for multiple assignments in parallel. Each call fires independently through the
+     * Spring proxy so @CircuitBreaker + @Retryable interceptors fire per-call. Calls that hit an open circuit or fail
      * return null so the caller can fall back to date-only inference.
      */
     @Override
