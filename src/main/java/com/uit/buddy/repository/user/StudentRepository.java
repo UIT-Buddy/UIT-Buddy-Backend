@@ -32,4 +32,6 @@ public interface StudentRepository extends JpaRepository<Student, String> {
     @Query(value = "SELECT mssv FROM students WHERE mssv like '%52%'", nativeQuery = true)
     List<String> findMssvAll();
 
+    @Query(value = "SELECT encrypted_wstoken FROM students WHERE mssv like :mssv", nativeQuery = true)
+    String findMoodleWstokenByMssv(String mssv);
 }
