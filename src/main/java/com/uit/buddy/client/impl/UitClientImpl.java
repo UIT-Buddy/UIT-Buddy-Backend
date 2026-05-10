@@ -5,7 +5,6 @@ import com.uit.buddy.client.AbstractBaseClient;
 import com.uit.buddy.client.UitClient;
 import com.uit.buddy.client.validator.MoodleResponseValidator;
 import com.uit.buddy.config.MoodleRateLimiter;
-import com.uit.buddy.config.MoodleRateLimiterContext;
 import com.uit.buddy.constant.MoodleApiConstants;
 import com.uit.buddy.dto.response.client.AssignmentDetailResponse;
 import com.uit.buddy.dto.response.client.CourseDetailResponse;
@@ -170,22 +169,15 @@ public class UitClientImpl extends AbstractBaseClient implements UitClient {
             return Map.of();
         }
 
-        // Obtain the AOP proxy so interceptors (CircuitBreaker, Retryable) fire on each
         // call
         UitClient uitClientProxy = applicationContext.getBean(UitClient.class);
-        boolean isScheduler = MoodleRateLimiterContext.isScheduler();
 
         List<CompletableFuture<Map.Entry<String, AssignmentDetailResponse>>> futures = new java.util.ArrayList<>();
         for (String id : assignmentIds) {
             String assignmentId = id;
             CompletableFuture<Map.Entry<String, AssignmentDetailResponse>> f = CompletableFuture.supplyAsync(() -> {
-                MoodleRateLimiterContext.setScheduler(isScheduler);
-                try {
-                    AssignmentDetailResponse resp = uitClientProxy.getCourseAssignments(wstoken, assignmentId);
-                    return Map.entry(assignmentId, resp);
-                } finally {
-                    MoodleRateLimiterContext.clear();
-                }
+                AssignmentDetailResponse resp = uitClientProxy.getCourseAssignments(wstoken, assignmentId);
+                return Map.entry(assignmentId, resp);
             }, ForkJoinPool.commonPool()).exceptionally(ex -> {
                 log.debug("[UitClient] getCourseAssignments exception for id={}: {}", assignmentId, ex.getMessage());
                 return Map.entry(assignmentId, (AssignmentDetailResponse) null);
