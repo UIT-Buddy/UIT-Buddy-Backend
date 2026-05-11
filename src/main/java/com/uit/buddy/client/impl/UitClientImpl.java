@@ -13,6 +13,8 @@ import com.uit.buddy.dto.response.client.EnrolledCourseResponse;
 import com.uit.buddy.dto.response.client.SiteInfoResponse;
 import com.uit.buddy.exception.client.ExternalClientErrorCode;
 import com.uit.buddy.exception.client.ExternalClientException;
+import com.uit.buddy.exception.ratelimit.RateLimitErrorCode;
+import com.uit.buddy.exception.ratelimit.RateLimitException;
 import com.uit.buddy.exception.user.UserErrorCode;
 import com.uit.buddy.exception.user.UserException;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
@@ -71,7 +73,7 @@ public class UitClientImpl extends AbstractBaseClient implements UitClient {
             rateLimiter.acquire();
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            throw new RuntimeException("Interrupted while waiting for rate limiter permit", e);
+            throw new RateLimitException(RateLimitErrorCode.PERMIT_INTERRUPTED);
         }
 
         try {
@@ -101,7 +103,7 @@ public class UitClientImpl extends AbstractBaseClient implements UitClient {
             rateLimiter.acquire();
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            throw new RuntimeException("Interrupted while waiting for rate limiter permit", e);
+            throw new RateLimitException(RateLimitErrorCode.PERMIT_INTERRUPTED);
         }
 
         try {
@@ -128,7 +130,7 @@ public class UitClientImpl extends AbstractBaseClient implements UitClient {
             rateLimiter.acquire();
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            throw new RuntimeException("Interrupted while waiting for rate limiter permit", e);
+            throw new RateLimitException(RateLimitErrorCode.PERMIT_INTERRUPTED);
         }
 
         try {
@@ -153,7 +155,7 @@ public class UitClientImpl extends AbstractBaseClient implements UitClient {
             rateLimiter.acquire();
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            throw new RuntimeException("Interrupted while waiting for rate limiter permit", e);
+            throw new RateLimitException(RateLimitErrorCode.PERMIT_INTERRUPTED);
         }
 
         try {

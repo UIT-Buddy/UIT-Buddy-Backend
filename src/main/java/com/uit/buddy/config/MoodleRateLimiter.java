@@ -1,6 +1,8 @@
 package com.uit.buddy.config;
 
 import com.uit.buddy.constant.ScheduleConstant;
+import com.uit.buddy.exception.ratelimit.RateLimitErrorCode;
+import com.uit.buddy.exception.ratelimit.RateLimitException;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import lombok.extern.slf4j.Slf4j;
@@ -51,7 +53,7 @@ public class MoodleRateLimiter {
         if (!acquired) {
             log.error("[Rate Limiter] Timeout waiting for Moodle permit after {}s",
                     ScheduleConstant.MOODLE_PERMIT_TIMEOUT_SECONDS);
-            throw new RuntimeException("Moodle rate limiter permit acquisition timed out");
+            throw new RateLimitException(RateLimitErrorCode.PERMIT_TIMEOUT);
         }
     }
 
