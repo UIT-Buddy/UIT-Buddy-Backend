@@ -6,6 +6,7 @@ import com.uit.buddy.client.UitClient;
 import com.uit.buddy.client.validator.MoodleResponseValidator;
 import com.uit.buddy.config.MoodleRateLimiter;
 import com.uit.buddy.constant.MoodleApiConstants;
+import com.uit.buddy.constant.ScheduleConstant;
 import com.uit.buddy.dto.response.client.AssignmentDetailResponse;
 import com.uit.buddy.dto.response.client.CourseDetailResponse;
 import com.uit.buddy.dto.response.client.EnrolledCourseResponse;
@@ -42,7 +43,6 @@ public class UitClientImpl extends AbstractBaseClient implements UitClient {
     private final String restFormat;
     private final MoodleResponseValidator moodleResponseValidator;
     private final MoodleRateLimiter rateLimiter;
-    private final AtomicReference<SiteInfoResponse> siteInfoCache = new AtomicReference<>();
     private final ApplicationContext applicationContext;
 
     public UitClientImpl(@Qualifier("moodleClient") RestClient restClient, ObjectMapper objectMapper,
@@ -69,6 +69,12 @@ public class UitClientImpl extends AbstractBaseClient implements UitClient {
     public SiteInfoResponse fetchSiteInfo(String wstoken) {
         try {
             rateLimiter.acquire();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new RuntimeException("Interrupted while waiting for rate limiter permit", e);
+        }
+
+        try {
             Map<String, String> queryParams = buildBaseParams(wstoken, MoodleApiConstants.FUNCTION_GET_SITE_INFO);
             try {
                 return get(moodleServerPath, SiteInfoResponse.class, queryParams, null);
@@ -76,9 +82,6 @@ public class UitClientImpl extends AbstractBaseClient implements UitClient {
                 log.error("Failed to fetch site info with provided wstoken", e);
                 throw new UserException(UserErrorCode.INVALID_WSTOKEN);
             }
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            throw new RuntimeException("Interrupted while waiting for rate limiter permit", e);
         } finally {
             rateLimiter.release();
         }
@@ -96,14 +99,17 @@ public class UitClientImpl extends AbstractBaseClient implements UitClient {
     public List<EnrolledCourseResponse> getUserCourses(String wstoken, Long userId) {
         try {
             rateLimiter.acquire();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new RuntimeException("Interrupted while waiting for rate limiter permit", e);
+        }
+
+        try {
             Map<String, String> queryParams = buildBaseParams(wstoken, MoodleApiConstants.FUNCTION_GET_USERS_COURSES);
             queryParams.put(MoodleApiConstants.PARAM_USERID, String.valueOf(userId));
 
             return getList(moodleServerPath, new ParameterizedTypeReference<List<EnrolledCourseResponse>>() {
             }, queryParams, null);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            throw new RuntimeException("Interrupted while waiting for rate limiter permit", e);
         } finally {
             rateLimiter.release();
         }
@@ -120,12 +126,15 @@ public class UitClientImpl extends AbstractBaseClient implements UitClient {
     public List<CourseDetailResponse> getAllCourseDetail(String wstoken, String courseId) {
         try {
             rateLimiter.acquire();
-            Map<String, String> queryParams = buildCourseContentsParams(wstoken, courseId);
-            return getList(moodleServerPath, new ParameterizedTypeReference<List<CourseDetailResponse>>() {
-            }, queryParams, null);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new RuntimeException("Interrupted while waiting for rate limiter permit", e);
+        }
+
+        try {
+            Map<String, String> queryParams = buildCourseContentsParams(wstoken, courseId);
+            return getList(moodleServerPath, new ParameterizedTypeReference<List<CourseDetailResponse>>() {
+            }, queryParams, null);
         } finally {
             rateLimiter.release();
         }
@@ -142,11 +151,14 @@ public class UitClientImpl extends AbstractBaseClient implements UitClient {
     public AssignmentDetailResponse getCourseAssignments(String wstoken, String assignmentId) {
         try {
             rateLimiter.acquire();
-            Map<String, String> queryParams = buildAssignmentSubmissionsParams(wstoken, assignmentId);
-            return get(moodleServerPath, AssignmentDetailResponse.class, queryParams, null);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new RuntimeException("Interrupted while waiting for rate limiter permit", e);
+        }
+
+        try {
+            Map<String, String> queryParams = buildAssignmentSubmissionsParams(wstoken, assignmentId);
+            return get(moodleServerPath, AssignmentDetailResponse.class, queryParams, null);
         } finally {
             rateLimiter.release();
         }
