@@ -23,7 +23,6 @@ import com.uit.buddy.entity.learning.TemporaryDeadline;
 import com.uit.buddy.entity.user.Student;
 import com.uit.buddy.enums.DeadlineStatus;
 import com.uit.buddy.enums.StudentClassStatus;
-import com.uit.buddy.enums.TaskType;
 import com.uit.buddy.exception.schedule.ScheduleErrorCode;
 import com.uit.buddy.exception.schedule.ScheduleException;
 import com.uit.buddy.exception.system.SystemErrorCode;
@@ -60,9 +59,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
-import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -609,49 +606,47 @@ public class ScheduleServiceImpl implements ScheduleService {
         EnrolledCoursesResult result = getEnrolledCoursesFromMoodle(wstoken, mssv);
         List<EnrolledCourseResponse> enrolledCourseResponses = result.enrolledCourses();
 
-        List<CompletableFuture<Map.Entry<String, List<CourseDetailResponse>>>> futures = new ArrayList<>();
-
+        Map<String, List<CourseDetailResponse>> contents = new HashMap<>();
         for (EnrolledCourseResponse course : enrolledCourseResponses) {
             String courseId = course.id();
             String courseName = course.shortName();
 
-            futures.add(CompletableFuture.supplyAsync(() -> {
-                List<CourseDetailResponse> details = uitClient.getAllCourseDetail(wstoken, courseId);
-                return Map.entry(courseName, details);
-            }, executor).orTimeout(ScheduleConstant.MOODLE_FETCH_TIMEOUT_SECONDS, TimeUnit.SECONDS));
-        }
-
-        return futures.stream().map(f -> {
             try {
-                return f.join();
+                // Sequential fetch (truly synchronous)
+                List<CourseDetailResponse> details = uitClient.getAllCourseDetail(wstoken, courseId);
+                contents.put(courseName, details);
             } catch (Exception e) {
-                log.error("[Schedule Service] Failed to fetch course content for mssv={}: {}", mssv, e.getMessage());
-                return null;
+                log.error("[Schedule Service] Failed to fetch course content for course {} (mssv={}): {}", courseName,
+                        mssv, e.getMessage());
             }
-        }).filter(Objects::nonNull).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+        }
+        return contents;
     }
 
     private List<CourseContentResponse> extractDeadlinesForCourses(String mssv,
             Map<String, List<CourseDetailResponse>> courseContents, String decryptedWstoken, Integer month,
             Integer year) {
-        List<CompletableFuture<CourseContentResponse>> futures = new ArrayList<>();
+        List<CourseContentResponse> result = new ArrayList<>();
         for (Map.Entry<String, List<CourseDetailResponse>> entry : courseContents.entrySet()) {
             String courseName = entry.getKey();
             List<CourseDetailResponse> details = entry.getValue();
             if (hasNoDeadline(details))
                 continue;
-            futures.add(CompletableFuture
-                    .supplyAsync(() -> extractDeadlinesForCourse(courseName, details, decryptedWstoken, month, year))
-                    .orTimeout(ScheduleConstant.MOODLE_FETCH_TIMEOUT_SECONDS, TimeUnit.SECONDS));
-        }
-        return futures.stream().map(f -> {
+
             try {
-                return f.join();
+                // Sequential fetch (truly synchronous)
+                CourseContentResponse deadlines = extractDeadlinesForCourse(courseName, details, decryptedWstoken,
+                        month, year);
+
+                if (deadlines != null && !deadlines.exercises().isEmpty()) {
+                    result.add(deadlines);
+                }
             } catch (Exception e) {
-                log.error("[Schedule Service] Failed to extract deadlines for mssv={}: {}", mssv, e.getMessage());
-                return null;
+                log.error("[Schedule Service] Failed to extract deadlines for course {} (mssv={}): {}", courseName,
+                        mssv, e.getMessage());
             }
-        }).filter(Objects::nonNull).filter(courseContent -> !courseContent.exercises().isEmpty()).toList();
+        }
+        return result;
     }
 
     private CourseContentResponse extractDeadlinesForCourse(String courseName, List<CourseDetailResponse> details,
@@ -688,16 +683,20 @@ public class ScheduleServiceImpl implements ScheduleService {
             return new CourseContentResponse(courseName, List.of());
         }
 
-        // ── Pass 2: batch-fetch submission statuses for ALL modules in this course ──
-        List<String> assignmentIds = modulesWithDueDates.stream().map(m -> m.id).toList();
-        Map<String, AssignmentDetailResponse> submissionStatuses = uitClient.getAssignmentsInfo(decryptedWstoken,
-                assignmentIds);
-
-        // ── Pass 3: resolve deadline status using cached results ────────────────────
-        List<CourseContentResponse.Exercise> exercises = modulesWithDueDates.stream().map(m -> {
-            DeadlineStatus status = determineDeadlineStatusFromCache(m.dueDate, submissionStatuses.get(m.id));
-            return new CourseContentResponse.Exercise(null, m.name, m.dueDate, m.url, status, false);
-        }).toList();
+        // ── Pass 2: Sequential fetch submission statuses for each module ──
+        List<CourseContentResponse.Exercise> exercises = new ArrayList<>();
+        for (ModuleWithDate m : modulesWithDueDates) {
+            try {
+                DeadlineStatus status = determineDeadlineStatus(m.dueDate, decryptedWstoken, m.id);
+                exercises.add(new CourseContentResponse.Exercise(null, m.name, m.dueDate, m.url, status, false));
+            } catch (Exception e) {
+                log.error("[Schedule Service] Failed to fetch assignment {} for course {}: {}", m.id, courseName,
+                        e.getMessage());
+                // Fallback to date-only inference
+                DeadlineStatus status = determineDeadlineStatusFromCache(m.dueDate, null);
+                exercises.add(new CourseContentResponse.Exercise(null, m.name, m.dueDate, m.url, status, false));
+            }
+        }
 
         List<CourseContentResponse.Exercise> sortedExercises = exercises.stream()
                 .sorted(Comparator.comparing(CourseContentResponse.Exercise::dueDate).reversed()).toList();
