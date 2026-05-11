@@ -39,7 +39,6 @@ import com.uit.buddy.repository.learning.StudentTaskRepository;
 import com.uit.buddy.repository.learning.TemporaryDeadlineRepository;
 import com.uit.buddy.repository.user.StudentRepository;
 import com.uit.buddy.service.academic.ScheduleService;
-import com.uit.buddy.service.learning.AssignmentService;
 import com.uit.buddy.service.notification.NotificationService;
 import com.uit.buddy.util.EncryptionUtils;
 import com.uit.buddy.util.IcsParser;
@@ -83,7 +82,7 @@ public class ScheduleServiceImpl implements ScheduleService {
     private final StudentTaskRepository studentTaskRepository;
     private final TemporaryDeadlineRepository temporaryDeadlineRepository;
     private final SemesterRepository semesterRepository;
-    private final AssignmentService assignmentService;
+
     private final NotificationService notificationService;
     private final UitClient uitClient;
     private final EncryptionUtils encryptionUtils;
@@ -94,10 +93,10 @@ public class ScheduleServiceImpl implements ScheduleService {
     public ScheduleServiceImpl(IcsParser icsParser, StudentRepository studentRepository,
             SubjectClassRepository subjectClassRepository, StudentSubjectClassRepository studentSubjectClassRepository,
             CourseRepository courseRepository, CurriculumCourseRepository curriculumCourseRepository,
-            AssignmentService assignmentService, SemesterRepository semesterRepository,
-            TemporaryDeadlineRepository temporaryDeadlineRepository, NotificationService notificationService,
-            UitClient uitClient, EncryptionUtils encryptionUtils, StudentTaskRepository studentTaskRepository,
-            @Qualifier("uploadExecutor") Executor executor, ScheduleMapper scheduleMapper) {
+            SemesterRepository semesterRepository, TemporaryDeadlineRepository temporaryDeadlineRepository,
+            NotificationService notificationService, UitClient uitClient, EncryptionUtils encryptionUtils,
+            StudentTaskRepository studentTaskRepository, @Qualifier("uploadExecutor") Executor executor,
+            ScheduleMapper scheduleMapper) {
         this.icsParser = icsParser;
         this.studentRepository = studentRepository;
         this.subjectClassRepository = subjectClassRepository;
@@ -112,7 +111,7 @@ public class ScheduleServiceImpl implements ScheduleService {
         this.executor = executor;
         this.scheduleMapper = scheduleMapper;
         this.studentTaskRepository = studentTaskRepository;
-        this.assignmentService = assignmentService;
+
     }
 
     @Override
@@ -246,14 +245,14 @@ public class ScheduleServiceImpl implements ScheduleService {
 
     @Override
     public DeadlineResponse fetchDeadline(String mssv, Integer month, Integer year, Pageable pageable) {
-        Semester semester = getActiveSemester();
-        String semesterCode = semester.getSemesterCode();
-
+        LocalDate now = LocalDate.now();
+        int currentMonth = now.getMonthValue();
+        int currentYear = now.getYear();
         // Read from TemporaryDeadline table scoped to semester and (optionally)
         // month/year
         List<TemporaryDeadline> savedDeadlines = (month != null && year != null)
-                ? temporaryDeadlineRepository.findByMssvAndSemesterCodeAndMonthAndYear(mssv, semesterCode, month, year)
-                : temporaryDeadlineRepository.findByMssvAndSemesterCodeAll(mssv, semesterCode);
+                ? temporaryDeadlineRepository.findByMssvAndMonthAndYear(mssv, month, year)
+                : temporaryDeadlineRepository.findByMssvAndMonthAndYear(mssv, currentMonth, currentYear);
 
         List<CourseContentResponse> moodleDeadlines = savedDeadlines.stream()
                 .collect(Collectors.groupingBy(TemporaryDeadline::getClassCode)).entrySet().stream()
@@ -263,24 +262,9 @@ public class ScheduleServiceImpl implements ScheduleService {
                         .toList()))
                 .toList();
 
-        // Read from StudentTask (personal/course-linked) scoped to current semester
-        List<CourseContentResponse> studentTasks = getCurrentSemesterDeadlines(mssv, month, year);
-
-        // Merge and paginate
-        List<CourseContentResponse> joinedTask = new ArrayList<>(moodleDeadlines);
-        joinedTask.addAll(studentTasks);
-        int totalDeadlines = joinedTask.stream().mapToInt(c -> c.exercises().size()).sum();
-        List<CourseContentResponse> pagedCourseContents = paginateDeadlines(joinedTask, pageable);
+        int totalDeadlines = moodleDeadlines.stream().mapToInt(c -> c.exercises().size()).sum();
+        List<CourseContentResponse> pagedCourseContents = paginateDeadlines(moodleDeadlines, pageable);
         return new DeadlineResponse(totalDeadlines, pagedCourseContents);
-    }
-
-    /**
-     * Fetches personal/course-linked deadlines from StudentTask table that fall within the given semester's date range.
-     * Delegates to {@link AssignmentService} which uses a proper JOIN FETCH query, avoiding LazyInitializationException
-     * on SubjectClass.
-     */
-    private List<CourseContentResponse> getCurrentSemesterDeadlines(String mssv, Integer month, Integer year) {
-        return assignmentService.getDeadlineWithMssv(mssv, month, year);
     }
 
     private void syncDeadlinesToTable(String mssv, List<CourseContentResponse> freshDeadlines) {

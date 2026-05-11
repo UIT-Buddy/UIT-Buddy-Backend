@@ -42,14 +42,10 @@ public interface TemporaryDeadlineRepository extends JpaRepository<TemporaryDead
 
     List<TemporaryDeadline> findByMssvAndSemesterCode(String mssv, String semesterCode);
 
-    @Query("SELECT t FROM TemporaryDeadline t WHERE t.mssv = :mssv AND t.semesterCode = :semesterCode "
+    @Query("SELECT t FROM TemporaryDeadline t WHERE t.mssv = :mssv "
             + "AND MONTH(t.dueDate) = :month AND YEAR(t.dueDate) = :year")
-    List<TemporaryDeadline> findByMssvAndSemesterCodeAndMonthAndYear(@Param("mssv") String mssv,
-            @Param("semesterCode") String semesterCode, @Param("month") int month, @Param("year") int year);
-
-    @Query("SELECT t FROM TemporaryDeadline t WHERE t.mssv = :mssv AND t.semesterCode = :semesterCode")
-    List<TemporaryDeadline> findByMssvAndSemesterCodeAll(@Param("mssv") String mssv,
-            @Param("semesterCode") String semesterCode);
+    List<TemporaryDeadline> findByMssvAndMonthAndYear(@Param("mssv") String mssv, @Param("month") int month,
+            @Param("year") int year);
 
     @Query("SELECT t FROM TemporaryDeadline t WHERE t.id = :id AND t.mssv = :mssv")
     TemporaryDeadline findByIdAndMssv(@Param("id") UUID id, @Param("mssv") String mssv);
