@@ -18,6 +18,10 @@ public final class ScheduleConstant {
     public static final long MOODLE_ENROLLMENT_CACHE_TTL_SECONDS = 3600; // 1 hour
     public static final long GAP_PER_STUDENT_PING_MOODLE = 30000; // 2 second gap between processing each student to
     // avoid overwhelming Moodle
+
+    public static final int MOODLE_FETCH_TIMEOUT_SECONDS = 5;
+    public static final int MOODLE_PERMIT_TIMEOUT_SECONDS = 5;
+
     // Time Buffers (in hours and minutes)
     public static final int NEAR_DEADLINE_HOURS = 24; // 24 hours before due
     public static final long NEAR_DEADLINE_BUFFER_MINUTES = NEAR_DEADLINE_HOURS * 60; // 1440 minutes

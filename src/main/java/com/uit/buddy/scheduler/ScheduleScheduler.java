@@ -19,6 +19,8 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -94,29 +96,32 @@ public class ScheduleScheduler {
 
         List<String> listMssv = studentRepository.findMssvAll();
         for (String mssv : listMssv) {
-            String encryptedWstoken = studentRepository.findMoodleWstokenByMssv(mssv);
-            String decryptedWstoken = wsTokenEncryptionService.decryptWstoken(encryptedWstoken);
-            SiteInfoResponse siteInfo = uitClient.fetchSiteInfo(decryptedWstoken);
-            if (siteInfo.username() == null || siteInfo.userid() == null || siteInfo.fullname() == null) {
-                log.error("[SCHEDULER SKIP] Invalid token for mssv={}", mssv);
-                continue;
-            }
+            log.info("[SCHEDULER] Processing mssv={}", mssv);
             try {
-                List<TemporaryDeadline> studentDeadlines = temporaryDeadlineRepository.findByMssv(mssv);
-                for (MonthYear my : semesterMonths) {
-                    {
+                CompletableFuture.runAsync(() -> {
+                    String encryptedWstoken = studentRepository.findMoodleWstokenByMssv(mssv);
+                    String decryptedWstoken = wsTokenEncryptionService.decryptWstoken(encryptedWstoken);
+                    SiteInfoResponse siteInfo = uitClient.fetchSiteInfo(decryptedWstoken);
+                    if (siteInfo == null || siteInfo.username() == null || siteInfo.userid() == null
+                            || siteInfo.fullname() == null) {
+                        log.error("[SCHEDULER SKIP] Invalid token for mssv={}", mssv);
+                        return;
+                    }
+                    List<TemporaryDeadline> studentDeadlines = temporaryDeadlineRepository.findByMssv(mssv);
+                    for (MonthYear my : semesterMonths) {
                         List<CourseContentResponse> moodleDeadlines = scheduleService
                                 .fetchCourseDeadlinesFromMoodle(mssv, my.month(), my.year());
                         processDeadlines(moodleDeadlines, mssv, studentDeadlines);
                     }
-                }
+                }).orTimeout(ScheduleConstant.MOODLE_FETCH_TIMEOUT_SECONDS * 3L, TimeUnit.SECONDS).join();
+
                 Thread.sleep(ScheduleConstant.GAP_PER_STUDENT_PING_MOODLE);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 log.error("Scheduler interrupted for mssv={}", mssv);
                 break;
             } catch (Exception e) {
-                log.error("Failed to fetch deadline for mssv={}", mssv, e);
+                log.error("Failed to fetch deadline for mssv={} (possibly timed out)", mssv, e);
             }
         }
     }

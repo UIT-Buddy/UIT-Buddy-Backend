@@ -62,6 +62,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -617,11 +618,17 @@ public class ScheduleServiceImpl implements ScheduleService {
             futures.add(CompletableFuture.supplyAsync(() -> {
                 List<CourseDetailResponse> details = uitClient.getAllCourseDetail(wstoken, courseId);
                 return Map.entry(courseName, details);
-            }, executor));
+            }, executor).orTimeout(ScheduleConstant.MOODLE_FETCH_TIMEOUT_SECONDS, TimeUnit.SECONDS));
         }
 
-        return futures.stream().map(CompletableFuture::join)
-                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+        return futures.stream().map(f -> {
+            try {
+                return f.join();
+            } catch (Exception e) {
+                log.error("[Schedule Service] Failed to fetch course content for mssv={}: {}", mssv, e.getMessage());
+                return null;
+            }
+        }).filter(Objects::nonNull).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     }
 
     private List<CourseContentResponse> extractDeadlinesForCourses(String mssv,
@@ -634,10 +641,17 @@ public class ScheduleServiceImpl implements ScheduleService {
             if (hasNoDeadline(details))
                 continue;
             futures.add(CompletableFuture
-                    .supplyAsync(() -> extractDeadlinesForCourse(courseName, details, decryptedWstoken, month, year)));
+                    .supplyAsync(() -> extractDeadlinesForCourse(courseName, details, decryptedWstoken, month, year))
+                    .orTimeout(ScheduleConstant.MOODLE_FETCH_TIMEOUT_SECONDS, TimeUnit.SECONDS));
         }
-        return futures.stream().map(CompletableFuture::join)
-                .filter(courseContent -> !courseContent.exercises().isEmpty()).toList();
+        return futures.stream().map(f -> {
+            try {
+                return f.join();
+            } catch (Exception e) {
+                log.error("[Schedule Service] Failed to extract deadlines for mssv={}: {}", mssv, e.getMessage());
+                return null;
+            }
+        }).filter(Objects::nonNull).filter(courseContent -> !courseContent.exercises().isEmpty()).toList();
     }
 
     private CourseContentResponse extractDeadlinesForCourse(String courseName, List<CourseDetailResponse> details,
