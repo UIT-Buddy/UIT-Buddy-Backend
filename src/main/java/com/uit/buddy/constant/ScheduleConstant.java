@@ -12,15 +12,15 @@ public final class ScheduleConstant {
     public static final String UNKNOWN_CLASS_CODE = "unknown";
 
     // Time Constants (in milliseconds and minutes)
-    public static final long SCRAPE_DEADLINE_INTERVAL = 900000; // 15 minutes
+    public static final long SCRAPE_DEADLINE_INTERVAL = 3600000; // 1 hour
     public static final long PUSH_NOTIFICATION_INTERVAL = 30000; // 30 seconds
     public static final long PING_MOODLE_INTERVAL = 3600000; // 1 hour
     public static final long MOODLE_ENROLLMENT_CACHE_TTL_SECONDS = 3600; // 1 hour
     public static final long GAP_PER_STUDENT_PING_MOODLE = 30000; // 2 second gap between processing each student to
     // avoid overwhelming Moodle
 
-    public static final int MOODLE_FETCH_TIMEOUT_SECONDS = 15;
-    public static final int MOODLE_PERMIT_TIMEOUT_SECONDS = 15;
+    public static final int MOODLE_FETCH_TIMEOUT_SECONDS = 20;
+    public static final int MOODLE_PERMIT_TIMEOUT_SECONDS = 20;
 
     // Time Buffers (in hours and minutes)
     public static final int NEAR_DEADLINE_HOURS = 24; // 24 hours before due
