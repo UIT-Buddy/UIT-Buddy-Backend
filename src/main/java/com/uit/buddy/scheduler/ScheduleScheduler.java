@@ -86,8 +86,10 @@ public class ScheduleScheduler {
     }
 
     /**
-     * Global scheduler — runs every 15 minutes. For the active semester, fetches all deadlines from Moodle + student
-     * tasks for every enrolled month, checks for new deadlines and pushes notifications, then saves to
+     * Global scheduler — runs every 15 minutes. For the active semester, fetches
+     * all deadlines from Moodle + student
+     * tasks for every enrolled month, checks for new deadlines and pushes
+     * notifications, then saves to
      * TemporaryDeadline table.
      */
     @Scheduled(fixedDelay = ScheduleConstant.SCRAPE_DEADLINE_INTERVAL)
@@ -140,7 +142,8 @@ public class ScheduleScheduler {
     }
 
     /**
-     * Returns all (month, year) pairs that fall within the semester's startDate and endDate. Example: Sem1 (Jan–Jun) →
+     * Returns all (month, year) pairs that fall within the semester's startDate and
+     * endDate. Example: Sem1 (Jan–Jun) →
      * (1,2025)..(6,2025); Sem2 (Aug–Jan) → (8,2025)..(1,2026).
      */
     private List<MonthYear> getSemesterMonthYears(Semester semester) {
@@ -164,7 +167,8 @@ public class ScheduleScheduler {
     }
 
     /**
-     * Child scheduler — runs every 30 seconds. Compares due time in TemporaryDeadline to push deadline reminders for
+     * Child scheduler — runs every 30 seconds. Compares due time in
+     * TemporaryDeadline to push deadline reminders for
      * two cases: at due time (on-time) and 24 hours before due.
      */
     @Scheduled(fixedDelay = ScheduleConstant.PUSH_NOTIFICATION_INTERVAL)
@@ -201,14 +205,14 @@ public class ScheduleScheduler {
     }
 
     /**
-     * Scheduler to push notifications for upcoming classes. Runs every minute and notifies users about classes starting
+     * Scheduler to push notifications for upcoming classes. Runs every minute and
+     * notifies users about classes starting
      * in the next 30 minutes.
      */
     @Scheduled(fixedDelay = ScheduleConstant.PUSH_CLASS_NOTIFICATION_INTERVAL)
     public void pushNotiForUpcomingClass() {
-        log.info("[START PUSH NOTI FOR UPCOMING CLASS]");
         LocalDateTime now = LocalDateTime.now();
-        LocalTime nowTime = LocalTime.of(12, 45);
+        LocalTime nowTime = LocalTime.now();
         LocalTime targetTime = nowTime.plusMinutes(ScheduleConstant.UPCOMING_CLASS_BUFFER_MINUTES);
         LocalDate today = now.toLocalDate();
         int dayOfWeek = today.getDayOfWeek().getValue() + 1;
