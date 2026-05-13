@@ -8,6 +8,8 @@ import com.uit.buddy.dto.websocket.DocumentUpdateMessage;
 import com.uit.buddy.entity.document.Document;
 import com.uit.buddy.entity.document.ShareDocument;
 import com.uit.buddy.entity.user.Student;
+import com.uit.buddy.enums.AccessRole;
+import com.uit.buddy.enums.FileType;
 import com.uit.buddy.exception.document.DocumentErrorCode;
 import com.uit.buddy.exception.document.DocumentException;
 import com.uit.buddy.repository.document.DocumentRepository;
@@ -56,7 +58,11 @@ public class DocumentCollaborationServiceImpl implements DocumentCollaborationSe
 
                 Document document = findDocumentWithAccessCheck(documentId, mssv);
 
-                // Last write wins - no version checking
+                if (!hasEditPermission(documentId, mssv, document)) {
+                        throw new DocumentException(DocumentErrorCode.FILE_ACCESS_DENIED,
+                                        "You do not have permission to edit this document. Only EDITOR or OWNER can edit.");
+                }
+
                 document.setContent(request.getContent());
                 document.setLastEditedBy(mssv);
                 document.setLastEditedAt(Instant.now());
@@ -65,7 +71,6 @@ public class DocumentCollaborationServiceImpl implements DocumentCollaborationSe
 
                 log.info("Document {} updated by {}, version: {}", documentId, mssv, savedDocument.getVersion());
 
-                // Broadcast to all connected users that document was updated
                 broadcastDocumentUpdate(savedDocument, mssv);
 
                 return buildDocumentContentResponse(savedDocument);
@@ -97,19 +102,35 @@ public class DocumentCollaborationServiceImpl implements DocumentCollaborationSe
                 Document document = documentRepository.findById(documentId)
                                 .orElseThrow(() -> new DocumentException(DocumentErrorCode.FILE_NOT_FOUND));
 
-                if (document.getFileType() != com.uit.buddy.enums.FileType.WORD) {
+                if (document.getFileType() != FileType.WORD) {
                         throw new DocumentException(DocumentErrorCode.FILE_ACCESS_DENIED,
                                         "Only text-based files (doc, docx, odt, txt, pdf) support collaborative editing");
                 }
 
-                boolean hasAccess = document.getMssv().equals(mssv) ||
-                                shareDocumentRepository.existsByDocumentIdAndMssv(documentId, mssv);
+                if (document.getMssv().equals(mssv)) {
+                        return document;
+                }
+
+                boolean hasAccess = shareDocumentRepository.existsByDocumentIdAndMssv(documentId, mssv);
 
                 if (!hasAccess) {
                         throw new DocumentException(DocumentErrorCode.FILE_ACCESS_DENIED);
                 }
 
                 return document;
+        }
+
+        private boolean hasEditPermission(UUID documentId, String mssv, Document document) {
+                if (document.getMssv().equals(mssv)) {
+                        return true;
+                }
+
+                return shareDocumentRepository.findByDocumentIdAndMssv(documentId, mssv)
+                                .map(share -> {
+                                        AccessRole role = share.getAccessRole();
+                                        return role == AccessRole.EDITOR || role == AccessRole.OWNER;
+                                })
+                                .orElse(false);
         }
 
         private DocumentContentResponse buildDocumentContentResponse(Document document) {
