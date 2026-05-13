@@ -112,6 +112,15 @@ public class NotificationServiceImpl implements NotificationService {
                 dataId);
     }
 
+    @Override
+    @Transactional
+    public void createUpcomingClassNotification(String mssv, String subjectName, String roomCode,
+            String remainingTime) {
+        NotificationTemplate template = NotificationTemplate.UPCOMING_CLASS;
+        processNotification(mssv, template.getTitle(), template.formatContent(subjectName, roomCode, remainingTime),
+                template, "");
+    }
+
     private void processAggregatedNotification(String receiverMssv, String title, String actorName,
             NotificationTemplate type, String dataId, String action) {
 

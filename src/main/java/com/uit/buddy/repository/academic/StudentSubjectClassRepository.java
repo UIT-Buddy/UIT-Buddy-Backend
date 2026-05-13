@@ -2,6 +2,8 @@ package com.uit.buddy.repository.academic;
 
 import com.uit.buddy.entity.academic.StudentSubjectClass;
 import com.uit.buddy.enums.StudentClassStatus;
+import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -45,5 +47,19 @@ public interface StudentSubjectClassRepository extends CrudRepository<StudentSub
             + "WHERE ssc.student.mssv = :mssv AND ssc.status = :status")
     List<String> findDistinctClassCodesByStudentAndStatus(@Param("mssv") String mssv,
             @Param("status") StudentClassStatus status);
+
+    @Query("""
+                SELECT ssc FROM StudentSubjectClass ssc
+                JOIN FETCH ssc.subjectClass sc
+                JOIN FETCH sc.course
+                WHERE sc.dayOfWeek = :dayOfWeek
+                  AND sc.startDate <= :currentDate
+                  AND sc.endDate >= :currentDate
+                  AND sc.startTime >= :nowTime
+                  AND sc.startTime <= :targetTime
+            """)
+    List<StudentSubjectClass> findUpcomingClasses(@Param("dayOfWeek") Integer dayOfWeek,
+            @Param("currentDate") LocalDate currentDate, @Param("nowTime") LocalTime nowTime,
+            @Param("targetTime") LocalTime targetTime);
 
 }

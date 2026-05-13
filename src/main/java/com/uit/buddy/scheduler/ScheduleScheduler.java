@@ -6,17 +6,24 @@ import com.uit.buddy.dto.response.auth.AuthResponse;
 import com.uit.buddy.dto.response.client.SiteInfoResponse;
 import com.uit.buddy.dto.response.schedule.CourseContentResponse;
 import com.uit.buddy.entity.academic.Semester;
+import com.uit.buddy.entity.academic.StudentSubjectClass;
+import com.uit.buddy.entity.academic.SubjectClass;
 import com.uit.buddy.entity.learning.TemporaryDeadline;
 import com.uit.buddy.enums.DeadlineStatus;
+import com.uit.buddy.redis.IncomingSubject;
+import com.uit.buddy.redis.IncomingSubjectRepository;
 import com.uit.buddy.repository.academic.SemesterRepository;
+import com.uit.buddy.repository.academic.StudentSubjectClassRepository;
 import com.uit.buddy.repository.learning.TemporaryDeadlineRepository;
 import com.uit.buddy.repository.user.StudentRepository;
 import com.uit.buddy.service.academic.ScheduleService;
 import com.uit.buddy.service.encryption.WsTokenEncryptionService;
 import com.uit.buddy.service.learning.AssignmentService;
 import com.uit.buddy.service.notification.NotificationService;
+import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -37,6 +44,8 @@ public class ScheduleScheduler {
     private final SemesterRepository semesterRepository;
     private final WsTokenEncryptionService wsTokenEncryptionService;
     private final UitClient uitClient;
+    private final StudentSubjectClassRepository studentSubjectClassRepository;
+    private final IncomingSubjectRepository incomingSubjectRepository;
 
     public static Boolean stop = false;
     public static Boolean isRunning = true;
@@ -44,7 +53,9 @@ public class ScheduleScheduler {
     public ScheduleScheduler(ScheduleService scheduleService, AssignmentService assignmentService,
             NotificationService notificationService, StudentRepository studentRepository,
             TemporaryDeadlineRepository temporaryDeadlineRepository, SemesterRepository semesterRepository,
-            WsTokenEncryptionService wsTokenEncryptionService, UitClient uitClient) {
+            WsTokenEncryptionService wsTokenEncryptionService, UitClient uitClient,
+            StudentSubjectClassRepository studentSubjectClassRepository,
+            IncomingSubjectRepository incomingSubjectRepository) {
         this.scheduleService = scheduleService;
         this.assignmentService = assignmentService;
         this.notificationService = notificationService;
@@ -53,6 +64,8 @@ public class ScheduleScheduler {
         this.semesterRepository = semesterRepository;
         this.wsTokenEncryptionService = wsTokenEncryptionService;
         this.uitClient = uitClient;
+        this.studentSubjectClassRepository = studentSubjectClassRepository;
+        this.incomingSubjectRepository = incomingSubjectRepository;
     }
 
     /**
@@ -187,8 +200,47 @@ public class ScheduleScheduler {
         }
     }
 
+    /**
+     * Scheduler to push notifications for upcoming classes. Runs every minute and notifies users about classes starting
+     * in the next 30 minutes.
+     */
+    @Scheduled(fixedDelay = ScheduleConstant.PUSH_CLASS_NOTIFICATION_INTERVAL)
+    public void pushNotiForUpcomingClass() {
+        log.info("[START PUSH NOTI FOR UPCOMING CLASS]");
+        LocalDateTime now = LocalDateTime.now();
+        LocalTime nowTime = LocalTime.of(12, 45);
+        LocalTime targetTime = nowTime.plusMinutes(ScheduleConstant.UPCOMING_CLASS_BUFFER_MINUTES);
+        LocalDate today = now.toLocalDate();
+        int dayOfWeek = today.getDayOfWeek().getValue() + 1;
+
+        List<StudentSubjectClass> upcomingClasses = studentSubjectClassRepository.findUpcomingClasses(dayOfWeek, today,
+                nowTime, targetTime);
+
+        for (StudentSubjectClass mapping : upcomingClasses) {
+            SubjectClass sc = mapping.getSubjectClass();
+            String mssv = mapping.getMssv();
+            String classCode = sc.getClassCode();
+            String subjectName = sc.getCourse().getCourseName();
+            String roomCode = sc.getRoomCode();
+            LocalTime startTime = sc.getStartTime();
+
+            String redisKey = String.format("%s:%s:%s", mssv, classCode, today);
+            if (!incomingSubjectRepository.existsById(redisKey)) {
+                long minutesLeft = Duration.between(nowTime, startTime).toMinutes();
+                String remainingTimeStr = minutesLeft + " phút";
+
+                notificationService.createUpcomingClassNotification(mssv, subjectName, roomCode, remainingTimeStr);
+                log.info("[PUSH NOTI CLASS]: User {} has class {} at {} in {}", mssv, subjectName, roomCode,
+                        remainingTimeStr);
+
+                incomingSubjectRepository.save(IncomingSubject.builder().id(redisKey).expiration(1800L) // 30 minutes
+                        .build());
+            }
+        }
+    }
+
     private boolean isWithinThreshold(LocalDateTime now, LocalDateTime targetTime) {
-        long secondsUntilTarget = java.time.Duration.between(now, targetTime).getSeconds();
+        long secondsUntilTarget = Duration.between(now, targetTime).getSeconds();
         boolean lessThan30SecBefore = secondsUntilTarget >= 0 && secondsUntilTarget < 30;
         boolean crossedWithin30Sec = secondsUntilTarget < 0 && Math.abs(secondsUntilTarget) < 30;
         return lessThan30SecBefore || crossedWithin30Sec;
