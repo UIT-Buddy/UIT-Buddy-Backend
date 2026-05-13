@@ -16,6 +16,11 @@ import com.uit.buddy.repository.document.DocumentRepository;
 import com.uit.buddy.repository.document.ShareDocumentRepository;
 import com.uit.buddy.repository.user.StudentRepository;
 import com.uit.buddy.service.document.DocumentCollaborationService;
+import java.time.Instant;
+import java.util.List;
+import java.util.Set;
+import java.util.UUID;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -23,191 +28,151 @@ import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Instant;
-import java.util.List;
-import java.util.Set;
-import java.util.UUID;
-import java.util.stream.Collectors;
-
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class DocumentCollaborationServiceImpl implements DocumentCollaborationService {
 
-        private final DocumentRepository documentRepository;
-        private final ShareDocumentRepository shareDocumentRepository;
-        private final StudentRepository studentRepository;
-        private final RedisTemplate<String, Object> redisTemplate;
-        private final SimpMessagingTemplate messagingTemplate;
+    private final DocumentRepository documentRepository;
+    private final ShareDocumentRepository shareDocumentRepository;
+    private final StudentRepository studentRepository;
+    private final RedisTemplate<String, Object> redisTemplate;
+    private final SimpMessagingTemplate messagingTemplate;
 
-        private static final String PRESENCE_KEY_PREFIX = "doc:presence:";
+    private static final String PRESENCE_KEY_PREFIX = "doc:presence:";
 
-        @Override
-        @Transactional(readOnly = true)
-        public DocumentContentResponse getDocumentContent(UUID documentId, String mssv) {
-                Document document = findDocumentWithAccessCheck(documentId, mssv);
-                return buildDocumentContentResponse(document);
+    @Override
+    @Transactional(readOnly = true)
+    public DocumentContentResponse getDocumentContent(UUID documentId, String mssv) {
+        Document document = findDocumentWithAccessCheck(documentId, mssv);
+        return buildDocumentContentResponse(document);
+    }
+
+    @Override
+    @Transactional
+    public DocumentContentResponse updateDocumentContent(UUID documentId, UpdateDocumentContentRequest request,
+            String mssv) {
+
+        Document document = findDocumentWithAccessCheck(documentId, mssv);
+
+        if (!hasEditPermission(documentId, mssv, document)) {
+            throw new DocumentException(DocumentErrorCode.FILE_ACCESS_DENIED,
+                    "You do not have permission to edit this document. Only EDITOR or OWNER can edit.");
         }
 
-        @Override
-        @Transactional
-        public DocumentContentResponse updateDocumentContent(
-                        UUID documentId,
-                        UpdateDocumentContentRequest request,
-                        String mssv) {
+        document.setContent(request.getContent());
+        document.setLastEditedBy(mssv);
+        document.setLastEditedAt(Instant.now());
 
-                Document document = findDocumentWithAccessCheck(documentId, mssv);
+        Document savedDocument = documentRepository.save(document);
 
-                if (!hasEditPermission(documentId, mssv, document)) {
-                        throw new DocumentException(DocumentErrorCode.FILE_ACCESS_DENIED,
-                                        "You do not have permission to edit this document. Only EDITOR or OWNER can edit.");
-                }
+        log.info("Document {} updated by {}, version: {}", documentId, mssv, savedDocument.getVersion());
 
-                document.setContent(request.getContent());
-                document.setLastEditedBy(mssv);
-                document.setLastEditedAt(Instant.now());
+        broadcastDocumentUpdate(savedDocument, mssv);
 
-                Document savedDocument = documentRepository.save(document);
+        return buildDocumentContentResponse(savedDocument);
+    }
 
-                log.info("Document {} updated by {}, version: {}", documentId, mssv, savedDocument.getVersion());
+    @Override
+    public void joinDocument(UUID documentId, String mssv) {
+        findDocumentWithAccessCheck(documentId, mssv);
 
-                broadcastDocumentUpdate(savedDocument, mssv);
+        String key = PRESENCE_KEY_PREFIX + documentId;
+        redisTemplate.opsForSet().add(key, mssv);
 
-                return buildDocumentContentResponse(savedDocument);
+        log.info("User {} joined document {}", mssv, documentId);
+
+        broadcastPresenceUpdate(documentId, mssv, true);
+    }
+
+    @Override
+    public void leaveDocument(UUID documentId, String mssv) {
+        String key = PRESENCE_KEY_PREFIX + documentId;
+        redisTemplate.opsForSet().remove(key, mssv);
+
+        log.info("User {} left document {}", mssv, documentId);
+
+        broadcastPresenceUpdate(documentId, mssv, false);
+    }
+
+    private Document findDocumentWithAccessCheck(UUID documentId, String mssv) {
+        Document document = documentRepository.findById(documentId)
+                .orElseThrow(() -> new DocumentException(DocumentErrorCode.FILE_NOT_FOUND));
+
+        if (document.getFileType() != FileType.WORD) {
+            throw new DocumentException(DocumentErrorCode.FILE_ACCESS_DENIED,
+                    "Only text-based files (doc, docx, odt, txt, pdf) support collaborative editing");
         }
 
-        @Override
-        public void joinDocument(UUID documentId, String mssv) {
-                findDocumentWithAccessCheck(documentId, mssv);
-
-                String key = PRESENCE_KEY_PREFIX + documentId;
-                redisTemplate.opsForSet().add(key, mssv);
-
-                log.info("User {} joined document {}", mssv, documentId);
-
-                broadcastPresenceUpdate(documentId, mssv, true);
+        if (document.getMssv().equals(mssv)) {
+            return document;
         }
 
-        @Override
-        public void leaveDocument(UUID documentId, String mssv) {
-                String key = PRESENCE_KEY_PREFIX + documentId;
-                redisTemplate.opsForSet().remove(key, mssv);
+        boolean hasAccess = shareDocumentRepository.existsByDocumentIdAndMssv(documentId, mssv);
 
-                log.info("User {} left document {}", mssv, documentId);
-
-                broadcastPresenceUpdate(documentId, mssv, false);
+        if (!hasAccess) {
+            throw new DocumentException(DocumentErrorCode.FILE_ACCESS_DENIED);
         }
 
-        private Document findDocumentWithAccessCheck(UUID documentId, String mssv) {
-                Document document = documentRepository.findById(documentId)
-                                .orElseThrow(() -> new DocumentException(DocumentErrorCode.FILE_NOT_FOUND));
+        return document;
+    }
 
-                if (document.getFileType() != FileType.WORD) {
-                        throw new DocumentException(DocumentErrorCode.FILE_ACCESS_DENIED,
-                                        "Only text-based files (doc, docx, odt, txt, pdf) support collaborative editing");
-                }
-
-                if (document.getMssv().equals(mssv)) {
-                        return document;
-                }
-
-                boolean hasAccess = shareDocumentRepository.existsByDocumentIdAndMssv(documentId, mssv);
-
-                if (!hasAccess) {
-                        throw new DocumentException(DocumentErrorCode.FILE_ACCESS_DENIED);
-                }
-
-                return document;
+    private boolean hasEditPermission(UUID documentId, String mssv, Document document) {
+        if (document.getMssv().equals(mssv)) {
+            return true;
         }
 
-        private boolean hasEditPermission(UUID documentId, String mssv, Document document) {
-                if (document.getMssv().equals(mssv)) {
-                        return true;
-                }
+        return shareDocumentRepository.findByDocumentIdAndMssv(documentId, mssv).map(share -> {
+            AccessRole role = share.getAccessRole();
+            return role == AccessRole.EDITOR || role == AccessRole.OWNER;
+        }).orElse(false);
+    }
 
-                return shareDocumentRepository.findByDocumentIdAndMssv(documentId, mssv)
-                                .map(share -> {
-                                        AccessRole role = share.getAccessRole();
-                                        return role == AccessRole.EDITOR || role == AccessRole.OWNER;
-                                })
-                                .orElse(false);
-        }
+    private DocumentContentResponse buildDocumentContentResponse(Document document) {
+        List<UserSummary> collaborators = shareDocumentRepository.findByDocumentId(document.getId()).stream()
+                .map(ShareDocument::getRecipient)
+                .map(student -> new UserSummary(student.getMssv(), student.getFullName(), student.getAvatarUrl()))
+                .collect(Collectors.toList());
 
-        private DocumentContentResponse buildDocumentContentResponse(Document document) {
-                List<UserSummary> collaborators = shareDocumentRepository.findByDocumentId(document.getId())
-                                .stream()
-                                .map(ShareDocument::getRecipient)
-                                .map(student -> new UserSummary(
-                                                student.getMssv(),
-                                                student.getFullName(),
-                                                student.getAvatarUrl()))
-                                .collect(Collectors.toList());
+        return DocumentContentResponse.builder().id(document.getId()).fileName(document.getFileName())
+                .content(document.getContent()).version(document.getVersion())
+                .owner(new UserSummary(document.getOwner().getMssv(), document.getOwner().getFullName(),
+                        document.getOwner().getAvatarUrl()))
+                .lastEditor(
+                        document.getLastEditor() != null
+                                ? new UserSummary(document.getLastEditor().getMssv(),
+                                        document.getLastEditor().getFullName(), document.getLastEditor().getAvatarUrl())
+                                : null)
+                .lastEditedAt(document.getLastEditedAt()).collaborators(collaborators)
+                .createdAt(document.getCreatedAt()).updatedAt(document.getUpdatedAt()).build();
+    }
 
-                return DocumentContentResponse.builder()
-                                .id(document.getId())
-                                .fileName(document.getFileName())
-                                .content(document.getContent())
-                                .version(document.getVersion())
-                                .owner(new UserSummary(
-                                                document.getOwner().getMssv(),
-                                                document.getOwner().getFullName(),
-                                                document.getOwner().getAvatarUrl()))
-                                .lastEditor(
-                                                document.getLastEditor() != null
-                                                                ? new UserSummary(
-                                                                                document.getLastEditor().getMssv(),
-                                                                                document.getLastEditor().getFullName(),
-                                                                                document.getLastEditor().getAvatarUrl())
-                                                                : null)
-                                .lastEditedAt(document.getLastEditedAt())
-                                .collaborators(collaborators)
-                                .createdAt(document.getCreatedAt())
-                                .updatedAt(document.getUpdatedAt())
-                                .build();
-        }
+    private void broadcastDocumentUpdate(Document document, String editorMssv) {
+        DocumentUpdateMessage message = DocumentUpdateMessage.builder().documentId(document.getId())
+                .version(document.getVersion()).build();
 
-        private void broadcastDocumentUpdate(Document document, String editorMssv) {
-                DocumentUpdateMessage message = DocumentUpdateMessage.builder()
-                                .documentId(document.getId())
-                                .version(document.getVersion())
-                                .build();
+        messagingTemplate.convertAndSend("/topic/document/" + document.getId() + "/updates", message);
 
-                messagingTemplate.convertAndSend(
-                                "/topic/document/" + document.getId() + "/updates",
-                                message);
+        log.debug("Broadcasted document update for {}", document.getId());
+    }
 
-                log.debug("Broadcasted document update for {}", document.getId());
-        }
+    private void broadcastPresenceUpdate(UUID documentId, String mssv, boolean isJoining) {
+        String key = PRESENCE_KEY_PREFIX + documentId;
+        Set<Object> activeMssvs = redisTemplate.opsForSet().members(key);
 
-        private void broadcastPresenceUpdate(UUID documentId, String mssv, boolean isJoining) {
-                String key = PRESENCE_KEY_PREFIX + documentId;
-                Set<Object> activeMssvs = redisTemplate.opsForSet().members(key);
+        List<DocumentPresenceMessage.ActiveUser> activeUsers = activeMssvs.stream().map(Object::toString)
+                .map(activeMssv -> {
+                    Student activeStudent = studentRepository.findById(activeMssv).orElse(null);
+                    return DocumentPresenceMessage.ActiveUser.builder().mssv(activeMssv)
+                            .name(activeStudent != null ? activeStudent.getFullName() : activeMssv)
+                            .avatarUrl(activeStudent != null ? activeStudent.getAvatarUrl() : null).build();
+                }).collect(Collectors.toList());
 
-                List<DocumentPresenceMessage.ActiveUser> activeUsers = activeMssvs.stream()
-                                .map(Object::toString)
-                                .map(activeMssv -> {
-                                        Student activeStudent = studentRepository.findById(activeMssv).orElse(null);
-                                        return DocumentPresenceMessage.ActiveUser.builder()
-                                                        .mssv(activeMssv)
-                                                        .name(activeStudent != null ? activeStudent.getFullName()
-                                                                        : activeMssv)
-                                                        .avatarUrl(activeStudent != null ? activeStudent.getAvatarUrl()
-                                                                        : null)
-                                                        .build();
-                                })
-                                .collect(Collectors.toList());
+        DocumentPresenceMessage message = DocumentPresenceMessage.builder().documentId(documentId)
+                .activeUsers(activeUsers).totalActive(activeUsers.size()).build();
 
-                DocumentPresenceMessage message = DocumentPresenceMessage.builder()
-                                .documentId(documentId)
-                                .activeUsers(activeUsers)
-                                .totalActive(activeUsers.size())
-                                .build();
+        messagingTemplate.convertAndSend("/topic/document/" + documentId + "/presence", message);
 
-                messagingTemplate.convertAndSend(
-                                "/topic/document/" + documentId + "/presence",
-                                message);
-
-                log.debug("Broadcasted presence update for document {}: {} users active",
-                                documentId, activeUsers.size());
-        }
+        log.debug("Broadcasted presence update for document {}: {} users active", documentId, activeUsers.size());
+    }
 }

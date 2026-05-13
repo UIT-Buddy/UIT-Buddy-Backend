@@ -1,15 +1,14 @@
 package com.uit.buddy.controller.document;
 
 import com.uit.buddy.service.document.DocumentCollaborationService;
+import java.security.Principal;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
 import org.springframework.stereotype.Controller;
-
-import java.security.Principal;
-import java.util.UUID;
 
 @Controller
 @RequiredArgsConstructor
@@ -19,9 +18,7 @@ public class DocumentWebSocketController {
     private final DocumentCollaborationService documentCollaborationService;
 
     @MessageMapping("/document/{documentId}/join")
-    public void joinDocument(
-            @DestinationVariable UUID documentId,
-            StompHeaderAccessor headerAccessor) {
+    public void joinDocument(@DestinationVariable UUID documentId, StompHeaderAccessor headerAccessor) {
 
         Principal user = headerAccessor.getUser();
         String mssv = user != null ? user.getName() : null;
@@ -37,9 +34,7 @@ public class DocumentWebSocketController {
     }
 
     @MessageMapping("/document/{documentId}/leave")
-    public void leaveDocument(
-            @DestinationVariable UUID documentId,
-            StompHeaderAccessor headerAccessor) {
+    public void leaveDocument(@DestinationVariable UUID documentId, StompHeaderAccessor headerAccessor) {
 
         Principal user = headerAccessor.getUser();
         String mssv = user != null ? user.getName() : null;
