@@ -206,9 +206,8 @@ public class ScheduleScheduler {
      */
     @Scheduled(fixedDelay = ScheduleConstant.PUSH_CLASS_NOTIFICATION_INTERVAL)
     public void pushNotiForUpcomingClass() {
-        log.info("[START PUSH NOTI FOR UPCOMING CLASS]");
         LocalDateTime now = LocalDateTime.now();
-        LocalTime nowTime = LocalTime.of(12, 45);
+        LocalTime nowTime = LocalTime.now();
         LocalTime targetTime = nowTime.plusMinutes(ScheduleConstant.UPCOMING_CLASS_BUFFER_MINUTES);
         LocalDate today = now.toLocalDate();
         int dayOfWeek = today.getDayOfWeek().getValue() + 1;
