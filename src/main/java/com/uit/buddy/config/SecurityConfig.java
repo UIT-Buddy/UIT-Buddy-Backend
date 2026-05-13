@@ -32,6 +32,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth.requestMatchers("/api/auth/signout").authenticated()
                         .requestMatchers("/api/auth/**").permitAll().requestMatchers("/api/chat/**").permitAll()
                         .requestMatchers("/v3/api-docs/**", "/docs", "/scalar/**", "/scalar.html").permitAll()
+                        .requestMatchers("/ws/**").permitAll()
                         .anyRequest().authenticated())
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
