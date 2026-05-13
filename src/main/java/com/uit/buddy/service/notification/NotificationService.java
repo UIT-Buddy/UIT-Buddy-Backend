@@ -29,6 +29,8 @@ public interface NotificationService {
 
     void createNewDeadlineNotification(String mssv, String deadlineName, String dataId);
 
+    void createUpcomingClassNotification(String mssv, String subjectName, String roomCode, String remainingTime);
+
     List<NotificationResponse> getNotifications(String mssv, String cursor, int limit);
 
     void markAsRead(UUID notificationId, String mssv);

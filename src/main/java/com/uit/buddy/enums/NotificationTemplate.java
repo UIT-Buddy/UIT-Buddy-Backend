@@ -12,7 +12,8 @@ public enum NotificationTemplate {
     COMMENT_LIKE("Tương tác mới", "%s đã thích bình luận của bạn."),
     FRIEND_REQUEST_RECEIVED("Lời mời kết bạn", "%s đã gửi lời mời kết bạn"),
     FRIEND_REQUEST_ACCEPTED("Chấp nhận kết bạn", "%s đã chấp nhận lời mời kết bạn của bạn"),
-    SYSTEM("Thông báo hệ thống", "%s"), ACADEMIC("Thông báo học tập", "%s"), REMINDER("Nhắc nhở", "%s");
+    SYSTEM("Thông báo hệ thống", "%s"), ACADEMIC("Thông báo học tập", "%s"), REMINDER("Nhắc nhở", "%s"),
+    UPCOMING_CLASS("Lịch học sắp tới", "Bạn có tiết học sắp tới [%s] tại [%s] trong [%s]");
 
     private final String title;
     private final String contentTemplate;
