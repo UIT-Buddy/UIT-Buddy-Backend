@@ -1,10 +1,10 @@
 package com.uit.buddy.entity.document;
 
 import com.uit.buddy.entity.AbstractBaseEntity;
-import com.uit.buddy.entity.academic.SubjectClass;
 import com.uit.buddy.entity.user.Student;
 import com.uit.buddy.enums.FileType;
 import jakarta.persistence.*;
+import java.time.Instant;
 import java.util.UUID;
 import lombok.*;
 
@@ -44,4 +44,22 @@ public class Document extends AbstractBaseEntity {
     @Enumerated(EnumType.STRING)
     @Column(name = "file_type", length = 20)
     private FileType fileType;
+
+    @Version
+    @Column(name = "version", nullable = false)
+    @Builder.Default
+    private Long version = 0L;
+
+    @Column(name = "content", columnDefinition = "TEXT")
+    private String content;
+
+    @Column(name = "last_edited_by", length = 12)
+    private String lastEditedBy;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "last_edited_by", referencedColumnName = "mssv", insertable = false, updatable = false, foreignKey = @ForeignKey(name = "fk_document_last_editor"))
+    private Student lastEditor;
+
+    @Column(name = "last_edited_at")
+    private Instant lastEditedAt;
 }
