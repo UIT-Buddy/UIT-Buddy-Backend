@@ -17,15 +17,14 @@ import com.uit.buddy.repository.document.FolderRepository;
 import com.uit.buddy.repository.note.NoteRepository;
 import com.uit.buddy.repository.user.StudentRepository;
 import com.uit.buddy.service.note.NoteService;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -67,8 +66,7 @@ public class NoteServiceImpl implements NoteService {
     @Override
     @Transactional
     public UUID saveNoteToDocument(String mssv, SaveNoteToDocumentRequest request) {
-        Note note = noteRepository.findByMssv(mssv)
-                .orElseThrow(() -> new NoteException(NoteErrorCode.NOTE_NOT_FOUND));
+        Note note = noteRepository.findByMssv(mssv).orElseThrow(() -> new NoteException(NoteErrorCode.NOTE_NOT_FOUND));
 
         String content = note.getContent();
         if (content == null || content.isBlank()) {
@@ -94,17 +92,8 @@ public class NoteServiceImpl implements NoteService {
             fileName = "Note_" + timestamp + ".txt";
         }
 
-        Document document = Document.builder()
-                .owner(owner)
-                .fileName(fileName)
-                .fileUrl("")
-                .fileType(FileType.WORD)
-                .fileSize(0f)
-                .folder(folder)
-                .content(content)
-                .lastEditedBy(mssv)
-                .lastEditedAt(Instant.now())
-                .build();
+        Document document = Document.builder().owner(owner).fileName(fileName).fileUrl("").fileType(FileType.WORD)
+                .fileSize(0f).folder(folder).content(content).lastEditedBy(mssv).lastEditedAt(Instant.now()).build();
 
         Document saved = documentRepository.save(document);
 

@@ -10,6 +10,7 @@ import com.uit.buddy.service.note.NoteService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -20,8 +21,6 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
-import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/note")
@@ -49,8 +48,7 @@ public class NoteController extends AbstractBaseController {
 
     @PostMapping("/save-to-document")
     @Operation(summary = "Save note to document", description = "Save current note content as a new document in user's storage")
-    public ResponseEntity<SingleResponse<UUID>> saveNoteToDocument(
-            @AuthenticationPrincipal String mssv,
+    public ResponseEntity<SingleResponse<UUID>> saveNoteToDocument(@AuthenticationPrincipal String mssv,
             @RequestBody(required = false) SaveNoteToDocumentRequest request) {
         if (request == null) {
             request = new SaveNoteToDocumentRequest(null, null);
