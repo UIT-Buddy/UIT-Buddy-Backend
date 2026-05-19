@@ -112,4 +112,18 @@ public class NoteServiceImpl implements NoteService {
 
         return saved.getId();
     }
+
+    @Override
+    @Transactional
+    public void newNote(String mssv) {
+        Note note = noteRepository.findByMssv(mssv).orElse(null);
+
+        if (note == null) {
+            note = Note.builder().mssv(mssv).content("").build();
+        } else {
+            note.setContent("");
+        }
+
+        noteRepository.saveAndFlush(note);
+    }
 }

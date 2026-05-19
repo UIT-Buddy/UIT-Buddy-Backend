@@ -13,4 +13,6 @@ public interface NoteService {
     NoteResponse upsertNote(String mssv, UpsertNoteRequest request);
 
     UUID saveNoteToDocument(String mssv, SaveNoteToDocumentRequest request);
+
+    void newNote(String mssv);
 }

@@ -1,6 +1,7 @@
 package com.uit.buddy.controller.note;
 
 import com.uit.buddy.controller.AbstractBaseController;
+import com.uit.buddy.dto.base.CreatedResponse;
 import com.uit.buddy.dto.base.SingleResponse;
 import com.uit.buddy.dto.request.note.SaveNoteToDocumentRequest;
 import com.uit.buddy.dto.request.note.UpsertNoteRequest;
@@ -19,6 +20,8 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/note")
@@ -46,13 +49,20 @@ public class NoteController extends AbstractBaseController {
 
     @PostMapping("/save-to-document")
     @Operation(summary = "Save note to document", description = "Save current note content as a new document in user's storage")
-    public ResponseEntity<SingleResponse<java.util.UUID>> saveNoteToDocument(
+    public ResponseEntity<SingleResponse<UUID>> saveNoteToDocument(
             @AuthenticationPrincipal String mssv,
             @RequestBody(required = false) SaveNoteToDocumentRequest request) {
         if (request == null) {
             request = new SaveNoteToDocumentRequest(null, null);
         }
-        java.util.UUID documentId = noteService.saveNoteToDocument(mssv, request);
+        UUID documentId = noteService.saveNoteToDocument(mssv, request);
         return successSingle(documentId, "Note saved to document successfully");
+    }
+
+    @PostMapping("/new")
+    @Operation(summary = "New note", description = "Clear current note and start a new empty note")
+    public ResponseEntity<CreatedResponse<Void>> newNote(@AuthenticationPrincipal String mssv) {
+        noteService.newNote(mssv);
+        return created("New note created successfully");
     }
 }
