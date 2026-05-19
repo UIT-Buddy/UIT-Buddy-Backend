@@ -1,18 +1,22 @@
 package com.uit.buddy.controller.note;
 
 import com.uit.buddy.controller.AbstractBaseController;
+import com.uit.buddy.dto.base.CreatedResponse;
 import com.uit.buddy.dto.base.SingleResponse;
+import com.uit.buddy.dto.request.note.SaveNoteToDocumentRequest;
 import com.uit.buddy.dto.request.note.UpsertNoteRequest;
 import com.uit.buddy.dto.response.note.NoteResponse;
 import com.uit.buddy.service.note.NoteService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -40,5 +44,23 @@ public class NoteController extends AbstractBaseController {
             @Valid @RequestBody UpsertNoteRequest request) {
         NoteResponse response = noteService.upsertNote(mssv, request);
         return successSingle(response, "Note saved successfully");
+    }
+
+    @PostMapping("/save-to-document")
+    @Operation(summary = "Save note to document", description = "Save current note content as a new document in user's storage")
+    public ResponseEntity<SingleResponse<UUID>> saveNoteToDocument(@AuthenticationPrincipal String mssv,
+            @RequestBody(required = false) SaveNoteToDocumentRequest request) {
+        if (request == null) {
+            request = new SaveNoteToDocumentRequest(null, null);
+        }
+        UUID documentId = noteService.saveNoteToDocument(mssv, request);
+        return successSingle(documentId, "Note saved to document successfully");
+    }
+
+    @PostMapping("/new")
+    @Operation(summary = "New note", description = "Clear current note and start a new empty note")
+    public ResponseEntity<CreatedResponse<Void>> newNote(@AuthenticationPrincipal String mssv) {
+        noteService.newNote(mssv);
+        return created("New note created successfully");
     }
 }
